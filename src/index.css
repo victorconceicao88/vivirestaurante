@@ -130,3 +130,9 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* No modal de opções */
+.options-modal-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}

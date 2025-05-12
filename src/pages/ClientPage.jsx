@@ -898,6 +898,17 @@ const ClientPage = () => {
   const [additionalPrice, setAdditionalPrice] = useState(0);
   const [meatSelectionError, setMeatSelectionError] = useState('');
   const [notification, setNotification] = useState(null);
+  const [activeTab, setActiveTab] = useState('');
+
+
+
+
+
+
+
+
+
+
 
   // Todos os produtos em um único array
   const allProducts = categories.flatMap(category => category.products);
@@ -934,7 +945,8 @@ const ClientPage = () => {
     additionalPrice: initialAdditionalPrice = 0,
     setAdditionalPrice: parentSetAdditionalPrice,
     meatSelectionError: initialMeatSelectionError = '',
-    setMeatSelectionError: parentSetMeatSelectionError
+    setMeatSelectionError: parentSetMeatSelectionError,
+   
   }) => {
     const modalRef = React.useRef(null);
     const optionKeys = Object.keys(product.options);
@@ -962,57 +974,44 @@ const ClientPage = () => {
       
       return false;
     };
-
     const handleOptionSelect = (optionName, value, price = 0, isChecked = false, optionData = {}) => {
       setSelectedOptions(prev => {
-        const newOptions = { ...prev };
+        const newOptions = {...prev};
         
-        if (optionName === 'meats') {
-          let newSelectedMeats = newOptions.meats || [];
+        if (optionData.type === 'checkbox') {
+          // Para opções do tipo checkbox (como carnes)
+          newOptions[optionName] = newOptions[optionName] || [];
           
           if (optionData.exclusive) {
-            newSelectedMeats = isChecked ? [value] : [];
+            // Opção exclusiva (como "Só Maminha")
+            newOptions[optionName] = isChecked ? [value] : [];
           } else {
-            newSelectedMeats = newSelectedMeats.filter(item => item !== 'onlyTopSirloin');
+            // Remove opção exclusiva se estiver selecionando outras
+            newOptions[optionName] = newOptions[optionName].filter(item => item !== 'onlyTopSirloin');
+            
             if (isChecked) {
-              newSelectedMeats = [...newSelectedMeats, value];
+              newOptions[optionName] = [...newOptions[optionName], value];
             } else {
-              newSelectedMeats = newSelectedMeats.filter(item => item !== value);
+              newOptions[optionName] = newOptions[optionName].filter(item => item !== value);
             }
           }
-          
-          const maxMeats = product.options.meats?.max || 2;
-          if (newSelectedMeats.length > maxMeats && !newSelectedMeats.includes('onlyTopSirloin')) {
-            setMeatSelectionError(t('options.maxOptions', { max: maxMeats }));
-            return prev;
-          } else {
-            setMeatSelectionError('');
-          }
-          
-          newOptions[optionName] = newSelectedMeats;
         } else {
+          // Para opções do tipo radio
           newOptions[optionName] = value;
         }
         
         return newOptions;
       });
-
+  
+      // Atualiza preço adicional
       if (isChecked) {
         setAdditionalPrice(prev => prev + price);
-      } else if (optionName !== 'meats') {
-        const previousOption = selectedOptions[optionName];
-        const previousPrice = product.options[optionName]?.items
-          .find(item => item.value === previousOption)?.price || 0;
-        setAdditionalPrice(prev => prev - previousPrice);
-      }
-
-      // Avança automaticamente para a próxima aba obrigatória
-      const currentIndex = optionKeys.indexOf(optionName);
-      if (currentIndex < optionKeys.length - 1 && product.options[optionName].required) {
-        const nextOption = optionKeys[currentIndex + 1];
-        setActiveTab(nextOption);
+      } else {
+        setAdditionalPrice(prev => prev - price);
       }
     };
+
+    
 
     const renderOptionItem = (optionName, optionData, item, index) => {
       const isRadio = optionData.type === 'radio';
@@ -1152,21 +1151,19 @@ const ClientPage = () => {
             </div>
             
             <div className="flex space-x-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-3 border border-[#3D1106] text-[#3D1106] rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                {t('options.cancel')}
-              </button>
-              <button
-                onClick={onConfirm}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-[#3D1106] to-[#5A1B0D] text-white rounded-lg hover:opacity-90 transition-all font-medium flex items-center justify-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                {t('options.addToCart')}
-              </button>
+            <button
+              onClick={() => {
+                if (onConfirm()) {
+                  onClose();
+                }
+              }}
+              className="flex-1 px-4 py-3 bg-[#3D1106] hover:bg-[#5A1B0D] text-white rounded-lg transition-colors font-medium flex items-center justify-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              {t('options.addToCart')}
+            </button>
             </div>
           </div>
         </div>
@@ -1198,67 +1195,105 @@ const ClientPage = () => {
       });
     }
   };
-
   const confirmAddToCart = () => {
-    if (!selectedProduct) return;
-
-    for (const [optionName, optionData] of Object.entries(selectedProduct.options)) {
-      if (optionData.required && !selectedOptions[optionName]) {
-        setNotification({
-          message: i18n.language === 'pt' ? 'Por favor, selecione todas as opções obrigatórias' :
-                    i18n.language === 'en' ? 'Please select all required options' :
-                    'Por favor, seleccione todas las opciones obligatorias',
-          type: 'error'
-        });
-        return;
+    try {
+      // Verifica se há um produto selecionado
+      if (!selectedProduct) {
+        throw new Error(t('errors.noProductSelected'));
       }
-    }
-
-    if (selectedProduct.options.meats) {
-      const selectedMeats = selectedOptions.meats || [];
-      const hasOnlyTopSirloin = selectedMeats.includes('onlyTopSirloin');
-      const maxMeats = selectedProduct.options.meats.max || 2;
+  
+      // Validação das opções obrigatórias
+      const requiredOptions = ['beans', 'sideDishes', 'salad'];
+      for (const optionName of requiredOptions) {
+        if (!selectedOptions[optionName]) {
+          throw new Error(`${selectedProduct.options[optionName].title} ${t('options.required')}`);
+        }
+      }
+  
+      // Validação especial para as carnes
+      if (selectedProduct.options.meats) {
+        const selectedMeats = selectedOptions.meats || [];
+        const hasOnlyTopSirloin = selectedMeats.includes('onlyTopSirloin');
+        const maxMeats = selectedProduct.options.meats.max || 2;
+  
+        if (selectedMeats.length === 0) {
+          throw new Error(t('options.meatSelection'));
+        }
+  
+        if (!hasOnlyTopSirloin && selectedMeats.length > maxMeats) {
+          throw new Error(t('options.maxOptions', { max: maxMeats }));
+        }
+  
+        if (hasOnlyTopSirloin && selectedMeats.length > 1) {
+          throw new Error(t('options.meatSelection'));
+        }
+      }
+  
+      // Criação do item do carrinho
+      const optionsHash = btoa(JSON.stringify(selectedOptions));
+      const cartItem = {
+        ...selectedProduct,
+        id: `${selectedProduct.id}-${optionsHash}`,
+        quantity: 1,
+        selectedOptions: JSON.parse(JSON.stringify(selectedOptions)), // Deep copy
+        additionalPrice,
+        finalPrice: selectedProduct.price + additionalPrice,
+        customizations: Object.entries(selectedOptions)
+          .map(([key, value]) => {
+            const option = selectedProduct.options[key];
+            if (Array.isArray(value)) {
+              return `${option.title}: ${value.map(v => {
+                const item = option.items.find(i => i.value === v);
+                return item ? item.label : v;
+              }).join(', ')}`;
+            }
+            const item = option.items.find(i => i.value === value);
+            return `${option.title}: ${item ? item.label : value}`;
+          })
+          .join('; ')
+      };
+  
+      // Adiciona ao carrinho
+      setCart(prevCart => {
+        const existingItem = prevCart.find(item => item.id === cartItem.id);
+        if (existingItem) {
+          return prevCart.map(item => 
+            item.id === cartItem.id 
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          );
+        }
+        return [...prevCart, cartItem];
+      });
+  
+      // Fecha o modal
+      setShowOptionsModal(false);
       
-      if (!hasOnlyTopSirloin && selectedMeats.length === 0) {
-        setMeatSelectionError(t('options.meatSelection'));
-        return;
-      }
-      
-      if (!hasOnlyTopSirloin && selectedMeats.length > maxMeats) {
-        setMeatSelectionError(t('options.maxOptions', { max: maxMeats }));
-        return;
-      }
+      // Feedback visual
+      setNotification({
+        message: t('notification.addedToCart'),
+        type: 'success'
+      });
+  
+      // Limpa os estados
+      setTimeout(() => {
+        setSelectedOptions({});
+        setAdditionalPrice(0);
+        setMeatSelectionError('');
+        setActiveTab(Object.keys(selectedProduct.options)[0]);
+      }, 300);
+  
+      return true;
+  
+    } catch (error) {
+      setNotification({
+        message: error.message,
+        type: 'error'
+      });
+      return false;
     }
-
-    const productWithOptions = {
-      ...selectedProduct,
-      id: selectedProduct.id,
-      quantity: 1,
-      selectedOptions: selectedOptions,
-      additionalPrice: additionalPrice,
-      finalPrice: selectedProduct.price + additionalPrice
-    };
-
-    setCart(prevCart => {
-      const existingItemIndex = prevCart.findIndex(item => 
-        item.id === productWithOptions.id && 
-        JSON.stringify(item.selectedOptions) === JSON.stringify(productWithOptions.selectedOptions)
-      );
-
-      if (existingItemIndex >= 0) {
-        return prevCart.map((item, index) => 
-          index === existingItemIndex 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        return [...prevCart, productWithOptions];
-      }
-    });
-
-    setShowOptionsModal(false);
   };
-
+ 
   const removeFromCart = (id) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === id);
@@ -1498,19 +1533,21 @@ const ClientPage = () => {
 
       {/* Modal de Opções Premium */}
       {showOptionsModal && selectedProduct && (
-        <PremiumOptionsModal 
-          product={selectedProduct}
-          onClose={() => setShowOptionsModal(false)}
-          onConfirm={confirmAddToCart}
-          t={t}
-          selectedOptions={selectedOptions}
-          setSelectedOptions={setSelectedOptions}
-          additionalPrice={additionalPrice}
-          setAdditionalPrice={setAdditionalPrice}
-          meatSelectionError={meatSelectionError}
-          setMeatSelectionError={setMeatSelectionError}
-        />
-      )}
+  <PremiumOptionsModal
+    product={selectedProduct}
+    onClose={() => setShowOptionsModal(false)}
+    onConfirm={confirmAddToCart}
+    t={t}
+    selectedOptions={selectedOptions}
+    setSelectedOptions={setSelectedOptions}
+    additionalPrice={additionalPrice}
+    setAdditionalPrice={setAdditionalPrice}
+    meatSelectionError={meatSelectionError}
+    setMeatSelectionError={setMeatSelectionError}
+    activeTab={activeTab}
+    setActiveTab={setActiveTab}
+  />
+)}
 
       {/* Cabeçalho Premium */}
       <header className="bg-[#FFF1E4] text-[#3D1106] p-4 shadow-sm sticky top-0 z-10">
