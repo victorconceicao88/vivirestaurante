@@ -35,7 +35,7 @@ const ModalPromocionalPremium = () => {
       id: 2,
       nome: "Vaca Atolada da Vivi",
       descricao: "O clássico mineiro preparado com o segredo da Vivi. Costela suína premium, linguiça artesanal e mandioca dourada. Servido com arroz branco e couve refogada.",
-      imagem: "https://img.freepik.com/fotos-gratis/comida-brasileira-vaca-atolada_23-2149512717.jpg",
+      imagem: "images/vaca-atolada.jpg",
       icone: <GiHotSpices className="text-3xl text-[#feb300]" />,
       disponibilidade: "Às Quintas-feiras",
       iconeDisponibilidade: <FiCalendar className="text-[#feb300]" />
@@ -47,7 +47,7 @@ const ModalPromocionalPremium = () => {
   };
 
   const enviarPedidoWhatsApp = () => {
-    const numeroRestaurante = "351912345678";
+    const numeroRestaurante = "351928145225";
     const mensagem = `*ENCOMENDA ESPECIAL* - ${pratoSelecionado.nome}\n\n` +
       `*Quantidade:* ${quantidade} dose(s)\n` +
       `*Preço por dose:* €${PRECO_POR_DOSE.toFixed(2)}\n` +
