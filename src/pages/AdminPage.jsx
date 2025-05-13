@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ref, onValue, off, update, push, remove, set } from 'firebase/database';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { ref, onValue, off, update, push, remove, set,get } from 'firebase/database';
 import { database } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   FiLogOut, FiPlus, FiTrash2, FiChevronLeft, FiClock, FiCheckCircle, 
   FiTruck, FiCoffee, FiHome, FiUsers, FiPrinter, FiX, FiEdit, 
-  FiSearch, FiPhone, FiUser, FiMapPin, FiDollarSign, FiMenu 
+  FiSearch, FiPhone, FiUser, FiMapPin, FiDollarSign, FiMenu ,FiEye, FiEyeOff
 } from 'react-icons/fi';
 import { BsClockHistory, BsReceipt, BsCashStack, BsPrinter } from 'react-icons/bs';
 import { IoFastFoodOutline, IoWineOutline, IoClose } from 'react-icons/io5';
@@ -40,6 +40,7 @@ const AdminPage = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [swipeStartX, setSwipeStartX] = useState(null);
   const [swipeEndX, setSwipeEndX] = useState(null);
+  const [unavailableItems, setUnavailableItems] = useState([]); 
   
   const stats = {
     pendingOrders: orders.filter(o => o.status === 'pending').length,
@@ -48,22 +49,232 @@ const AdminPage = () => {
   };
 
   const menuItems = [
-    { id: 1, name: 'Pizza Margherita', price: 8.90, category: 'Pizzas', type: 'food', iconName: 'pizza' },
-    { id: 2, name: 'Pizza Calabresa', price: 9.90, category: 'Pizzas', type: 'food', iconName: 'pizza' },
-    { id: 3, name: 'Hambúrguer Gourmet', price: 7.50, category: 'Lanches', type: 'food', iconName: 'burger' },
-    { id: 4, name: 'Batata Frita', price: 4.00, category: 'Acompanhamentos', type: 'food', iconName: 'fries' },
-    { id: 5, name: 'Refrigerante', price: 2.50, category: 'Bebidas', type: 'drink', iconName: 'soda' },
-    { id: 6, name: 'Água Mineral', price: 1.50, category: 'Bebidas', type: 'drink', iconName: 'water' },
-    { id: 7, name: 'Salada Caesar', price: 6.90, category: 'Saladas', type: 'food', iconName: 'salad' },
-    { id: 8, name: 'Tiramisu', price: 5.90, category: 'Sobremesas', type: 'food', iconName: 'dessert' },
-    { id: 9, name: 'Espaguete Carbonara', price: 8.90, category: 'Massas', type: 'food', iconName: 'pasta' },
-    { id: 10, name: 'Vinho Tinto (taça)', price: 12.00, category: 'Bebidas', type: 'drink', iconName: 'wine' },
-    { id: 11, name: 'Cerveja Artesanal', price: 8.00, category: 'Bebidas', type: 'drink', iconName: 'beer' },
-    { id: 12, name: 'Suco Natural', price: 5.50, category: 'Bebidas', type: 'drink', iconName: 'juice' },
-    { id: 13, name: 'Risoto de Funghi', price: 14.90, category: 'Pratos Principais', type: 'food', iconName: 'risotto' },
-    { id: 14, name: 'Filé Mignon', price: 22.90, category: 'Pratos Principais', type: 'food', iconName: 'steak' },
-    { id: 15, name: 'Coca-Cola (lata)', price: 3.50, category: 'Bebidas', type: 'drink', iconName: 'soda' },
+    // Churrasco
+    {
+      id: 1,
+      name: 'Churrasco Misto',
+      category: 'Churrasco',
+      price: 15.00,
+      type: 'food',
+      iconName: 'meat',
+      customOptions: {
+        feijao: ['Feijão de caldo', 'Feijão tropeiro'],
+        acompanhamentos: ['Banana frita', 'Mandioca cozida', 'Mandioca frita'],
+        carnes: [
+          'Coração de galinha',
+          'Costelinha de porco',
+          'Filé de frango',
+          'Linguiça',
+          'Só Maminha (+€1,00)',
+          'Maminha',
+          'Torresmo'
+        ],
+        pontoCarne: [
+          'Selada',
+          'Mal passada',
+          'Ao ponto',
+          'Ao ponto para bem',
+          'Bem passado',
+          'Indiferente'
+        ],
+        salada: ['Salada mista', 'Vinagrete', 'Não quero salada'],
+        bebida: [
+          'Sem bebida',
+          'Água sem gás 500ml (+€1,00)',
+          'Água com gás Castelo (+€1,50)',
+          'Água com gás Pedras 500ml (+€1,50)',
+          'Coca-Cola (+€2,00)',
+          'Coca-Cola Zero (+€2,00)',
+          'Fanta Laranja (+€2,00)',
+          'Guaraná Antarctica (+€2,00)',
+          'Ice Tea de Manga (+€2,00)'
+        ]
+      }
+    },
+    {
+      id: 2,
+      name: 'Maminha',
+      category: 'Churrasco',
+      price: 16.00,
+      type: 'food',
+      iconName: 'meat',
+      customOptions: {
+        feijao: ['Feijão de caldo', 'Feijão tropeiro'],
+        acompanhamentos: ['Banana frita', 'Mandioca cozida', 'Mandioca frita'],
+        pontoCarne: [
+          'Selada',
+          'Mal passada',
+          'Ao ponto',
+          'Ao ponto para bem',
+          'Bem passado',
+          'Indiferente'
+        ],
+        salada: ['Salada mista', 'Vinagrete', 'Não quero salada'],
+        bebida: [
+          'Sem bebida',
+          'Água sem gás 500ml (+€1,00)',
+          'Água com gás Castelo (+€1,50)',
+          'Água com gás Pedras 500ml (+€1,50)',
+          'Coca-Cola (+€2,00)',
+          'Coca-Cola Zero (+€2,00)',
+          'Fanta Laranja (+€2,00)',
+          'Guaraná Antarctica (+€2,00)',
+          'Ice Tea de Manga (+€2,00)'
+        ]
+      }
+    },
+    {
+      id: 3,
+      name: 'Linguiça Toscana',
+      category: 'Churrasco',
+      price: 13.00,
+      type: 'food',
+      iconName: 'meat',
+      customOptions: {
+        feijao: ['Feijão de caldo', 'Feijão tropeiro'],
+        acompanhamentos: ['Banana frita', 'Mandioca cozida', 'Mandioca frita'],
+        pontoCarne: [
+          'Selada',
+          'Mal passada',
+          'Ao ponto',
+          'Ao ponto para bem',
+          'Bem passado',
+          'Indiferente'
+        ],
+        salada: ['Salada mista', 'Vinagrete', 'Não quero salada'],
+        bebida: [
+          'Sem bebida',
+          'Água sem gás 500ml (+€1,00)',
+          'Água com gás Castelo (+€1,50)',
+          'Água com gás Pedras 500ml (+€1,50)',
+          'Coca-Cola (+€2,00)',
+          'Coca-Cola Zero (+€2,00)',
+          'Fanta Laranja (+€2,00)',
+          'Guaraná Antarctica (+€2,00)',
+          'Ice Tea de Manga (+€2,00)'
+        ]
+      }
+    },
+    {
+      id: 4,
+      name: 'Costelinha de Porco',
+      category: 'Churrasco',
+      price: 14.00,
+      type: 'food',
+      iconName: 'meat',
+      customOptions: {
+        feijao: ['Feijão de caldo', 'Feijão tropeiro'],
+        acompanhamentos: ['Banana frita', 'Mandioca cozida', 'Mandioca frita'],
+        pontoCarne: [
+          'Selada',
+          'Mal passada',
+          'Ao ponto',
+          'Ao ponto para bem',
+          'Bem passado',
+          'Indiferente'
+        ],
+        salada: ['Salada mista', 'Vinagrete', 'Não quero salada'],
+        bebida: [
+          'Sem bebida',
+          'Água sem gás 500ml (+€1,00)',
+          'Água com gás Castelo (+€1,50)',
+          'Água com gás Pedras 500ml (+€1,50)',
+          'Coca-Cola (+€2,00)',
+          'Coca-Cola Zero (+€2,00)',
+          'Fanta Laranja (+€2,00)',
+          'Guaraná Antarctica (+€2,00)',
+          'Ice Tea de Manga (+€2,00)'
+        ]
+      }
+    },
+    {
+      id: 5,
+      name: 'Peito de Frango Grelhado',
+      category: 'Churrasco',
+      price: 12.00,
+      type: 'food',
+      iconName: 'meat',
+      customOptions: {
+        feijao: ['Feijão de caldo', 'Feijão tropeiro'],
+        acompanhamentos: ['Banana frita', 'Mandioca cozida', 'Mandioca frita'],
+        pontoCarne: [
+          'Selada',
+          'Mal passada',
+          'Ao ponto',
+          'Ao ponto para bem',
+          'Bem passado',
+          'Indiferente'
+        ],
+        salada: ['Salada mista', 'Vinagrete', 'Não quero salada'],
+        bebida: [
+          'Sem bebida',
+          'Água sem gás 500ml (+€1,00)',
+          'Água com gás Castelo (+€1,50)',
+          'Água com gás Pedras 500ml (+€1,50)',
+          'Coca-Cola (+€2,00)',
+          'Coca-Cola Zero (+€2,00)',
+          'Fanta Laranja (+€2,00)',
+          'Guaraná Antarctica (+€2,00)',
+          'Ice Tea de Manga (+€2,00)'
+        ]
+      }
+    },
+  
+    // Burguers
+    { id: 6, name: 'X-Salada', price: 6.90, category: 'Burguers', type: 'food', iconName: 'burger' },
+    { id: 7, name: 'X-Bacon', price: 7.90, category: 'Burguers', type: 'food', iconName: 'burger' },
+    { id: 8, name: 'X-Frango', price: 7.50, category: 'Burguers', type: 'food', iconName: 'burger' },
+    { id: 9, name: 'X-Especial', price: 8.90, category: 'Burguers', type: 'food', iconName: 'burger' },
+    { id: 10, name: 'X-Tudo', price: 9.90, category: 'Burguers', type: 'food', iconName: 'burger' },
+  
+    // Porções
+    { id: 11, name: 'Porção de Arroz', price: 3.00, category: 'Porções', type: 'food', iconName: 'rice' },
+    { id: 12, name: 'Queijo Coalho', price: 5.50, category: 'Porções', type: 'food', iconName: 'cheese' },
+    { id: 13, name: 'Torresmo', price: 4.50, category: 'Porções', type: 'food', iconName: 'pork' },
+    { id: 14, name: 'Porção de Mandioca', price: 4.00, category: 'Porções', type: 'food', iconName: 'cassava' },
+    { id: 15, name: 'Porção de Batata Frita', price: 4.00, category: 'Porções', type: 'food', iconName: 'fries' },
+    { id: 16, name: 'Porção de Carnes', price: 10.00, category: 'Porções', type: 'food', iconName: 'meat' },
+  
+    // Bebidas - Refrigerantes
+    { id: 17, name: 'Coca-Cola', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
+    { id: 18, name: 'Coca-Cola Zero', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
+    { id: 19, name: '7Up', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
+    { id: 20, name: 'Fanta Laranja', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
+    { id: 21, name: 'Guaraná Antarctica', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
+    { id: 22, name: 'Ice Tea de Manga', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'tea' },
+  
+    // Bebidas - Águas
+    { id: 23, name: 'Água sem gás 500ml', price: 1.00, category: 'Bebidas', type: 'drink', iconName: 'water' },
+    { id: 24, name: 'Água com gás Castelo (pequena)', price: 1.50, category: 'Bebidas', type: 'drink', iconName: 'water' },
+    { id: 25, name: 'Água com gás Pedras (pequena)', price: 1.50, category: 'Bebidas', type: 'drink', iconName: 'water' },
+  
+    // Sobremesas
+    { id: 26, name: 'Açaí Pequeno', price: 4.50, category: 'Sobremesas', type: 'dessert', iconName: 'acai' },
+    { id: 27, name: 'Açaí Grande', price: 6.50, category: 'Sobremesas', type: 'dessert', iconName: 'acai' },
+  
+    // Vinhos & Cervejas
+    { id: 28, name: 'Garrafa de Vinho', price: 13.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
+    { id: 29, name: 'Garrafa Vinho Tinto', price: 10.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
+    { id: 30, name: 'Caneca de Cerveja', price: 3.50, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'beer' },
+    { id: 31, name: 'Imperial', price: 2.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'beer' },
+    { id: 32, name: 'Jarra de Vinho', price: 10.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
+    { id: 33, name: 'Meia Jarra de Vinho', price: 6.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
+    { id: 34, name: 'Sagres', price: 2.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'beer' },
+    { id: 35, name: 'Sangria', price: 15.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
+    { id: 36, name: 'Sangria 0.5L', price: 8.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
+    { id: 37, name: 'Sangria Taça', price: 5.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
+    { id: 38, name: 'Summersby', price: 2.50, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'cider' },
+    { id: 39, name: 'Super Bock', price: 2.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'beer' },
+    { id: 40, name: 'Taça de Vinho', price: 3.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
+  
+    // Cafés & Licores
+    { id: 41, name: 'Cachaça', price: 1.50, category: 'Cafés & Licores', type: 'drink', iconName: 'shot' },
+    { id: 42, name: 'Café', price: 1.00, category: 'Cafés & Licores', type: 'drink', iconName: 'coffee' },
+    { id: 43, name: 'Galão', price: 1.50, category: 'Cafés & Licores', type: 'drink', iconName: 'coffee' },
+    { id: 44, name: 'Constantino', price: 2.00, category: 'Cafés & Licores', type: 'drink', iconName: 'liqueur' }
   ];
+  
+  
 
   const categories = ['all', ...new Set(menuItems.map(item => item.category))];
   const navigate = useNavigate();
@@ -71,6 +282,59 @@ const AdminPage = () => {
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  // Função para alternar disponibilidade de um item
+  const toggleItemAvailability = async (productId) => {
+    try {
+      const idString = productId.toString();
+      const itemRef = ref(database, `unavailableItems/${idString}`);
+      
+      if (unavailableItems.includes(idString)) {
+        await set(itemRef, null);
+        setUnavailableItems(prev => prev.filter(id => id !== idString));
+      } else {
+        await set(itemRef, true);
+        setUnavailableItems(prev => [...prev, idString]);
+      }
+    } catch (error) {
+      console.error("Error updating availability:", error);
+    }
+  };
+
+
+
+  // Função para obter os itens que devem aparecer no controle de disponibilidade
+  const getAvailabilityControlItems = useMemo(() => {
+    return menuItems.filter(item => 
+      (item.category === 'Churrasco' && item.name.includes('Mandioca')) ||
+      (item.category === 'Porções' && item.name === 'Torresmo') ||
+      (item.category === 'Sobremesas' && (item.name === 'Açaí Grande' || item.name === 'Açaí Pequeno')) ||
+      item.name.includes('Mandioca')
+    );
+  }, [menuItems]);
+
+  // Efeito para carregar itens indisponíveis do Firebase
+  useEffect(() => {
+    const unavailableRef = ref(database, 'unavailableItems');
+    const unsubscribe = onValue(unavailableRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      // Converte o objeto em array de strings (IDs)
+      const items = Object.keys(data).filter(key => data[key] === true);
+      setUnavailableItems(items);
+    });
+  
+    return () => unsubscribe();
+  }, []);
+
+  const toggleAvailability = async (productId) => {
+    const idString = productId.toString();
+    try {
+      await set(ref(database, `unavailableItems/${idString}`), 
+        !unavailableItems.includes(idString));
+    } catch (error) {
+      console.error("Error toggling availability:", error);
+    }
   };
 
   const sendWhatsAppNotification = (order, status) => {
@@ -87,10 +351,44 @@ const AdminPage = () => {
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
-
+  const loadUnavailableItems = async () => {
+    try {
+      const snapshot = await get(ref(database, 'unavailableItems'));
+      const data = snapshot.val() || {};
+      
+      // Converter para array de strings
+      const items = Object.keys(data).filter(key => data[key] === true);
+      setUnavailableItems(items);
+    } catch (error) {
+      console.error("Error loading unavailable items:", error);
+      setUnavailableItems([]); // Fallback para array vazio
+    }
+  };
+  
+  useEffect(() => {
+    loadUnavailableItems();
+    
+    // Configurar listener em tempo real
+    const unavailableRef = ref(database, 'unavailableItems');
+    const unsubscribe = onValue(unavailableRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      setUnavailableItems(Object.keys(data).filter(key => data[key] === true));
+    });
+  
+    return () => unsubscribe();
+  }, []);
   const printKitchenOrder = async (items, tableNumber, orderType = 'table', customerInfo = null) => {
     try {
-      // Mostrar resumo antes de imprimir
+      const foodItems = items.filter(item => item.type === 'food');
+      if (foodItems.length === 0) {
+        showNotification('Nenhum item de comida para enviar à cozinha', 'info');
+        return false;
+      }
+      const confirmMessage = `Deseja enviar ${foodItems.length} item(s) para a cozinha?\n\n`
+      foodItems.map(i => `• ${i.name} (x${i.quantity || 1})`).join('\n');
+
+      
+      
       const summaryContent = `
         <div style="padding: 15px; font-family: Arial, sans-serif;">
           <h2 style="text-align: center; margin-bottom: 10px;">Confirmação de Pedido</h2>
@@ -116,9 +414,9 @@ const AdminPage = () => {
       `;
 
       // Criar modal de confirmação
-      const shouldPrint = window.confirm(`Deseja enviar este pedido para a cozinha?\n\n${items.map(i => `${i.name} (x${i.quantity || 1})`).join('\n')}`);
+      const shouldPrint = window.confirm(confirmMessage);
       if (!shouldPrint) {
-        showNotification('Impressão cancelada', 'info');
+        showNotification('Envio para cozinha cancelado', 'info');
         return false;
       }
 
@@ -153,9 +451,13 @@ const AdminPage = () => {
       let content = '\x1B\x40'; // Reset printer
       content += '\x1B\x21\x30'; // Large text
       content += '================================\n';
-      content += '        PEDIDO COZINHA         \n';
+      content += '          COZINHA         \n';
       content += '================================\n\n';
       content += '\x1B\x21\x00'; // Normal text
+
+      if (customerInfo?.notes) {
+        content += `OBS GERAIS: ${customerInfo.notes}\n\n`;
+      }
       
       if (orderType === 'delivery' || orderType === 'pickup') {
         content += `TIPO: ${orderType === 'delivery' ? 'ENTREGA' : 'RETIRADA'}\n`;
@@ -196,23 +498,85 @@ const AdminPage = () => {
       return true;
     } catch (error) {
       console.error('Erro ao imprimir:', error);
-      showNotification('Falha ao imprimir pedido: ' + error.message, 'error');
+      showNotification('Falha ao enviar para cozinha: ' + error.message, 'error');
       return false;
     }
   };
-
   const printOnlineOrder = async (order) => {
-    if (!order || !order.items) return false;
-
-    const items = Object.values(order.items);
-    const orderType = order.deliveryAddress ? 'delivery' : 'pickup';
-    const customerInfo = {
-      name: order.customerName,
-      phone: order.customerPhone,
-      address: order.deliveryAddress
-    };
-
-    return printKitchenOrder(items, order.id, orderType, customerInfo);
+    if (!order || !order.items) {
+      console.error('Pedido inválido - sem itens:', order);
+      showNotification('Pedido sem itens para imprimir', 'error');
+      return false;
+    }
+  
+    try {
+      // 1. Converter itens para array (compatível com Firebase)
+      let itemsArray = [];
+      
+      if (Array.isArray(order.items)) {
+        itemsArray = order.items;
+      } else if (typeof order.items === 'object') {
+        itemsArray = Object.values(order.items);
+      } else {
+        throw new Error('Formato de itens inválido');
+      }
+  
+      // 2. Filtrar apenas itens de comida e mapear corretamente
+      const foodItems = itemsArray
+        .filter(item => item && item.type === 'food')
+        .map(item => ({
+          name: item.name || 'Item sem nome',
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          notes: item.notes || '',
+          type: 'food' // Forçar tipo comida
+        }));
+  
+      if (foodItems.length === 0) {
+        showNotification('Nenhum item de comida no pedido', 'info');
+        return false;
+      }
+  
+      // 3. Preparar dados do cliente
+      const orderType = order.deliveryAddress ? 'delivery' : 'pickup';
+      const customerInfo = {
+        name: order.customerName || 'Cliente não informado',
+        phone: order.customerPhone || 'Não informado',
+        address: order.deliveryAddress || 'Retirada no local',
+        notes: order.notes // Inclui observações gerais do pedido
+      };
+  
+      // 4. Mostrar confirmação
+      const confirmText = [
+        `Enviar ${foodItems.length} item(s) para cozinha?`,
+        ...foodItems.map(i => `- ${i.name} (x${i.quantity})`)
+      ].join('\n');
+  
+      if (!window.confirm(confirmText)) {
+        showNotification('Impressão cancelada', 'info');
+        return false;
+      }
+  
+      // 5. Chamar função de impressão
+      const printResult = await printKitchenOrder(
+        foodItems,
+        `PED-${order.id.slice(0, 5)}`, // ID reduzido
+        orderType,
+        customerInfo
+      );
+  
+      if (!printResult) {
+        throw new Error('Falha na impressão');
+      }
+  
+      showNotification('Pedido enviado para cozinha!', 'success');
+      return true;
+  
+    } catch (error) {
+      console.error('Falha ao imprimir pedido:', error);
+      showNotification(`Erro: ${error.message}`, 'error');
+      return false;
+    }
   };
 
   const handleLogout = async () => {
@@ -232,10 +596,32 @@ const AdminPage = () => {
       showNotification(`Pedido atualizado para ${status === 'pending' ? 'pendente' : status === 'preparing' ? 'em preparo' : status === 'ready' ? 'pronto' : 'entregue'}`);
       
       const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+  
+      // Garantir que os itens sejam processados corretamente
+      const items = order.items ? (
+        Array.isArray(order.items) ? 
+          order.items : 
+          Object.values(order.items)
+      ) : [];
+  
       if (status === 'preparing') {
-        await printOnlineOrder(order);
+        // Filtrar apenas itens de comida e incluir observações
+        const foodItems = items
+          .filter(item => item.type === 'food')
+          .map(item => ({
+            ...item,
+            notes: item.notes || '', // Garante que as observações sejam incluídas
+            quantity: item.quantity || 1
+          }));
+  
+        if (foodItems.length > 0) {
+          // Chamar printOnlineOrder para pedidos online
+          await printOnlineOrder(order);
+        }
       }
-      if (status === 'ready' && order) {
+  
+      if (status === 'ready') {
         sendWhatsAppNotification(order, status);
       }
     } catch (error) {
@@ -367,25 +753,25 @@ const AdminPage = () => {
   const preparePrintItems = useCallback(() => {
     if (!selectedTable || !selectedTable.order) return;
     
+    // Filtrar apenas itens de comida não impressos
     const foodItems = Object.entries(selectedTable.order || {})
       .filter(([_, item]) => item && item.type === 'food' && !item.printed)
       .map(([key, item]) => ({ ...item, itemId: key }));
     
     if (foodItems.length === 0) {
-      showNotification('Não há itens de comida para imprimir', 'info');
+      showNotification('Não há itens de comida para enviar à cozinha', 'info');
       return;
     }
     
-    // Imprime automaticamente sem mostrar preview
     confirmPrintItems(foodItems);
   }, [selectedTable]);
 
-  const confirmPrintItems = useCallback(async (itemsToPrint) => {
-    const printSuccess = await printKitchenOrder(itemsToPrint, selectedTable.number);
+  const confirmPrintItems = useCallback(async (foodItems) => {
+    const printSuccess = await printKitchenOrder(foodItems, selectedTable.number);
     
     if (printSuccess) {
       const updates = {};
-      itemsToPrint.forEach(item => {
+      foodItems.forEach(item => {
         updates[`tables/${selectedTable.id}/order/${item.itemId}/printed`] = true;
         updates[`tables/${selectedTable.id}/order/${item.itemId}/status`] = 'preparing';
       });
@@ -395,7 +781,7 @@ const AdminPage = () => {
         showNotification('Itens enviados para cozinha com sucesso!');
         
         const updatedOrder = { ...selectedTable.order };
-        itemsToPrint.forEach(item => {
+        foodItems.forEach(item => {
           if (updatedOrder[item.itemId]) {
             updatedOrder[item.itemId].printed = true;
             updatedOrder[item.itemId].status = 'preparing';
@@ -513,9 +899,15 @@ const AdminPage = () => {
     return isDateInRange;
   });
 
-  const filteredMenuItems = menuItems
-    .filter(item => activeCategory === 'all' || item.category === activeCategory)
-    .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+const filteredMenuItems = menuItems
+  .filter(item => activeCategory === 'all' || item.category === activeCategory)
+  .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  .filter(item => !unavailableItems.includes(item.id.toString())); // Converte para string para com
+
+      // 4. Garanta que a função isItemAvailable esteja correta
+      const isItemAvailable = useCallback((itemId) => {
+        return !unavailableItems.includes(itemId.toString());
+      }, [unavailableItems]);
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -596,7 +988,8 @@ const AdminPage = () => {
   useEffect(() => {
     const ordersRef = ref(database, 'orders');
     const tablesRef = ref(database, 'tables');
-
+    const unavailableItemsRef = ref(database, 'unavailableItems');
+  
     const ordersListener = onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
       const ordersArray = data ? Object.entries(data).map(([key, value]) => ({
@@ -605,7 +998,7 @@ const AdminPage = () => {
       })) : [];
       setOrders(ordersArray);
     });
-
+  
     const tablesListener = onValue(tablesRef, (snapshot) => {
       const data = snapshot.val();
       const tablesArray = data ? Object.entries(data).map(([key, value]) => ({
@@ -615,10 +1008,19 @@ const AdminPage = () => {
       })) : [];
       setTables(tablesArray);
     });
-
+  
+    // Listener específico para itens indisponíveis
+    const unavailableItemsListener = onValue(unavailableItemsRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      // Converte o objeto em array de strings (IDs)
+      const items = Object.keys(data).filter(key => data[key] === true);
+      setUnavailableItems(items);
+    });
+  
     return () => {
       off(ordersRef, ordersListener);
       off(tablesRef, tablesListener);
+      off(unavailableItemsRef, unavailableItemsListener);
     };
   }, []);
 
@@ -641,11 +1043,13 @@ const AdminPage = () => {
                 ? 'bg-red-100 border-l-4 border-red-500 text-red-700' 
                 : notification.type === 'info'
                 ? 'bg-blue-100 border-l-4 border-blue-500 text-blue-700'
+                : notification.type === 'warning'
+                ? 'bg-amber-100 border-l-4 border-amber-500 text-amber-700'
                 : 'bg-green-100 border-l-4 border-green-500 text-green-700'
             }`}
           >
             <span className="mr-2">
-              {notification.type === 'error' ? '⚠️' : notification.type === 'info' ? 'ℹ️' : '✓'}
+              {notification.type === 'error' ? '⚠️' : notification.type === 'info' ? 'ℹ️' : notification.type === 'warning' ? '⚠️' : '✓'}
             </span>
             {notification.message}
             <button 
@@ -661,7 +1065,7 @@ const AdminPage = () => {
       {/* Sidebar - Desktop */}
       <div className={`${isMobile ? 'hidden' : 'w-64'} bg-gray-900 text-gray-100 p-4 flex flex-col`}>
         <div className="flex items-center justify-between mb-8 p-2">
-          <h1 className="text-xl font-bold">Restaurante Premium</h1>
+          <h1 className="text-xl font-bold">Cozinha da Vivi</h1>
         </div>
         
         <nav className="space-y-1 flex-1">
@@ -691,6 +1095,15 @@ const AdminPage = () => {
           >
             <FiUsers className="mr-3" />
             Gerenciar Mesas
+          </button>
+
+          {/* Nova seção para Controle de Disponibilidade */}
+          <button
+            onClick={() => setActiveSection('availability')}
+            className={`flex items-center w-full px-4 py-3 rounded-lg transition ${activeSection === 'availability' ? 'bg-indigo-700 text-white' : 'hover:bg-gray-800'}`}
+          >
+            <FiEye className="mr-3" />
+            Controle de Disponibilidade
           </button>
         </nav>
         
@@ -774,6 +1187,18 @@ const AdminPage = () => {
                 >
                   <FiUsers className="mr-3" />
                   Gerenciar Mesas
+                </button>
+
+                {/* Nova seção para Controle de Disponibilidade */}
+                <button
+                  onClick={() => {
+                    setActiveSection('availability');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center w-full px-4 py-3 rounded-lg transition ${activeSection === 'availability' ? 'bg-indigo-700 text-white' : 'hover:bg-gray-700'}`}
+                >
+                  <FiEye className="mr-3" />
+                  Controle de Disponibilidade
                 </button>
               </nav>
               
@@ -971,6 +1396,13 @@ const AdminPage = () => {
                             {order.status === 'delivered' && 'Entregue'}
                           </span>
                         </div>
+                        {order.notes && (
+                            <div className="mb-3 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                              <h4 className="font-medium text-yellow-800 mb-1">Observações do Cliente:</h4>
+                              <p className="text-yellow-700">{order.notes}</p>
+                            </div>
+                          )}
+
                         
                         {/* Customer Info Section */}
                         <div className="mb-3 sm:mb-4 bg-gray-50 p-3 sm:p-4 rounded-lg">
@@ -1022,16 +1454,22 @@ const AdminPage = () => {
                         <div className="mb-3 sm:mb-4">
                           <h4 className="font-medium text-gray-700 mb-2 text-sm sm:text-base">Itens:</h4>
                           <ul className="space-y-1 sm:space-y-2">
-                            {order.items && Object.values(order.items).map((item, idx) => (
-                              <li key={idx} className="flex justify-between text-sm sm:text-base">
-                                <span className="truncate max-w-[70%]">
-                                  <span className="font-medium">{item.name}</span>
-                                  {item.notes && <span className="text-xs text-gray-500 ml-1 sm:ml-2">({item.notes})</span>}
-                                </span>
-                                <span className="text-gray-700 whitespace-nowrap ml-2">x{item.quantity} • € {(item.price * item.quantity).toFixed(2)}</span>
-                              </li>
-                            ))}
-                          </ul>
+                          {order.items && Object.values(order.items).map((item, idx) => (
+                            <li key={idx} className="flex justify-between text-sm sm:text-base">
+                              <span className="truncate max-w-[70%]">
+                                <span className="font-medium">{item.name}</span>
+                                {item.notes && (
+                                  <span className="text-xs text-red-600 ml-1 sm:ml-2">
+                                    (Obs: {item.notes})
+                                  </span>
+                                )}
+                              </span>
+                              <span className="text-gray-700 whitespace-nowrap ml-2">
+                                x{item.quantity} • € {(item.price * item.quantity).toFixed(2)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
                         </div>
                         
                         {/* Actions */}
@@ -1182,8 +1620,7 @@ const AdminPage = () => {
                       {/* Invoice Layout */}
                       <div className="border-2 border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
                         <div className="text-center mb-4 sm:mb-6">
-                          <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Restaurante Premium</h3>
-                          <p className="text-gray-600 text-sm sm:text-base">Rua Principal, 123 • Tel: (11) 98765-4321</p>
+                          <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Cozinha da Vivi</h3>
                         </div>
                         
                         <div className="flex flex-col sm:flex-row justify-between mb-4 sm:mb-6 pb-2 border-b gap-3 sm:gap-4">
@@ -1474,13 +1911,13 @@ const AdminPage = () => {
                                 Adicionar
                               </button>
                               {Object.values(selectedTable.order || {}).some(item => item.type === 'food' && !item.printed) && (
-                                <button
-                                  onClick={preparePrintItems}
-                                  className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
-                                >
-                                  <BsPrinter className="mr-1 sm:mr-2" />
-                                  Cozinha
-                                </button>
+                              <button
+                              onClick={preparePrintItems}
+                              className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
+                            >
+                              <BsPrinter className="mr-1 sm:mr-2" />
+                              Enviar para Cozinha
+                            </button>
                               )}
                               <button
                                 onClick={prepareCloseTable}
@@ -1610,6 +2047,71 @@ const AdminPage = () => {
               )}
             </div>
           )}
+
+          {/* Availability Control Content */}
+          {activeSection === 'availability' && (
+  <div className="space-y-4 sm:space-y-6">
+    <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Controle de Disponibilidade</h2>
+    
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="p-4 sm:p-6 border-b">
+        <h3 className="text-lg font-semibold">Itens Especiais</h3>
+        <p className="text-sm text-gray-500">
+          Status atualizado em tempo real. Alterações afetam imediatamente o cardápio.
+        </p>
+      </div>
+      
+      <div className="divide-y">
+        {getAvailabilityControlItems.map(item => {
+          const isUnavailable = unavailableItems.includes(item.id);
+          return (
+            <div key={item.id} className="p-4 sm:p-6 hover:bg-gray-50 transition">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center flex-1 min-w-0">
+                  <div className={`p-2 sm:p-3 rounded-full ${
+                    item.type === 'food' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'
+                  } mr-3 sm:mr-4`}>
+                    {getIconComponent(item.iconName)}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                    <p className="text-sm text-gray-500 truncate">
+                      {item.category} • € {item.price.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                
+                <button
+                onClick={() => toggleItemAvailability(item.id)}
+                className={`px-2 py-1 rounded ${
+                  unavailableItems.includes(item.id)
+                    ? 'bg-red-500 text-white'
+                    : 'bg-green-500 text-white'
+                }`}
+              >
+                {unavailableItems.includes(item.id) ? 'Indisponível' : 'Disponível'}
+              </button>
+                </div>
+              
+              {/* Status em tempo real */}
+              <div className="mt-2 text-xs sm:text-sm ${
+                isUnavailable ? 'text-red-600' : 'text-green-600'
+              }">
+                Status atual: {isUnavailable ? 'INDISPONÍVEL (não aparecerá no cardápio)' : 'DISPONÍVEL'}
+              </div>
+            </div>
+          );
+        })}
+        
+        {getAvailabilityControlItems.length === 0 && (
+          <div className="p-6 text-center text-gray-500">
+            Nenhum item especial encontrado.
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
         </div>
       </div>
     </div>

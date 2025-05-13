@@ -136,3 +136,14 @@ body {
   max-height: 60vh;
   overflow-y: auto;
 }
+
+@keyframes pulse-unavailable {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.unavailable-badge {
+  animation: pulse-unavailable 2s infinite;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
