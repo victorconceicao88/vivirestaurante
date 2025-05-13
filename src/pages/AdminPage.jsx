@@ -378,44 +378,66 @@ const AdminPage = () => {
     return () => unsubscribe();
   }, []);
 // 1. Função de impressão SUPER REFORÇADA
-const printKitchenOrder = async (items, tableNumber, orderType = 'table', customerInfo = null) => {
-  // Verificação EXTRA de itens
-  if (!items || items.length === 0) {
-    console.error('Nenhum item fornecido para impressão');
-    throw new Error('Nenhum item para imprimir');
-  }
-
-  // Cria conteúdo com fallbacks
-  const content = `
-    \x1B\x40\x1B\x21\x30
-    === PEDIDO ${orderType.toUpperCase()} ===
-    ${tableNumber ? `Mesa: ${tableNumber}\n` : ''}
-    ${customerInfo?.name ? `Cliente: ${customerInfo.name}\n` : ''}
-    ${new Date().toLocaleString()}
-    ------------------------
-    ${items.map(item => 
-      `${item.quantity || 1}x ${item.name || 'ITEM'}${item.notes ? `\nOBS: ${item.notes}` : ''}`
-    ).join('\n')}
-    \x1B\x69
-  `;
-
-  // Tenta impressão Bluetooth
+const printKitchenOrder = async (items, orderId, orderType = 'online', customerInfo = null) => {
   try {
-    const device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-    });
+    // Verificação de itens
+    if (!items || items.length === 0) {
+      throw new Error('Nenhum item para imprimir');
+    }
 
-    const server = await device.gatt.connect();
-    const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-    const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+    // Formata o conteúdo do pedido
+    let content = `\x1B\x40\x1B\x21\x30\n`;
+    content += `=== PEDIDO ${orderType.toUpperCase()} ===\n`;
+    content += `Nº: ${orderId.slice(0, 6)}\n`;
     
-    await characteristic.writeValue(new TextEncoder().encode(content));
-    return true;
+    if (customerInfo?.name) {
+      content += `Cliente: ${customerInfo.name}\n`;
+    }
+    if (customerInfo?.phone) {
+      content += `Tel: ${customerInfo.phone}\n`;
+    }
+    if (customerInfo?.address) {
+      content += `Endereço: ${customerInfo.address}\n`;
+    }
+    if (customerInfo?.notes) {
+      content += `OBS GERAL: ${customerInfo.notes}\n`;
+    }
+    
+    content += `Data: ${new Date().toLocaleString()}\n`;
+    content += '------------------------\n';
+    
+    items.forEach(item => {
+      content += `${item.quantity}x ${item.name}\n`;
+      if (item.notes) {
+        content += `  - OBS: ${item.notes}\n`;
+      }
+      content += `  (${item.category})\n`;
+    });
+    
+    content += '\x1B\x69'; // Comando para cortar o papel
+
+    // Tenta imprimir via Bluetooth
+    try {
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+      });
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+      const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+      
+      await characteristic.writeValue(new TextEncoder().encode(content));
+      return true;
+    } catch (error) {
+      console.error('Falha na impressão Bluetooth:', error);
+      // Fallback: Mostra o conteúdo para impressão manual
+      alert(`IMPRIMIR MANUALMENTE:\n\n${content.replace(/\x1B\[[0-9;]*[mGKH]/g, '')}`);
+      return false;
+    }
   } catch (error) {
-    console.error('Falha na impressão Bluetooth:', error);
-    // Fallback: Mostra alerta com os itens
-    alert(`IMPRIMIR MANUALMENTE:\n\n${content.replace(/\x1B\[[0-9;]*[mGKH]/g, '')}`);
+    console.error('Erro ao preparar pedido para impressão:', error);
+    showNotification(`Erro ao imprimir: ${error.message}`, 'error');
     return false;
   }
 };
@@ -430,68 +452,64 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
       return;
     }
 
-    // Atualização imediata do status
+    // Atualiza o status no Firebase
     await update(orderRef, { 
       status,
       updatedAt: new Date().toISOString() 
     });
 
+    // Se mudando para "preparing", envia para cozinha
     if (status === 'preparing') {
-      // Extrai itens de forma mais robusta
+      // Extrai os itens do pedido
       const items = order.items 
         ? (Array.isArray(order.items) 
             ? order.items 
             : Object.values(order.items))
         : [];
 
-      // Filtra itens de comida com verificação rigorosa
+      // Filtra apenas itens de comida
       const foodItems = items.filter(item => {
-        // Verifica se o item existe e tem tipo
         if (!item) return false;
-        
-        // Considera como comida se:
-        // 1. Tem type === 'food'
-        // 2. OU está em categorias de comida
-        const isFood = item.type === 'food' || 
-                      ['Churrasco', 'Burguers', 'Porções', 'Sobremesas'].includes(item.category);
-        
-        return isFood;
+        return item.type === 'food' || 
+               ['Churrasco', 'Burguers', 'Porções', 'Sobremesas'].includes(item.category);
       }).map(item => ({
         name: item.name || 'Item sem nome',
         price: item.price || 0,
         quantity: item.quantity || 1,
         notes: item.notes || '',
-        type: 'food', // Força tipo food
+        type: 'food',
         category: item.category || 'Geral'
       }));
 
       if (foodItems.length === 0) {
-        // Mostra detalhes no console para debug
-        console.log('Itens do pedido:', items);
-        showNotification('AVISO: Nenhum item de comida identificado no pedido', 'warning');
+        showNotification('AVISO: Nenhum item de comida no pedido', 'warning');
         return;
       }
 
-      // Imprime com tratamento de erro reforçado
-      try {
-        await printKitchenOrder(
-          foodItems,
-          `PED-${order.id.slice(0, 6)}`,
-          order.deliveryAddress ? 'delivery' : 'pickup',
-          {
-            name: order.customerName || 'Cliente não informado',
-            phone: order.customerPhone || 'Não informado',
-            address: order.deliveryAddress || 'Retirada no local',
-            notes: order.notes || ''
-          }
-        );
+      // Prepara informações do cliente
+      const customerInfo = {
+        name: order.customerName || 'Cliente não informado',
+        phone: order.customerPhone || 'Não informado',
+        address: order.deliveryAddress || 'Retirada no local',
+        notes: order.notes || ''
+      };
+
+      // Chama a função de impressão
+      const printSuccess = await printKitchenOrder(
+        foodItems,
+        order.id,
+        order.deliveryAddress ? 'delivery' : 'pickup',
+        customerInfo
+      );
+
+      if (printSuccess) {
         showNotification('Pedido enviado para cozinha!', 'success');
-      } catch (error) {
-        console.error('Erro na impressão:', error);
+      } else {
         showNotification('Erro ao imprimir - Verifique a impressora', 'error');
       }
     }
 
+    // Se mudando para "ready", envia notificação
     if (status === 'ready') {
       sendWhatsAppNotification(order, status);
     }
