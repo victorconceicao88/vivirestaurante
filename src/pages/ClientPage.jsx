@@ -1,9 +1,8 @@
-import React, { useState, useEffect, } from 'react';
+import React, { useState, useEffect,useMemo } from 'react';
 import { useTranslation, initReactI18next } from 'react-i18next';
 import i18n from 'i18next';
 import ProductCard from '../components/Client/ProductCard';
 import { database, ref, push, set, onValue } from '../firebase';
-import PremiumPromoModal from '../components/PremiumPromoModal';
 import { motion } from 'framer-motion';
 
 
@@ -23,7 +22,7 @@ i18n
           "continue": "Continuar",
           "deliveryOptions": "Opções de Entrega",
           "pickup": "Retirar no Local (Grátis)",
-          "delivery": "Entrega (+ €2,50)",
+          "delivery": "Entrega (+ €2,00)",
           "deliveryInfo": "Informações de Entrega",
           "firstName": "Nome*",
           "lastName": "Sobrenome",
@@ -157,7 +156,7 @@ i18n
           "continue": "Continue",
           "deliveryOptions": "Delivery Options",
           "pickup": "Pickup (Free)",
-          "delivery": "Delivery (+ €2.50)",
+          "delivery": "Delivery (+ €2.00)",
           "deliveryInfo": "Delivery Information",
           "firstName": "First Name*",
           "lastName": "Last Name",
@@ -291,7 +290,7 @@ i18n
           "continue": "Continuar",
           "deliveryOptions": "Opciones de Entrega",
           "pickup": "Recoger en Local (Gratis)",
-          "delivery": "Entrega a Domicilio (+ €2,50)",
+          "delivery": "Entrega a Domicilio (+ €2,00)",
           "deliveryInfo": "Información de Entrega",
           "firstName": "Nombre*",
           "lastName": "Apellido",
@@ -1238,7 +1237,6 @@ const ClientPage = () => {
   });
   const [paymentMethod, setPaymentMethod] = useState('');
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-  const [showPromoModal, setShowPromoModal] = useState(true);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedOptions, setSelectedOptions] = useState({});
@@ -1252,56 +1250,58 @@ const ClientPage = () => {
 
   const allProducts = categories.flatMap(category => category.products);
 
-  const filteredProducts = activeCategory === 'all' 
-  ? allProducts.filter(product => !unavailableItems.includes(product.id.toString()))
-  : categories.find(cat => cat.id === activeCategory)?.products
-      .filter(product => !unavailableItems.includes(product.id.toString())) || [];
+  const filteredProducts = useMemo(() => {
+    const products = activeCategory === 'all' 
+      ? allProducts 
+      : categories.find(cat => cat.id === activeCategory)?.products || [];
+    return products.filter(product => !unavailableItems.includes(product.id.toString()));
+  }, [activeCategory, allProducts, categories, unavailableItems]);
+  
 
-      const PremiumCartIcon = ({ count }) => (
-        <motion.div 
-          className="relative rounded-full p-2"
-          whileHover={{ 
-            scale: 1.05,
-            border: '1px solid #000', // Borda preta fina no hover
-            backgroundColor: '#FFF1E4' // Fundo suave no hover
-          }}
-          transition={{ type: 'spring', stiffness: 400 }}
-          style={{
-            border: '1px solid transparent',
-          }}
+
+
+  const PremiumCartIcon = ({ count }) => (
+    <motion.div
+      className="relative p-2 rounded-full"
+      whileHover={{
+        scale: 1.05,
+        borderColor: '#000', // borda preta apenas no hover
+      }}
+      transition={{ type: 'spring', stiffness: 400 }}
+      style={{
+        border: '1px solid transparent', // sem borda visível inicialmente
+        backgroundColor: 'transparent',  // totalmente sem fundo
+      }}
+    >
+      {/* Ícone do carrinho elegante e sem preenchimento */}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-7 w-7"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#000"
+        strokeWidth="1.8"
+      >
+        <path d="M4 19a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z" strokeLinecap="round" />
+        <path d="M16 19a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z" strokeLinecap="round" />
+        <path d="M4 14h2.5l3-10h9.5l-2 6h-12" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M8 14h8" strokeLinecap="round" />
+      </svg>
+  
+      {/* Badge de contagem estilizado e limpo */}
+      {count > 0 && (
+        <motion.span
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute -top-2 -right-2 bg-red-600 text-white text-xs
+                     font-semibold w-5 h-5 flex items-center justify-center rounded-full
+                     border border-white shadow"
         >
-          {/* Ícone do carrinho preto */}
-          <svg 
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-7 w-7"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#000"
-            strokeWidth="1.8"
-          >
-            <path d="M4 19a2 2 0 1 0 4 0 2 2 0 0 0-4 0ZM16 19a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z" 
-                  strokeLinecap="round" />
-            <path d="M4 14h2.5l3-10h9.5l-2 6h-12" 
-                  strokeLinecap="round"
-                  strokeLinejoin="round" />
-            <path d="M8 14h8" 
-                  strokeLinecap="round" />
-          </svg>
-      
-          {/* Badge de contagem */}
-          {count > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-2 -right-2 bg-[#E74C3C] text-white text-xs
-                         font-bold w-5 h-5 flex items-center justify-center rounded-full
-                         border-2 border-white shadow-xs"
-            >
-              {count > 9 ? '9+' : count}
-            </motion.span>
-          )}
-        </motion.div>
-      );
+          {count > 9 ? '9+' : count}
+        </motion.span>
+      )}
+    </motion.div>
+  );
   // Componente de Modal de Opções Premium
   const PremiumOptionsModal = ({ 
     product, 
@@ -1541,8 +1541,14 @@ const ClientPage = () => {
       if (product.options?.meats && !validateMeatSelection()) {
         return;
       }
-  
-      const success = await onConfirm(selectedOptions, additionalPrice);
+    
+      // Garanta que todas as opções estão incluídas
+      const optionsToSave = {
+        ...selectedOptions,
+        // Inclua qualquer processamento adicional necessário
+      };
+    
+      const success = await onConfirm(optionsToSave, additionalPrice);
       if (success) {
         onClose();
       }
@@ -1656,25 +1662,7 @@ const ClientPage = () => {
   // Funções do carrinho
   const addToCart = (product) => {
     setSelectedProduct(product);
-    
-    // Definir seleções padrão apenas se o produto tiver opções
-    const defaultOptions = {};
-    if (product.options) {
-      Object.entries(product.options).forEach(([optionName, optionData]) => {
-        if (optionData.required) {
-          if (optionData.type === 'radio') {
-            const defaultItem = optionData.items.find(item => item.default) || optionData.items[0];
-            if (defaultItem) {
-              defaultOptions[optionName] = defaultItem.value;
-            }
-          } else if (optionData.type === 'checkbox') {
-            defaultOptions[optionName] = [];
-          }
-        }
-      });
-    }
-    
-    setSelectedOptions(defaultOptions);
+    setSelectedOptions({});
     setAdditionalPrice(0);
     setMeatSelectionError('');
     setShowOptionsModal(true);
@@ -1686,12 +1674,23 @@ const ClientPage = () => {
         throw new Error("Nenhum produto selecionado");
       }
   
-      // Validações (mantidas iguais)
-      if (selectedProduct.options) {
-        // ... (validações existentes)
+      // Validação específica para carnes
+      if (selectedProduct.options?.meats) {
+        const selectedMeats = selectedOptions.meats || [];
+        const hasOnlyTopSirloin = selectedMeats.includes('onlyTopSirloin');
+        
+        if (selectedMeats.length === 0) {
+          setMeatSelectionError(t('options.meatSelection'));
+          return false;
+        }
+        
+        if (hasOnlyTopSirloin && selectedMeats.length > 1) {
+          setMeatSelectionError(t('options.meatSelection'));
+          return false;
+        }
       }
   
-      // Processar opções selecionadas
+      // Processar opções selecionadas para descrição
       const optionsDescription = [];
       if (selectedProduct.options) {
         Object.entries(selectedProduct.options).forEach(([optionName, optionData]) => {
@@ -1712,7 +1711,8 @@ const ClientPage = () => {
           } else if (optionData.type === 'radio' && selectedValue && selectedValue !== 'none') {
             const selectedItem = optionData.items.find(item => item.value === selectedValue);
             if (selectedItem) {
-              optionsDescription.push(`${optionData.title}: ${selectedItem.label}`);
+              optionsDescription.push(`${t(optionData.title)}: ${t(selectedItem.label)}`);
+
             }
           } else if (optionData.type === 'checkbox' && Array.isArray(selectedValue)) {
             const selectedLabels = optionData.items
@@ -1725,50 +1725,51 @@ const ClientPage = () => {
           }
         });
       }
-
+      
+  
       // Criar item do carrinho
       const cartItem = {
         ...selectedProduct,
-        id: `${selectedProduct.id}-${Date.now()}`,
+        id: `${selectedProduct.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         quantity: 1,
-        selectedOptions,
+        selectedOptions, // Todas as opções selecionadas
         additionalPrice,
         finalPrice: selectedProduct.price + additionalPrice,
-        customizations: optionsDescription.join('; ')
+        customizations: optionsDescription.join('; '), // Descrição legível
+        type: selectedProduct.type || 'food', // Garante tipo padrão
+        category: selectedProduct.category || 'Geral'
       };
-
+  
       // Adicionar ao carrinho
       setCart(prevCart => {
-        const existingItem = prevCart.find(item => 
-          JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions) &&
-          item.productName === selectedProduct.name
+        // Verificar se já existe um item idêntico no carrinho
+        const existingItemIndex = prevCart.findIndex(item => 
+          item.id === selectedProduct.id &&
+          JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
         );
-        
-        if (existingItem) {
-          return prevCart.map(item =>
-            item.id === existingItem.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          );
+  
+        if (existingItemIndex >= 0) {
+          const updatedCart = [...prevCart];
+          updatedCart[existingItemIndex].quantity += 1;
+          return updatedCart;
         }
+        
         return [...prevCart, cartItem];
       });
-
-      // Limpar estados
-      setSelectedOptions({});
-      setAdditionalPrice(0);
-      setMeatSelectionError('');
-
+  
       // Mostrar notificação
       setNotification({
-        message: t('options.addToCart') + ' ' + t('success'),
+        message: `${selectedProduct.name} ${t('options.addToCart')}`,
         type: 'success'
       });
-
+  
       return true;
-
+  
     } catch (error) {
-      setMeatSelectionError(error.message);
+      setNotification({
+        message: error.message,
+        type: 'error'
+      });
       return false;
     }
   };
@@ -1802,7 +1803,7 @@ const ClientPage = () => {
 
   const calculateTotal = () => {
     const subtotal = cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * (item.quantity || 1)), 0);
-    const deliveryFee = deliveryOption === 'delivery' ? 2.5 : 0;
+    const deliveryFee = deliveryOption === 'delivery' ? 2.0 : 0;
     return subtotal + deliveryFee;
   };
 
@@ -1854,12 +1855,28 @@ const ClientPage = () => {
       });
       return;
     }
-
+  
     setShowCart(false);
     setCheckoutStep('cart');
-
+  
+    // Processar os itens para incluir todas as opções
+    const processedItems = cart.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.finalPrice || item.price,
+      quantity: item.quantity,
+      category: item.category,
+      type: item.type || 'food', // padrão para food se não definido
+      options: item.selectedOptions || null, // Inclui todas as opções selecionadas
+      notes: item.notes || '', // Observações específicas do item
+      customizations: item.customizations || '' // Descrição das customizações
+    }));
+  
     const orderData = {
-      items: cart,
+      items: processedItems.reduce((acc, item, index) => {
+        acc[`item_${index}`] = item; // Estrutura mais fácil de ler no Firebase
+        return acc;
+      }, {}),
       customerName: deliveryDetails.firstName + (deliveryDetails.lastName ? ' ' + deliveryDetails.lastName : ''),
       customerPhone: deliveryDetails.phone,
       paymentMethod,
@@ -1869,19 +1886,19 @@ const ClientPage = () => {
       subtotal: cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0),
       deliveryFee: deliveryOption === 'delivery' ? 2.5 : 0,
       total: calculateTotal(),
+      source: 'online', // Identificador crucial para o admin
       ...(deliveryOption === 'delivery' && { 
         deliveryAddress: deliveryDetails.address 
       }),
       ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
     };
-
+  
     try {
       const orderRef = push(ref(database, 'orders'));
       await set(orderRef, orderData);
       
       let whatsappMessage = i18n.language === 'pt' ? '🍽️ *NOVO PEDIDO - Cozinha da Vivi* 🍽️\n\n' :
-                           i18n.language === 'en' ? '🍽️ *NEW ORDER - Vivi\'s Kitchen* 🍽️\n\n' :
-                           '🍽️ *NUEVO PEDIDO - Cocina de Vivi* 🍽️\n\n';
+                      
       
       whatsappMessage += cart.map(item => {
         let itemText = `✔️ ${item.name} (${item.quantity}x) - €${((item.finalPrice || item.price) * item.quantity).toFixed(2)}`;
@@ -1901,18 +1918,18 @@ const ClientPage = () => {
       }).join('\n');
       
       whatsappMessage += i18n.language === 'pt' ? 
-        `\n\n🚚 *Tipo de Pedido:* ${deliveryOption === 'delivery' ? 'Entrega (+€2,50)' : 'Retirada no Local'}` +
+        `\n\n🚚 *Tipo de Pedido:* ${deliveryOption === 'delivery' ? 'Entrega (+€2.00)' : 'Retirada no Local'}` +
         `\n👤 *Nome:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}` +
         (deliveryOption === 'delivery' ? `\n🏠 *Endereço:* ${deliveryDetails.address}` : '') +
         `\n📞 *Telefone:* ${deliveryDetails.phone}` +
         (deliveryDetails.notes ? `\n📝 *Observações:* ${deliveryDetails.notes}` : '') :
         i18n.language === 'en' ? 
-        `\n\n🚚 *Order Type:* ${deliveryOption === 'delivery' ? 'Delivery (+€2.50)' : 'Pickup'}` +
+        `\n\n🚚 *Order Type:* ${deliveryOption === 'delivery' ? 'Delivery (+€2.00)' : 'Pickup'}` +
         `\n👤 *Name:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}` +
         (deliveryOption === 'delivery' ? `\n🏠 *Address:* ${deliveryDetails.address}` : '') +
         `\n📞 *Phone:* ${deliveryDetails.phone}` +
         (deliveryDetails.notes ? `\n📝 *Notes:* ${deliveryDetails.notes}` : '') :
-        `\n\n🚚 *Tipo de Pedido:* ${deliveryOption === 'delivery' ? 'Entrega (+€2,50)' : 'Recoger en Local'}` +
+        `\n\n🚚 *Tipo de Pedido:* ${deliveryOption === 'delivery' ? 'Entrega (+€2.00)' : 'Recoger en Local'}` +
         `\n👤 *Nombre:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}` +
         (deliveryOption === 'delivery' ? `\n🏠 *Dirección:* ${deliveryDetails.address}` : '') +
         `\n📞 *Teléfono:* ${deliveryDetails.phone}` +
@@ -1921,16 +1938,16 @@ const ClientPage = () => {
       whatsappMessage += i18n.language === 'pt' ? 
         `\n\n💳 *Pagamento:* ${paymentMethod}` +
         `\n💰 *Subtotal:* €${orderData.subtotal.toFixed(2)}` +
-        (deliveryOption === 'delivery' ? `\n🚚 *Taxa de Entrega:* €2.50` : '') +
+        (deliveryOption === 'delivery' ? `\n🚚 *Taxa de Entrega:* €2.00` : '') +
         `\n💵 *Total a Pagar:* €${orderData.total.toFixed(2)}` :
         i18n.language === 'en' ? 
         `\n\n💳 *Payment:* ${paymentMethod}` +
         `\n💰 *Subtotal:* €${orderData.subtotal.toFixed(2)}` +
-        (deliveryOption === 'delivery' ? `\n🚚 *Delivery Fee:* €2.50` : '') +
+        (deliveryOption === 'delivery' ? `\n🚚 *Delivery Fee:* €2.00` : '') +
         `\n💵 *Total:* €${orderData.total.toFixed(2)}` :
         `\n\n💳 *Pago:* ${paymentMethod}` +
         `\n💰 *Subtotal:* €${orderData.subtotal.toFixed(2)}` +
-        (deliveryOption === 'delivery' ? `\n🚚 *Gastos de Envío:* €2.50` : '') +
+        (deliveryOption === 'delivery' ? `\n🚚 *Gastos de Envío:* €2.00` : '') +
         `\n💵 *Total:* €${orderData.total.toFixed(2)}`;
 
       setShowSuccessModal(true);
@@ -2004,26 +2021,6 @@ const ClientPage = () => {
         </div>
       )}
 
-      {/* Modal Promocional */}
-      <PremiumPromoModal 
-        show={showPromoModal} 
-        onClose={() => setShowPromoModal(false)}
-        t={t}
-      />
-
-      {/* Modal de Opções Premium */}
-      {showOptionsModal && selectedProduct && (
-  <PremiumOptionsModal
-    product={selectedProduct}
-    onClose={() => {
-      setShowOptionsModal(false);
-      setSelectedProduct(null);
-    }}
-    onConfirm={confirmAddToCart}
-    t={t}
-  />
-)}
-     
       {/* Cabeçalho Premium */}
       <header className="bg-[#FFF1E4] text-[#3D1106] p-4 shadow-sm sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
@@ -2088,7 +2085,7 @@ const ClientPage = () => {
             
           <button 
           onClick={() => setShowCart(true)}
-          className="relative p-2 rounded-full hover:bg-[#3D1106] hover:text-[#FFB501] transition-all duration-300"
+          className="relative p-2 rounded-full  hover:text-[#FFB501] transition-all duration-300"
         >
           <PremiumCartIcon count={cart.reduce((sum, item) => sum + (item.quantity || 1), 0)} />
         </button>
@@ -2257,7 +2254,7 @@ const ClientPage = () => {
       </button>
     </div>
   </div>
-))}
+                       ))}
                       </div>
                       
                       <div className="bg-gray-50 p-4 rounded-lg mb-6">
@@ -2340,7 +2337,7 @@ const ClientPage = () => {
                             <span className={`text-sm font-medium px-2 py-1 rounded-full ${
                               deliveryOption === 'delivery' ? 'bg-[#3D1106] text-white' : 'bg-gray-100 text-gray-600'
                             }`}>
-                              + €2,50
+                              + €2,00
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
@@ -2438,7 +2435,7 @@ const ClientPage = () => {
                     {deliveryOption === 'delivery' && (
                       <div className="flex justify-between text-sm text-gray-600 mb-1">
                         <span>{t('deliveryFee')}</span>
-                        <span>€2.50</span>
+                        <span>€2.00</span>
                       </div>
                     )}
                     <div className="flex justify-between font-bold text-lg text-[#3D1106] pt-2 border-t border-gray-200">
@@ -2646,7 +2643,7 @@ const ClientPage = () => {
                     {deliveryOption === 'delivery' && (
                       <div className="flex justify-between text-sm text-gray-600 mb-1">
                         <span>{t('deliveryFee')}</span>
-                        <span>€2.50</span>
+                        <span>€2.00</span>
                       </div>
                     )}
                     <div className="flex justify-between font-bold text-xl text-[#3D1106] pt-2 border-t border-gray-200">
@@ -2693,7 +2690,22 @@ const ClientPage = () => {
             </svg>
           </button>
         </div>
-      )} 
+      )}
+      
+      {showOptionsModal && selectedProduct && (
+  <PremiumOptionsModal 
+    product={selectedProduct}
+    onClose={() => setShowOptionsModal(false)}
+    onConfirm={(options, additionalPrice) => {
+      const success = confirmAddToCart(options, additionalPrice);
+      if (success) {
+        setShowOptionsModal(false);
+      }
+      return success;
+    }}
+    t={t}
+  />
+)}
 
       {/* Rodapé */}
       <footer className="bg-[#FEB300] text-[#280B04] py-8 md:py-12">
@@ -2810,7 +2822,7 @@ const ClientPage = () => {
         
         {/* Instagram */}
         <a 
-          href="https://www.instagram.com/cozinhadavivipt/?utm_source=ig_web_button_share_sheet" 
+          href="https://www.instagram.com/cozinhadavivipt?igsh=MTd0NDI1a2c5Y3Uydg==" 
           target="_blank" 
           rel="noopener noreferrer"
           className="bg-[#280B04] text-[#FEB300] p-2 rounded-full hover:scale-110 transition-transform hover:shadow-md"

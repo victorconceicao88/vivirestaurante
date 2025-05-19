@@ -71,11 +71,11 @@ const ProductCard = ({
           </span>
           
           <button
-  onClick={() => addToCart(product)}
-  className="mt-2 px-3 py-1 bg-[#3D1106] hover:bg-[#280B04] text-[#FFB501] rounded-md text-sm"
->
-  + {t('options.addToCart')}
-</button>
+            onClick={handleAddToCart}
+            className="ml-2 bg-[#3D1106] text-[#FFB501] py-2 px-4 rounded hover:bg-[#280B04] transition-colors text-sm font-medium"
+          >
+            {t('options.addToCart')}
+          </button>
         </div>
       </div>
     </div>

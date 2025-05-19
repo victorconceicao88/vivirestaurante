@@ -58,7 +58,7 @@ const OrderItem = ({ order, updateOrderStatus, activeTab }) => {
               onClick={() => handleStatusChange('ready')}
               className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition"
             >
-              Pronto
+              Prontoooooo
             </button>
           )}
           
@@ -67,7 +67,7 @@ const OrderItem = ({ order, updateOrderStatus, activeTab }) => {
               onClick={() => handleStatusChange('delivered')}
               className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 transition"
             >
-              Entregue
+              entregue
             </button>
           )}
         </div>
