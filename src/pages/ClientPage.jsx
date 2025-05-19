@@ -1884,7 +1884,7 @@ const ClientPage = () => {
       orderType: deliveryOption,
       createdAt: new Date().toISOString(),
       subtotal: cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0),
-      deliveryFee: deliveryOption === 'delivery' ? 2.5 : 0,
+      deliveryFee: deliveryOption === 'delivery' ? 2.0 : 0,
       total: calculateTotal(),
       source: 'online', // Identificador crucial para o admin
       ...(deliveryOption === 'delivery' && { 
@@ -1953,7 +1953,7 @@ const ClientPage = () => {
       setShowSuccessModal(true);
 
       setTimeout(() => {
-        const phone = '+351933737672';
+        const phone = '+351928145225';
         const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage)}`;
         window.open(whatsappUrl, '_blank');
         

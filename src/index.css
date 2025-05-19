@@ -147,3 +147,23 @@ body {
   animation: pulse-unavailable 2s infinite;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+
+@layer base {
+  @media print {
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 14pt;
+      line-height: 1.4;
+    }
+
+    .no-print {
+      display: none !important;
+    }
+
+    .break-after {
+      page-break-after: always;
+    }
+  }
+}
+
+

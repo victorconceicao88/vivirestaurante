@@ -572,137 +572,172 @@ const AdminPage = () => {
       .replace(/[áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ]/g, match => charMap[match] || match)
       .replace(/[^ -~À-ÿ]/g, '');
   };
-  
-  const centerText = (text) => {
-    const width = 32;
-    const padding = Math.floor((width - text.length) / 2);
-    return ' '.repeat(Math.max(0, padding)) + text;
-  };
-  
-  const printKitchenOrder = async (items, orderId, orderType = 'mesa', customerInfo = null) => {
+  const printKitchenOrder = async (items, orderId, customerInfo) => {
     try {
-      console.log('Preparando conteúdo para impressão...');
+      // Configurações iniciais da impressora
+      let content = `\x1B\x40`; // Inicializa a impressora
+      content += `\x1B\x21\x30`; // Fonte aumentada e negrito
+  
+      // ============= CABEÇALHO =============
+      content += `${centerText("COZINHA DA VIVI")}\n`;
+      content += `${centerText("========================")}\n`;
+      content += `${centerText(`COMANDA #${orderId.slice(0, 8)}`)}\n\n`;
       
-      let content = `\x1B\x40`; // Reset printer
-      content += `\x1B\x74\x10`; // Portuguese encoding
-      content += `\x1B\x21\x01`; // Normal font
-  
-      // Cabeçalho
-      const orderNumber = `PEDIDO ${String(orderId).slice(0, 6)}`;
-      content += `${centerText(`=== COZINHA - ${orderNumber} ===`)}\n`;
+      // ============= DADOS DO CLIENTE =============
+      content += `\x1B\x21\x10`; // Negrito
+      content += `CLIENTE:\n`;
+      content += `\x1B\x21\x00`; // Fonte normal
       
-      // Informações do cliente
-      if (customerInfo?.name) {
-        content += `Cliente: ${sanitizeText(customerInfo.name)}\n`;
+      content += `NOME: ${customerInfo.name || 'Não informado'}\n`;
+      content += `TEL: ${customerInfo.phone || 'Não informado'}\n`;
+      content += `TIPO: ${customerInfo.address ? 'ENTREGA' : 'BALCÃO'}\n`;
+      if (customerInfo.address) {
+        content += `END: ${customerInfo.address}\n`;
       }
-      if (customerInfo?.phone) {
-        content += `Telefone: ${sanitizeText(customerInfo.phone)}\n`;
-      }
-      if (orderType === 'delivery' && customerInfo?.address) {
-        content += `Endereço: ${sanitizeText(customerInfo.address)}\n`;
-      }
+      content += `PGTO: ${customerInfo.paymentMethod || 'Não especificado'}\n`;
+      content += `HORA: ${new Date().toLocaleTimeString('pt-BR')}\n`;
+      content += "------------------------\n\n";
   
-      content += `Data: ${new Date().toLocaleString('pt-PT')}\n`;
-      content += `--------------------------------\n`;
-  
-      // Itens do pedido
-      items.forEach(item => {
-        const name = sanitizeText(item.name);
-        content += `\n${item.quantity}x ${name}\n`;
-  
-        // Observações específicas do item
-        if (item.kitchenNotes && item.kitchenNotes.trim() !== '') {
-          content += `   • OBS: ${sanitizeText(item.kitchenNotes)}\n`;
-        }
-  
-        // Processar opções
-        if (item.options) {
-          Object.entries(item.options).forEach(([key, value]) => {
+      // ============= ITENS DO PEDIDO =============
+      content += `\x1B\x21\x10`; // Negrito
+      content += `ITENS:\n\n`;
+      content += `\x1B\x21\x00`; // Normal
+      
+      items.forEach((item, index) => {
+        content += `${item.quantity}x ${item.name.toUpperCase()}\n`;
+        
+        // Processa customizações em português
+        if (item.options && Object.keys(item.options).length > 0) {
+          content += `  PERSONALIZAÇÕES:\n`;
+          
+          Object.entries(item.options).forEach(([optionName, value]) => {
             if (!value || (Array.isArray(value) && value.length === 0)) return;
             
-            const optionLabel = {
-              base: 'Base',
-              acompanhamentos: 'Adicionais',
-              pontoCarne: 'Ponto',
-              salada: 'Salada',
-              carnes: 'Carnes',
-              feijao: 'Feijão',
-              tamanho: 'Tamanho'
-            }[key] || key;
+            // Traduz nomes das opções
+            const translatedOption = {
+              'point': 'Ponto da Carne',
+              'size': 'Tamanho',
+              'sideDishes': 'Acompanhamentos',
+              'salad': 'Salada',
+              'beans': 'Feijão',
+              'meats': 'Carnes',
+              'toppings': 'Coberturas'
+            }[optionName] || optionName;
+            
+            // Traduz valores das opções
+            const translateValue = (val) => {
+              const translations = {
+                'rare': 'Mal passada',
+                'medium': 'Ao ponto',
+                'wellDone': 'Bem passada',
+                'broth': 'Caldo',
+                'mixed': 'Mista',
+                'complete': 'Completa',
+                'pure': 'Puro',
+                'custom': 'Personalizado'
+              };
+              return translations[val] || val;
+            };
   
-            // Processar valores (array ou string)
-            const optionValue = Array.isArray(value) 
-              ? value.join(', ')
-              : String(value);
-      
-            content += `   • ${optionLabel}: ${optionValue}\n`;
+            const displayValue = Array.isArray(value) 
+                ? value.map(v => `› ${translateValue(v)}`).join('\n      ')
+                : `› ${translateValue(value)}`;
+            
+            content += `  ${translatedOption}:\n`;
+            content += `    ${displayValue}\n`;
           });
         }
-      });
   
-      content += `\n--------------------------------\n`;
-      if (customerInfo?.notes) {
-        content += `OBS GERAL: ${sanitizeText(customerInfo.notes)}\n`;
-        content += `--------------------------------\n`;
-      }
-      content += `\n\n\n\n\n`; // Avanço para corte
-  
-      console.log('Conteúdo pronto para impressão:', content);
-      const printResult = await sendToPrinter(content);
-      
-      if (!printResult) {
-        // Se a impressão automática falhar, mostrar alerta com o conteúdo
-        const printableContent = content
-          .replace(/\x1B\[[0-9;]*[mGKH]/g, '')
-          .replace(/\x1B\x40/g, '')
-          .replace(/\x1B\x74\x10/g, '')
-          .replace(/\x1B\x21\x01/g, '');
-        
-        alert(`FALHA NA IMPRESSÃO AUTOMÁTICA\n\nIMPRIMIR MANUALMENTE:\n\n${printableContent}`);
-      }
-  
-      return printResult;
-    } catch (error) {
-      console.error('Erro na impressão:', error);
-      throw error;
-    }
-  };
-
-  const printBarOrder = async (items, orderId, orderType = 'mesa', customerInfo = null) => {
-    try {
-      let content = `\x1B\x40`; // Reset
-      content += `\x1B\x74\x10`; // Encoding (Portuguese)
-      content += `\x1B\x21\x01`; // Fonte normal
-
-      const mesa = `MESA ${String(orderId).slice(0, 6)}`;
-      content += `${centerText(`=== BAR - ${mesa} ===`)}\n`;
-
-      if (customerInfo?.name) {
-        content += `Cliente: ${sanitizeText(customerInfo.name)}\n`;
-      }
-
-      content += `Data: ${new Date().toLocaleString()}\n`;
-      content += `--------------------------------\n`;
-
-      items.forEach(item => {
-        const name = sanitizeText(item.name);
-        const notes = sanitizeText(item.barNotes || '');
-        content += `\n${item.quantity}x ${name}\n`;
-        if (notes) {
-          content += `OBS: ${notes}\n`;
+        // Observações específicas
+        if (item.notes) {
+            content += `  OBS: ${item.notes}\n`;
         }
+  
+        // Espaçamento entre itens
+        if (index < items.length - 1) content += '\n';
       });
-
-      content += `\n--------------------------------\n`;
-      content += `\n\n\n\n\n`; // Avanço para "corte manual"
-      return await sendToPrinter(content);
+  
+      // ============= RODAPÉ =============
+      content += "\n------------------------\n";
+      content += `${centerText("OBRIGADO PREFERÊNCIA!")}\n`;
+      content += `${centerText("========================")}\n`;
+      
+      // Finalização para corte automático
+      content += `\n\n\n\n\n\x1D\x56\x41\x05`;
+  
+      // Envia para impressora
+      const printSuccess = await sendToPrinter(content);
+      
+      if (!printSuccess) {
+          const printableText = content
+              .replace(/\x1B\[[0-9;]*[mGKH]/g, '')
+              .replace(/\x1B\x40/g, '')
+              .replace(/\x1B\x21\x..?/g, '')
+              .replace(/\x1D\x56\x41\x05/g, '');
+          
+          alert(`FALHA NA IMPRESSÃO! Copie manualmente:\n\n${printableText}`);
+          return false;
+      }
+  
+      return true;
+  
     } catch (error) {
-      console.error('Erro ao imprimir pedido do bar:', error);
-      showNotification(`Erro no bar: ${error.message}`, 'error');
-      return false;
+        console.error('Erro na impressão:', error);
+        showNotification('Falha ao imprimir comanda', 'error');
+        return false;
     }
   };
   
+  // ============= FUNÇÕES AUXILIARES =============
+  const centerText = (text, width = 32) => {
+    const padding = Math.max(0, Math.floor((width - text.length) / 2));
+    return ' '.repeat(padding) + text;
+  };
+  
+  const formatPhone = (phone) => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  };
+  
+  const formatOptionName = (name) => {
+      // Garante que os nomes das opções estejam em português formatado
+      const translations = {
+          'point': 'PONTO DA CARNE',
+          'size': 'TAMANHO',
+          'sideDishes': 'ACOMPANHAMENTOS',
+          'salad': 'SALADA',
+          'beans': 'FEIJÃO'
+      };
+      return translations[name] || name.toUpperCase().replace(/_/g, ' ');
+  };
+  
+  const formatOptionValue = (value) => {
+      // Traduz valores comuns para português
+      const translations = {
+          'rare': 'MAL PASSADA',
+          'medium': 'AO PONTO',
+          'wellDone': 'BEM PASSADA',
+          'broth': 'CALDO',
+          'mixed': 'MISTA'
+      };
+      return translations[value] || value.toString().toUpperCase();
+  };
+
+const printBarOrder = async (items, tableNumber) => {
+  try {
+    // Simulação da lógica de impressão
+    console.log(`Imprimindo itens do bar para a mesa ${tableNumber}:`, items);
+
+    // Aqui entraria a integração com a impressora ou sistema de impressão
+    // Ex: await printer.print(drinkItems)
+
+    return true; // Retorna true se a impressão for bem-sucedida
+  } catch (error) {
+    console.error('Erro ao imprimir itens do bar:', error);
+    return false;
+  }
+};
 
   const sendToPrinter = async (content) => {
     try {
@@ -755,7 +790,44 @@ const AdminPage = () => {
     }
   };
 
+  const handleSendToKitchen = async (orderId) => {
+    try {
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
   
+      // Prepara os itens para impressão
+      const itemsToPrint = Object.values(order.items || {}).map(item => ({
+        ...item,
+        // Garante que todas as opções estejam incluídas
+        options: item.options || {},
+        notes: item.notes || ''
+      }));
+  
+      // Prepara informações do cliente
+      const customerInfo = {
+        name: order.customerName,
+        phone: order.customerPhone,
+        address: order.deliveryAddress,
+        paymentMethod: order.paymentMethod,
+        notes: order.notes
+      };
+  
+      // Imprime o pedido na cozinha
+      const printSuccess = await printKitchenOrder(
+        itemsToPrint,
+        order.id,
+        customerInfo
+      );
+  
+      if (printSuccess) {
+        // Atualiza o status para "Em preparo"
+        await updateOrderStatus(orderId, 'preparing');
+      }
+    } catch (error) {
+      console.error('Falha ao enviar para cozinha:', error);
+      showNotification('Erro ao enviar para cozinha', 'error');
+    }
+  };
 
 // Atualize a função updateOrderStatus para processar corretamente as opções
 const updateOrderStatus = useCallback(async (orderId, status) => {
@@ -768,24 +840,35 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
       return;
     }
 
-    // Processar os itens para garantir que as opções estão corretas
-    const processedItems = order.items 
-      ? Object.entries(order.items).map(([key, item]) => ({
-          ...item,
-          options: item.options || null // Garantir que options existe
-        }))
-      : [];
-
+    // Atualiza o status e o timestamp
     await update(orderRef, { 
       status,
-      updatedAt: new Date().toISOString(),
-      items: processedItems.reduce((acc, item, index) => {
-        acc[`item_${index}`] = item;
-        return acc;
-      }, {})
+      updatedAt: new Date().toISOString()
     });
 
-    // ... restante da função ...
+    // Notificação de sucesso
+    let statusMessage = '';
+    switch(status) {
+      case 'preparing': 
+        statusMessage = 'Pedido enviado para cozinha';
+        break;
+      case 'ready': 
+        statusMessage = 'Pedido marcado como pronto';
+        break;
+      case 'delivered': 
+        statusMessage = 'Pedido marcado como entregue';
+        break;
+    }
+    
+    if (statusMessage) {
+      showNotification(statusMessage);
+    }
+
+    // Se for marcado como pronto e tiver telefone, enviar WhatsApp
+    if (status === 'ready' && order.customerPhone) {
+      sendWhatsAppNotification(order, status);
+    }
+
   } catch (error) {
     console.error('Erro ao atualizar pedido:', error);
     showNotification(`Erro ao atualizar pedido: ${error.message}`, 'error');
@@ -1149,6 +1232,39 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
       default: return 'Status desconhecido';
     }
   };
+
+  const formatItemOptions = (options) => {
+    if (!options) return '';
+    
+    return Object.entries(options)
+      .map(([key, value]) => {
+        if (!value || (Array.isArray(value) && value.length === 0)) return '';
+        
+        // Exibe diretamente os valores em português
+        const formattedValue = Array.isArray(value) 
+          ? value.join(', ')
+          : String(value);
+        
+        return `${key}: ${formattedValue}`;
+      })
+      .filter(Boolean)
+      .join('; ');
+  };
+  
+  // Exemplo de uso no componente de pedidos:
+  {orders.items && Object.entries(orders.items).map(([key, item]) => (
+    <li key={key} className="flex justify-between text-sm">
+      <span>
+        {item.quantity}x {item.name}
+        {item.options && (
+          <div className="text-xs text-gray-600 ml-2">
+            {formatItemOptions(item.options)}
+          </div>
+        )}
+      </span>
+      <span>€ {(item.price * item.quantity).toFixed(2)}</span>
+    </li>
+  ))}
 
   const filteredOrders = orders.filter(order => {
     if (activeSection !== 'online') return false;
@@ -1771,32 +1887,56 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
                         <div className="mb-3 sm:mb-4">
                           <h4 className="font-medium text-gray-700 mb-2 text-sm sm:text-base">Itens:</h4>
                           <ul className="space-y-1 sm:space-y-2">
-                          {order.items && Object.entries(order.items).map(([key, item]) => {
-  // Função para transformar valores complexos em string legível
-  const formatValue = (val) => {
-    if (Array.isArray(val)) {
-      // Se for array, junta com vírgula
-      return val.join(', ');
-    } else if (val && typeof val === 'object') {
-      // Se for objeto, transforma em string JSON compacta
-      return JSON.stringify(val);
-    }
-    return val;
-  };
+                   
+{order.items && Object.entries(order.items).map(([key, item]) => {
+  // Função para formatar opções em português
+  const formatOptions = (options) => {
+    if (!options) return '';
+    
+    const translations = {
+      'point': 'Ponto da Carne',
+      'size': 'Tamanho',
+      'sideDishes': 'Acompanhamentos',
+      'salad': 'Salada',
+      'beans': 'Feijão',
+      'meats': 'Carnes',
+      'toppings': 'Coberturas'
+    };
 
-  const optionsText = item.options 
-    ? Object.entries(item.options).map(([optKey, optValue]) => {
-        return `${optKey}: ${formatValue(optValue)}`;
-      }).join('; ')
-    : '';
+    const valueTranslations = {
+      'rare': 'Mal passada',
+      'medium': 'Ao ponto',
+      'wellDone': 'Bem passada',
+      'broth': 'Caldo',
+      'mixed': 'Mista',
+      'complete': 'Completa',
+      'pure': 'Puro',
+      'custom': 'Personalizado'
+    };
+
+    return Object.entries(options)
+      .map(([optKey, optValue]) => {
+        const translatedKey = translations[optKey] || optKey;
+        
+        let translatedValue;
+        if (Array.isArray(optValue)) {
+          translatedValue = optValue.map(v => valueTranslations[v] || v).join(', ');
+        } else {
+          translatedValue = valueTranslations[optValue] || optValue;
+        }
+        
+        return `${translatedKey}: ${translatedValue}`;
+      })
+      .join('; ');
+  };
 
   return (
     <li key={key} className="flex justify-between text-sm sm:text-base">
       <span className="truncate max-w-[70%]">
         <span className="font-medium">{item.name}</span>
-        {optionsText && (
+        {item.options && (
           <span className="text-xs text-gray-600 block ml-2">
-            {optionsText}
+            {formatOptions(item.options)}
           </span>
         )}
         {item.notes && (
@@ -1821,13 +1961,13 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
                           
                           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                             {order.status === 'pending' && (
-                            <button 
-                            onClick={() => updateOrderStatus(order.id, 'preparing')}
-                            className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
-                          >
-                            <FiCoffee className="mr-1 sm:mr-2" />
-                            Preparar
-                          </button>
+                          <button 
+                          onClick={() => handleSendToKitchen(order.id)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                        >
+                          <BsPrinter className="mr-2" />
+                          Enviar para Cozinha
+                        </button>
                             )}
                             {order.status === 'preparing' && (
                               <button 
