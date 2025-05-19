@@ -608,7 +608,7 @@ const AdminPage = () => {
         
         // Processa customizações em português
         if (item.options && Object.keys(item.options).length > 0) {
-          content += `  PERSONALIZAÇÕES:\n`;
+          content += `  PERSONALIZACOES:\n`;
           
           Object.entries(item.options).forEach(([optionName, value]) => {
             if (!value || (Array.isArray(value) && value.length === 0)) return;
@@ -619,7 +619,7 @@ const AdminPage = () => {
               'size': 'Tamanho',
               'sideDishes': 'Acompanhamentos',
               'salad': 'Salada',
-              'beans': 'Feijão',
+              'beans': 'Feijao',
               'meats': 'Carnes',
               'toppings': 'Coberturas'
             }[optionName] || optionName;
@@ -659,7 +659,7 @@ const AdminPage = () => {
   
       // ============= RODAPÉ =============
       content += "\n------------------------\n";
-      content += `${centerText("OBRIGADO PREFERÊNCIA!")}\n`;
+      content += `${centerText("OBRIGADO PREFERENCIA!")}\n`;
       content += `${centerText("========================")}\n`;
       
       // Finalização para corte automático
