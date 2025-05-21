@@ -205,8 +205,8 @@ i18n
             "sideDishesOptions": {
               "banana": "Fried banana",
               "potato": "French fries",
-              "cassavaFried": "Fried cassava",
-              "cassavaCooked": "Cooked cassava"
+              "Mandioca Frita": "Fried cassava",
+              "Mandioca Cozida": "Cooked cassava"
             },
             "meats": "Meat Selection",
             "meatsOptions": {
