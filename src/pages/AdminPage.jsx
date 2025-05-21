@@ -638,7 +638,8 @@ const printKitchenOrder = async (items, orderId, customerInfo) => {
       items.forEach((item, index) => {
         const itemNameMap = {
           'water': 'Agua Mineral',
-          'fries': 'Mandioca Frita'
+          'fries': 'Mandioca Frita',
+          'fries': 'Mandioca cozida'
         };
         const displayName = itemNameMap[item.name.toLowerCase()] || item.name;
 
@@ -676,7 +677,9 @@ const printKitchenOrder = async (items, orderId, customerInfo) => {
                 'medium': 'Medio',
                 'large': 'Grande',
                 'none': 'Sem',
-                'extra': 'Extra'
+                'extra': 'Extra',
+                'cassavaCooked':'Mandioca cozida',
+                'cassavaFried':'Mandioca frita',
               };
               return translations[val] || val;
             };
