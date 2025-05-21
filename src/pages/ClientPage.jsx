@@ -71,8 +71,8 @@ i18n
             "sideDishesOptions": {
               "banana": "Banana frita",
               "potato": "Batata frita",
-              "cassavaFried": "Mandioca frita",
-              "cassavaCooked": "Mandioca cozida"
+              "Mandioca frita": "Mandioca frita",
+              "Mandioca cozida": "Mandioca cozida"
             },
             "meats": "Escolha de Carnes",
             "meatsOptions": {
@@ -1091,7 +1091,7 @@ const ClientPage = () => {
                           i18n.language === 'en' ? "Select your favorite soft drink. All in 350ml cans, ice cold." : 
                           "Selecciona tu refresco preferido. Todos en lata de 350ml, bien fríos.", 
           price: 2.00, 
-          image: "/images/refrigerantes.jpg",
+          image: "/images/vivi-aguas.jpg",
           options: {
             sodas: {
               title: t('options.chooseSoda'),
@@ -1116,7 +1116,7 @@ const ClientPage = () => {
                           i18n.language === 'en' ? "Select your preferred water." : 
                           "Selecciona tu agua preferida.", 
           price: 1.00, 
-          image: "/images/aguas.jpg",
+          image: "/images/vivi-aguas.jpg",
           options: {
             waters: {
               title: t('options.chooseWater'),
@@ -1248,19 +1248,19 @@ const [deliveryDetails, setDeliveryDetails] = useState({
   const [menuItems, setMenuItems] = useState([]);
   const [unavailableItems, setUnavailableItems] = useState([]);
   const [showWhatsappRedirect, setShowWhatsappRedirect] = useState(false);
-  const [countdown, setCountdown] = useState(7);
+  const [countdown, setCountdown] = useState(40);
   const [whatsappUrl, setWhatsappUrl] = useState('');
   const [showOrderSuccessModal, setShowOrderSuccessModal] = useState(false);
 
 
    const allProducts = categories.flatMap(category => category.products);
 
-  const filteredProducts = useMemo(() => {
-    const products = activeCategory === 'all' 
-      ? allProducts 
-      : categories.find(cat => cat.id === activeCategory)?.products || [];
-    return products.filter(product => !unavailableItems.includes(product.id.toString()));
-  }, [activeCategory, allProducts, categories, unavailableItems]);
+ const filteredProducts = useMemo(() => {
+  const products = activeCategory === 'all' 
+    ? allProducts 
+    : categories.find(cat => cat.id === activeCategory)?.products || [];
+  return products.filter(product => !unavailableItems.includes(product.id.toString()));
+}, [activeCategory, allProducts, categories, unavailableItems]);
 
   const PremiumCartIcon = ({ count }) => (
     <motion.div
@@ -1887,7 +1887,7 @@ const sendOrder = async () => {
     source: 'online',
     ...(deliveryOption === 'delivery' && { 
       deliveryAddress: deliveryDetails.address,
-      postalCode: deliveryDetails.postalCode
+      postalCode: deliveryDetails.postalCode // GARANTINDO QUE O CÓDIGO POSTAL É ENVIADO
     }),
     ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
   };
@@ -1944,14 +1944,14 @@ const sendOrder = async () => {
       (deliveryOption === 'delivery' ? `\n🚚 *Gastos de Envío:* €2.00` : '') +
       `\n💵 *Total:* €${orderData.total.toFixed(2)}`;
 
-    const phone = '+351933737672';
+    const phone = '+351928145225';
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage)}`;
     setWhatsappUrl(url);
     
     // Mostra o modal primeiro
     setShowSuccessModal(true);
     setShowWhatsappRedirect(true);
-    setCountdown(10);
+    setCountdown(40);
     
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
@@ -1983,7 +1983,7 @@ useEffect(() => {
         notes: ''
       });
       setPaymentMethod('');
-    }, 10000); // 10 segundos
+    }, 40000); // Alterado de 10000 para 15000
 
     const interval = setInterval(() => {
       setCountdown(prev => {
@@ -2016,47 +2016,7 @@ const changeLanguage = (lng) => {
  
   return (
     <div className="min-h-screen bg-[#FFF1E4] flex flex-col">
-{showWhatsappRedirect && (
-  <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-90">
-    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6 text-center animate-fadeIn">
-      <div className="mb-6">
-        <motion.div
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: [0, 10, -10, 0]
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: 2,
-            ease: "easeInOut"
-          }}
-        >
-          <svg className="w-16 h-16 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-        </motion.div>
-      </div>
-      <h3 className="text-2xl font-bold text-gray-800 mb-4">
-        {i18n.language === 'pt' ? 'Redirecionando para o WhatsApp' : 
-         i18n.language === 'en' ? 'Redirecting to WhatsApp' : 
-         'Redirigiendo a WhatsApp'}
-      </h3>
-      <p className="text-gray-600 mb-6">
-        {i18n.language === 'pt' ? 'Aguarde, você será redirecionado automaticamente em:' : 
-         i18n.language === 'en' ? 'Please wait, you will be automatically redirected in:' : 
-         'Espere, será redirigido automáticamente en:'} {countdown}s
-      </p>
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-        <motion.div 
-          className="bg-green-500 h-2.5 rounded-full"
-          initial={{ width: 0 }}
-          animate={{ width: '100%' }}
-          transition={{ duration: 7, ease: "linear" }}
-        />
-      </div>
-    </div>
-  </div>
-)}
+
 
 {showSuccessModal && (
   <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-90 p-4">
@@ -2122,12 +2082,12 @@ const changeLanguage = (lng) => {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <motion.div 
-              className="bg-gradient-to-r from-[#FFB501] to-[#E67E22] h-2.5 rounded-full"
-              initial={{ width: '100%' }}
-              animate={{ width: '0%' }}
-              transition={{ duration: 10, ease: "linear" }}
-            />
-          </div>
+                className="bg-gradient-to-r from-[#FFB501] to-[#E67E22] h-2.5 rounded-full"
+                initial={{ width: '100%' }}
+                animate={{ width: '0%' }}
+                transition={{ duration: 40, ease: "linear" }} 
+              />
+            </div>
         </div>
 
         {/* Botão de ação */}
@@ -2639,9 +2599,9 @@ const changeLanguage = (lng) => {
                         <div className="flex-1">
                           <h3 className="font-bold text-[#3D1106]">MBWay</h3>
                          <p className="text-sm text-gray-600 mt-1">
-                          {i18n.language === 'pt' ? 'Receberá uma solicitação de pagamento do número 928145225' : 
-                          i18n.language === 'en' ? 'You will receive a payment request from the number 928145225' : 
-                          'Recibirá una solicitud de pago del número 928145225'}
+                          {i18n.language === 'pt' ? 'Receberá uma solicitação de pagamento do número 922271991' : 
+                          i18n.language === 'en' ? 'You will receive a payment request from the number 92922271991' : 
+                          'Recibirá una solicitud de pago del número 922271991'}
                         </p>
 
                         </div>
@@ -2833,27 +2793,43 @@ const changeLanguage = (lng) => {
         </div>
       )}
 
-      {notification && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center ${
-          notification.type === 'error' 
-            ? 'bg-red-100 border-l-4 border-red-500 text-red-700' 
-            : 'bg-green-100 border-l-4 border-green-500 text-green-700'
-        }`}
-        >
-          <span className="mr-2">
-            {notification.type === 'error' ? '⚠️' : '✓'}
-          </span>
-          {notification.message}
-          <button 
-            onClick={() => setNotification(null)} 
-            className="ml-4 text-gray-500 hover:text-gray-700"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 10.586l4.293-4.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-      )}
+    {notification && (
+  <motion.div 
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3 }}
+    className={`fixed top-20 right-4 z-50 px-4 py-2 rounded-lg shadow-lg flex items-center ${
+      notification.type === 'error' 
+        ? 'bg-red-50 border border-red-200 text-red-700' 
+        : 'bg-green-50 border border-green-200 text-green-700'
+    }`}
+    style={{
+      maxWidth: 'calc(100% - 2rem)',
+      backdropFilter: 'blur(10px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+    }}
+  >
+    <div className={`w-2 h-8 rounded-l absolute left-0 top-1/2 transform -translate-y-1/2 ${
+      notification.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+    }`}></div>
+    
+    <div className="flex items-center pl-3 pr-4 py-2">
+      <span className="mr-2 text-lg">
+        {notification.type === 'error' ? '⚠️' : '✓'}
+      </span>
+      <span className="text-sm font-medium">{notification.message}</span>
+      <button 
+        onClick={() => setNotification(null)} 
+        className="ml-3 text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
+    </div>
+  </motion.div>
+)}
       
       {showOptionsModal && selectedProduct && (
         <PremiumOptionsModal 

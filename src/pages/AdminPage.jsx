@@ -16,6 +16,7 @@ import { FaWineBottle, FaGlassWhiskey, FaBluetoothB } from 'react-icons/fa';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { motion, AnimatePresence } from 'framer-motion';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const AdminPage = () => {
   const [orders, setOrders] = useState([]);
@@ -485,14 +486,13 @@ const AdminPage = () => {
     { id: 55, name: 'Fogão Kids', price: 8.00, category: 'Churrasco', type: 'food', iconName: 'meat' },
   ];
 
-  
-  const categories = ['all', ...new Set(menuItems.map(item => item.category))];
-  const navigate = useNavigate();
+const categories = ['all', ...new Set(menuItems?.map(item => item?.category) || [])];
+const navigate = useNavigate();
 
-  const showNotification = (message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
+const showNotification = (message, type = 'success') => {
+  setNotification({ message, type });
+  setTimeout(() => setNotification(null), 3000);
+};
 
   const toggleItemAvailability = async (productId) => {
     try {
@@ -562,52 +562,94 @@ const AdminPage = () => {
     return () => unsubscribe();
   }, []);
 
-  const printKitchenOrder = async (items, orderId, customerInfo) => {
-    try {
-      // Configurações iniciais da impressora
-      let content = `\x1B\x40`; // Inicializa a impressora
-      content += `\x1B\x21\x08`; // Fonte normal (sem negrito)
-  
-      // ============= CABEÇALHO PROFISSIONAL =============
-      content += `${centerText("COZINHA DA VIVI")}\n`;
-      content += `${centerText("-------------------------------")}\n`;
-      content += `${centerText(`COMANDA: #${orderId.slice(0, 8)}`)}\n`;
-      content += `${centerText(new Date().toLocaleString('pt-BR'))}\n\n`;
-  
-      // ============= DADOS DO CLIENTE =============
-      content += `\x1B\x21\x10`; // Negrito
-      content += `DADOS DO CLIENTE:\n`;
-      content += `\x1B\x21\x00`; // Fonte normal
-      
-      // Formatação consistente dos dados do cliente
-      content += `NOME: ${sanitizeText(customerInfo.name) || 'Não informado'}\n`;
-      content += `TEL: ${formatPhone(customerInfo.phone) || 'Não informado'}\n`;
-      content += `TIPO: ${customerInfo.address ? 'ENTREGA' : 'BALCÃO'}\n`;
-      if (customerInfo.address) {
-        content += `END: ${sanitizeText(customerInfo.address)}\n`;
-      }
-      content += `PGTO: ${sanitizeText(customerInfo.paymentMethod) || 'Não especificado'}\n`;
-      content += `OBS: ${sanitizeText(customerInfo.notes) || 'Nenhuma'}\n`;
-      content += "-------------------------------\n\n";
-  
-      // ============= ITENS DO PEDIDO =============
-      content += `\x1B\x21\x10`; // Negrito
-      content += `ITENS DO PEDIDO:\n\n`;
-      content += `\x1B\x21\x00`; // Normal
-      
+const printKitchenOrder = async (items, orderId, customerInfo) => {
+  try {
+    let content = '\x1B\x40'; // Reset printer
+    content += '\x1B\x21\x00'; // Default font
+
+    const centerText = (text) => {
+      const lineWidth = 32;
+      const spaces = Math.max(0, Math.floor((lineWidth - text.length) / 2));
+      return ' '.repeat(spaces) + text;
+    };
+
+    const sanitizeText = (text) => {
+      return (text || '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/ç/g, 'c')              // Replace ç
+        .replace(/\^/g, '')              // Remove ^
+        .replace(/[€£¥$¢]/g, '')         // Remove currency symbols
+        .replace(/[^\x20-\x7E]/g, '')    // Remove other non-printable ASCII
+        .trim();
+    };
+
+    const formatPhone = (phone) => {
+      if (!phone) return '';
+      return phone.replace(/[^0-9]/g, '').replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
+    };
+
+    // Cabeçalho
+    content += `${centerText("COZINHA DA VIVI")}\n`;
+    content += `${centerText("-------------------------------")}\n`;
+    content += `${centerText("COMANDA: #" + orderId.slice(0, 8))}\n`;
+    content += `${centerText(new Date().toLocaleString('pt-BR'))}\n\n`;
+
+    // Dados do cliente
+    content += '\x1B\x21\x10'; // Bold
+    content += `DADOS DO CLIENTE:\n`;
+    content += '\x1B\x21\x00'; // Normal
+
+    content += `NOME: ${sanitizeText(customerInfo.customerName) || 'Nao informado'}\n`;
+    content += `TEL: ${formatPhone(customerInfo.customerPhone) || 'Nao informado'}\n`;
+    content += `TIPO: ${customerInfo.deliveryAddress ? 'ENTREGA' : 'BALCAO'}\n`;
+
+    if (customerInfo.deliveryAddress) {
+      content += `END: ${sanitizeText(customerInfo.deliveryAddress)}\n`;
+      content += `CEP: ${sanitizeText(customerInfo.postalCode) || 'NAO INFORMADO'}\n`;
+    }
+
+    content += `PGTO: ${sanitizeText(customerInfo.paymentMethod) || 'Nao especificado'}\n`;
+    content += `OBS: ${sanitizeText(customerInfo.notes) || 'Nenhuma'}\n`;
+    content += `-------------------------------\n\n`;
+
+    // Categorias
+    const allCategories = ['Bebidas', 'Porcoes', 'Churrasco', 'Sobremesas', 'Outros'];
+    const categorizedItems = Object.fromEntries(allCategories.map(cat => [cat, []]));
+
+    items.forEach(item => {
+      const category = allCategories.includes(item.category) ? item.category : 'Outros';
+      categorizedItems[category].push(item);
+    });
+
+    // Itens do pedido
+    content += '\x1B\x21\x10'; // Bold
+    content += `ITENS DO PEDIDO:\n\n`;
+    content += '\x1B\x21\x00'; // Normal
+
+    Object.entries(categorizedItems).forEach(([category, items]) => {
+      if (items.length === 0) return;
+
+      content += '\x1B\x21\x10'; // Bold
+      content += `${category.toUpperCase()}:\n`;
+      content += '\x1B\x21\x00'; // Normal
+
       items.forEach((item, index) => {
-        // Linha principal do item
-        content += `${item.quantity}x ${sanitizeText(item.name).toUpperCase()}\n`;
-        content += `   Preço:  ${(item.price * item.quantity).toFixed(2)}\n`;
-        
-        // Processa customizações em português
+        const itemNameMap = {
+          'water': 'Agua Mineral',
+          'fries': 'Mandioca Frita'
+        };
+        const displayName = itemNameMap[item.name.toLowerCase()] || item.name;
+
+        content += `${item.quantity}x ${sanitizeText(displayName).toUpperCase()}\n`;
+
         if (item.options && Object.keys(item.options).length > 0) {
           content += `   PERSONALIZACOES:\n`;
-          
+
           Object.entries(item.options).forEach(([optionName, value]) => {
             if (!value || (Array.isArray(value) && value.length === 0)) return;
-            
-            // Traduz nomes das opções
+
             const translatedOption = {
               'point': 'Ponto da Carne',
               'size': 'Tamanho',
@@ -618,10 +660,8 @@ const AdminPage = () => {
               'toppings': 'Coberturas',
               'drinks': 'Bebida',
               'dessert': 'Sobremesa'
-
             }[optionName] || optionName;
-            
-            // Traduz valores das opções
+
             const translateValue = (val) => {
               const translations = {
                 'rare': 'Mal passada',
@@ -633,100 +673,109 @@ const AdminPage = () => {
                 'pure': 'Puro',
                 'custom': 'Personalizado',
                 'small': 'Pequeno',
-                'medium': 'Médio',
+                'medium': 'Medio',
                 'large': 'Grande',
                 'none': 'Sem',
                 'extra': 'Extra'
               };
               return translations[val] || val;
             };
-  
-            const displayValue = Array.isArray(value) 
-                ? value.map(v => `› ${translateValue(v)}`).join('\n      ')
-                : `› ${translateValue(value)}`;
-            
-            content += `   ${translatedOption}:\n`;
-            content += `     ${displayValue}\n`;
+
+            const displayValue = Array.isArray(value)
+              ? value.map(v => `> ${translateValue(v)}`).join('\n      ')
+              : `> ${translateValue(value)}`;
+
+            content += `   ${sanitizeText(translatedOption)}:\n`;
+            content += `      ${sanitizeText(displayValue)}\n`;
           });
         }
-  
-        // Observações específicas do item
+
         if (item.notes || item.kitchenNotes) {
-            const notes = sanitizeText(item.notes || item.kitchenNotes);
-            content += `   OBSERVACOES: ${notes}\n`;
+          const notes = sanitizeText(item.notes || item.kitchenNotes);
+          content += `   OBS: ${notes}\n`;
         }
-  
-        // Espaçamento entre itens
+
         if (index < items.length - 1) content += '\n';
       });
-  
-      // ============= RODAPÉ PROFISSIONAL =============
-      content += "\n-------------------------------\n";
-      content += `${centerText("TOTAL:  " + items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2))}\n`;
-      content += `${centerText("OBRIGADO PELA PREFERENCIA!")}\n`;
-      content += `${centerText("-------------------------------")}\n`;
-      
-      // Finalização para corte automático
-      content += `\n\n\n\n\n\x1D\x56\x41\x05`;
-  
-      // Envia para impressora
-      const printSuccess = await sendToPrinter(content);
-      
-      if (!printSuccess) {
-          const printableText = content
-              .replace(/\x1B\[[0-9;]*[mGKH]/g, '')
-              .replace(/\x1B\x40/g, '')
-              .replace(/\x1B\x21\x..?/g, '')
-              .replace(/\x1D\x56\x41\x05/g, '');
-          
-          alert(`FALHA NA IMPRESSÃO! Copie manualmente:\n\n${printableText}`);
-          return false;
-      }
-  
-      return true;
-  
-    } catch (error) {
-        console.error('Erro na impressão:', error);
-        showNotification('Falha ao imprimir comanda', 'error');
-        return false;
+
+      content += '\n';
+    });
+
+    // Rodape
+    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    content += `-------------------------------\n`;
+    content += `${centerText("TOTAL: " + total.toFixed(2))}\n`;
+    content += `${centerText("OBRIGADO PELA PREFERENCIA")}\n`;
+    content += `${centerText("-------------------------------")}\n`;
+
+    // Cortar papel
+    content += '\n\n\n\n\n';
+    content += '\x1D\x56\x00'; // Corte total
+
+    const printSuccess = await sendToPrinter(content);
+
+    if (!printSuccess) {
+      const fallbackText = content
+        .replace(/[\x1B\x1D][^\n]*?/g, '') // Remove comandos ESC/POS
+        .replace(/[^\x20-\x7E\n]/g, '');   // Remove caracteres especiais
+
+      alert(`FALHA NA IMPRESSAO! Copie manualmente:\n\n${fallbackText}`);
+      return false;
     }
+
+    return true;
+
+  } catch (error) {
+    console.error('Erro na impressao:', error);
+    showNotification('Falha ao imprimir comanda', 'error');
+    return false;
+  }
+};
+
+
+
+const formatPostalCode = (postalCode) => {
+  if (!postalCode) return '';
+  const cleaned = postalCode.replace(/\D/g, '');
+  return cleaned.replace(/(\d{5})(\d{3})/, '$1-$2');
+};
+  
+// Função para centralizar texto
+const centerText = (text, width = 32) => {
+  const padding = Math.max(0, Math.floor((width - text.length) / 2));
+  return ' '.repeat(padding) + text;
+};
+
+// Função para formatar telefone
+const formatPhone = (phone) => {
+  if (!phone) return '';
+  const cleaned = phone.replace(/\D/g, '');
+  return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+};
+
+// Função para sanitizar texto
+const sanitizeText = (str) => {
+  if (typeof str !== 'string') return '';
+  
+  const charMap = {
+    'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a',
+    'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+    'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
+    'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+    'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
+    'ç': 'c', 'Ç': 'C',
+    'Á': 'A', 'À': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A',
+    'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
+    'Í': 'I', 'Ì': 'I', 'Î': 'I', 'Ï': 'I',
+    'Ó': 'O', 'Ò': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
+    'Ú': 'U', 'Ù': 'U', 'Û': 'U', 'Ü': 'U'
   };
   
-  // Função auxiliar para centralizar texto
-  const centerText = (text, width = 32) => {
-    const padding = Math.max(0, Math.floor((width - text.length) / 2));
-    return ' '.repeat(padding) + text;
-  };
-  
-  // Função para formatar telefone
-  const formatPhone = (phone) => {
-    if (!phone) return '';
-    const cleaned = phone.replace(/\D/g, '');
-    return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-  };
-  
-  // Função para sanitizar texto (remover acentos e caracteres especiais)
-  const sanitizeText = (str) => {
-    if (typeof str !== 'string') return '';
-    
-    const charMap = {
-      'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a',
-      'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
-      'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
-      'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
-      'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
-      'ç': 'c', 'Ç': 'C',
-      'Á': 'A', 'À': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A',
-      'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
-      'Í': 'I', 'Ì': 'I', 'Î': 'I', 'Ï': 'I',
-      'Ó': 'O', 'Ò': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
-      'Ú': 'U', 'Ù': 'U', 'Û': 'U', 'Ü': 'U'
-    };
-    
-    return str
-      .replace(/[áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ]/g, match => charMap[match] || match)
-      .replace(/[^ -~À-ÿ]/g, '');
-  };
+  return str
+    .replace(/[áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ]/g, match => charMap[match] || match)
+    .replace(/[^ -~À-ÿ]/g, '');
+};
+
 
 const printBarOrder = async (items, tableNumber) => {
   try {
@@ -743,100 +792,104 @@ const printBarOrder = async (items, tableNumber) => {
   }
 };
 
-  const sendToPrinter = async (content) => {
-    try {
-      console.log('Tentando imprimir via Bluetooth...');
-      
-      // Verificar se o navegador suporta Bluetooth
-      if (!navigator.bluetooth) {
-        throw new Error('Bluetooth não suportado neste navegador');
-      }
-  
-      // Solicitar dispositivo Bluetooth
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ name: "BlueTooth Printer" }],
-        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-      });
-  
-      console.log('Conectando à impressora:', device.name);
-      
-      // Conectar ao dispositivo
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-      const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-  
-      console.log('Enviando dados para impressão...');
-      
-      // Enviar em chunks para evitar problemas com grandes conteúdos
-      const chunkSize = 100;
-      for (let i = 0; i < content.length; i += chunkSize) {
-        const chunk = content.slice(i, i + chunkSize);
-        await characteristic.writeValue(new TextEncoder().encode(chunk));
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-  
-      console.log('Impressão concluída com sucesso!');
-      return true;
-      
-    } catch (error) {
-      console.error('Erro na impressão:', error);
-      
-      // Mostrar o conteúdo que seria impresso para debug
-      const printableContent = content
-        .replace(/\x1B\[[0-9;]*[mGKH]/g, '')
-        .replace(/\x1B\x40/g, '')
-        .replace(/\x1B\x74\x10/g, '')
-        .replace(/\x1B\x21\x01/g, '');
-      
-      alert(`ERRO DE IMPRESSÃO\n\nCopie e cole manualmente na impressora:\n\n${printableContent}`);
-      
-      return false;
+const sendToPrinter = async (content) => {
+  try {
+    console.log('Tentando imprimir via Bluetooth...');
+    
+    if (!navigator.bluetooth) {
+      throw new Error('Bluetooth não suportado neste navegador');
     }
-  };
 
-  const handleSendToKitchen = async (orderId) => {
-    try {
-      const order = orders.find(o => o.id === orderId);
-      if (!order) return;
-  
-      // Prepara os itens para impressão
-      const itemsToPrint = Object.values(order.items || {}).map(item => ({
-        ...item,
-        // Garante que todas as opções estejam incluídas
-        options: item.options || {},
-        notes: item.notes || ''
-      }));
-  
-      // Prepara informações do cliente
-      const customerInfo = {
-        name: order.customerName,
-        phone: order.customerPhone,
-        address: order.deliveryAddress,
-        paymentMethod: order.paymentMethod,
-        notes: order.notes
-      };
-  
-      // Imprime o pedido na cozinha
-      const printSuccess = await printKitchenOrder(
-        itemsToPrint,
-        order.id,
-        customerInfo
-      );
-  
-      if (printSuccess) {
-        // Atualiza o status para "Em preparo"
-        await updateOrderStatus(orderId, 'preparing');
-        
-        // Envia notificação via WhatsApp
-        if (order.customerPhone) {
-          sendWhatsAppNotification(order, 'preparing');
-        }
-      }
-    } catch (error) {
-      console.error('Falha ao enviar para cozinha:', error);
-      showNotification('Erro ao enviar para cozinha', 'error');
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: "BlueTooth Printer" }],
+      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+    });
+
+    console.log('Conectando à impressora:', device.name);
+    
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+    const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+
+    console.log('Enviando dados para impressão...');
+    
+    const chunkSize = 100;
+    const encoder = new TextEncoder();
+    
+    for (let i = 0; i < content.length; i += chunkSize) {
+      const chunk = content.slice(i, i + chunkSize);
+      await characteristic.writeValue(encoder.encode(chunk));
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
-  };
+
+    // Comando para cortar o papel
+    const cutCommand = new Uint8Array([0x1D, 0x56, 0x41, 0x05]);
+    await characteristic.writeValue(cutCommand);
+
+    console.log('Impressão concluída com sucesso!');
+    return true;
+    
+  } catch (error) {
+    console.error('Erro na impressão:', error);
+    
+    const printableContent = content
+      .replace(/\x1B\[[0-9;]*[mGKH]/g, '')
+      .replace(/\x1B\x40/g, '')
+      .replace(/\x1B\x74\x10/g, '')
+      .replace(/\x1B\x21\x01/g, '');
+    
+    alert(`ERRO DE IMPRESSÃO\n\nCopie e cole manualmente na impressora:\n\n${printableContent}`);
+    
+    return false;
+  }
+};
+
+// Função auxiliar para preparar o conteúdo da impressão
+const preparePrintContent = (text) => {
+  // Primeiro normaliza os caracteres (NFD = decomposição canônica)
+  let normalized = text.normalize('NFD');
+  
+  // Remove caracteres de controle e mantém apenas imprimíveis
+  return normalized
+    .replace(/[\u0300-\u036f]/g, '')  // Remove diacríticos (acentos)
+    .replace(/[^\x20-\x7E]/g, '')     // Mantém apenas ASCII básico
+    .replace(/\r\n/g, '\n')           // Normaliza quebras de linha
+    .replace(/\t/g, '    ');          // Substitui tabs por espaços
+};
+
+const handleSendToKitchen = async (orderId) => {
+  try {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // Prepara os dados do cliente incluindo o postalCode
+    const customerInfo = {
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      deliveryAddress: order.deliveryAddress,
+      postalCode: order.postalCode, // GARANTE QUE O CEP ESTÁ SENDO ENVIADO
+      paymentMethod: order.paymentMethod,
+      notes: order.notes
+    };
+
+    // Chama a função de impressão com todos os dados
+    const printSuccess = await printKitchenOrder(
+      Object.values(order.items || {}),
+      order.id,
+      customerInfo
+    );
+
+    if (printSuccess) {
+      await updateOrderStatus(orderId, 'preparing');
+      if (order.customerPhone) {
+        sendWhatsAppNotification(order, 'preparing');
+      }
+    }
+  } catch (error) {
+    console.error('Falha ao enviar para cozinha:', error);
+    showNotification('Erro ao enviar para cozinha', 'error');
+  }
+};
 
 // Atualize a função updateOrderStatus para processar corretamente as opções
 const updateOrderStatus = useCallback(async (orderId, status) => {
@@ -1220,6 +1273,9 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
       case 'juice': return <GiSodaCan />;
       case 'risotto': return <GiMeal />;
       case 'steak': return <GiMeal />;
+      case 'water': return <FaGlassWhiskey />; // Água
+      case 'soda': return <GiSodaCan />;      // Refrigerante
+      case 'juice': return <GiSodaCan />;     // Suco
       default: return <IoFastFoodOutline />;
     }
   };
@@ -1865,12 +1921,20 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
                                 <p className="text-gray-800 truncate">{order.customerPhone || 'Não informado'}</p>
                               </div>
                             </div>
-                            {order.deliveryAddress && (
+                              {order.deliveryAddress && (
                               <div className="flex items-start sm:col-span-2">
                                 <FiMapPin className="text-gray-500 mt-0.5 sm:mt-1 mr-2 flex-shrink-0" />
                                 <div className="min-w-0">
                                   <p className="text-xs sm:text-sm font-medium text-gray-600">Endereço de Entrega</p>
-                                  <p className="text-gray-800 truncate">{order.deliveryAddress}</p>
+                                  <p className="text-gray-800 truncate">
+                                    {order.deliveryAddress}
+                                  </p>
+                                  {/* LINHA ADICIONADA PARA MOSTRAR O CEP SEPARADAMENTE */}
+                                  {order.postalCode && (
+                                    <p className="text-gray-800 truncate">
+                                      <span className="font-medium">Codigo Postal:</span> {order.postalCode}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                             )}
