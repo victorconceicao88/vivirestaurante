@@ -1228,13 +1228,14 @@ const ClientPage = () => {
   const [checkoutStep, setCheckoutStep] = useState('cart');
   const [deliveryOption, setDeliveryOption] = useState('pickup');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [deliveryDetails, setDeliveryDetails] = useState({
-    firstName: '',
-    lastName: '',
-    address: '',
-    phone: '',
-    notes: ''
-  });
+const [deliveryDetails, setDeliveryDetails] = useState({
+  firstName: '',
+  lastName: '',
+  address: '',
+  postalCode: '', 
+  phone: '',
+  notes: ''
+});
   const [paymentMethod, setPaymentMethod] = useState('');
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -1833,12 +1834,22 @@ const ClientPage = () => {
     setCheckoutStep('payment');
   };
 
-  const sendOrder = async () => {
+const sendOrder = async () => {
   if (!paymentMethod) {
     setNotification({
       message: i18n.language === 'pt' ? 'Selecione um método de pagamento' : 
                 i18n.language === 'en' ? 'Select a payment method' : 
                 'Seleccione un método de pago',
+      type: 'error'
+    });
+    return;
+  }
+
+  if (deliveryOption === 'delivery' && !deliveryDetails.postalCode) {
+    setNotification({
+      message: i18n.language === 'pt' ? 'Por favor, informe o código postal' :
+                i18n.language === 'en' ? 'Please provide the postal code' :
+                'Por favor, proporcione el código postal',
       type: 'error'
     });
     return;
@@ -1875,7 +1886,8 @@ const ClientPage = () => {
     total: calculateTotal(),
     source: 'online',
     ...(deliveryOption === 'delivery' && { 
-      deliveryAddress: deliveryDetails.address 
+      deliveryAddress: deliveryDetails.address,
+      postalCode: deliveryDetails.postalCode
     }),
     ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
   };
@@ -1903,6 +1915,7 @@ const ClientPage = () => {
       `\n\n🚚 *Tipo de Pedido:* ${deliveryOption === 'delivery' ? 'Entrega (+€2.00)' : 'Retirada no Local'}` +
       `\n👤 *Nome:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}` +
       (deliveryOption === 'delivery' ? `\n🏠 *Endereço:* ${deliveryDetails.address}` : '') +
+      (deliveryOption === 'delivery' ? `\n📮 *Código Postal:* ${deliveryDetails.postalCode}` : '') +
       `\n📞 *Telefone:* ${deliveryDetails.phone}` +
       (deliveryDetails.notes ? `\n📝 *Observações:* ${deliveryDetails.notes}` : '') +
       `\n\n💳 *Pagamento:* ${paymentMethod}` +
@@ -1913,6 +1926,7 @@ const ClientPage = () => {
       `\n\n🚚 *Order Type:* ${deliveryOption === 'delivery' ? 'Delivery (+€2.00)' : 'Pickup'}` +
       `\n👤 *Name:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}` +
       (deliveryOption === 'delivery' ? `\n🏠 *Address:* ${deliveryDetails.address}` : '') +
+      (deliveryOption === 'delivery' ? `\n📮 *Postal Code:* ${deliveryDetails.postalCode}` : '') +
       `\n📞 *Phone:* ${deliveryDetails.phone}` +
       (deliveryDetails.notes ? `\n📝 *Notes:* ${deliveryDetails.notes}` : '') +
       `\n\n💳 *Payment:* ${paymentMethod}` +
@@ -1922,6 +1936,7 @@ const ClientPage = () => {
       `\n\n🚚 *Tipo de Pedido:* ${deliveryOption === 'delivery' ? 'Entrega (+€2.00)' : 'Recoger en Local'}` +
       `\n👤 *Nombre:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}` +
       (deliveryOption === 'delivery' ? `\n🏠 *Dirección:* ${deliveryDetails.address}` : '') +
+      (deliveryOption === 'delivery' ? `\n📮 *Código Postal:* ${deliveryDetails.postalCode}` : '') +
       `\n📞 *Teléfono:* ${deliveryDetails.phone}` +
       (deliveryDetails.notes ? `\n📝 *Observaciones:* ${deliveryDetails.notes}` : '') +
       `\n\n💳 *Pago:* ${paymentMethod}` +
@@ -1931,32 +1946,13 @@ const ClientPage = () => {
 
     const phone = '+351933737672';
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage)}`;
+    setWhatsappUrl(url);
     
     // Mostra o modal primeiro
     setShowSuccessModal(true);
     setShowWhatsappRedirect(true);
-    setCountdown(7);
+    setCountdown(10);
     
-    // Configura o temporizador para abrir o WhatsApp após 7 segundos
-    const whatsappTimer = setTimeout(() => {
-      window.open(url, '_blank');
-      setShowWhatsappRedirect(false);
-      setShowSuccessModal(false);
-      
-      // Limpar carrinho e dados
-      setCart([]);
-      setDeliveryDetails({
-        firstName: '',
-        lastName: '',
-        address: '',
-        phone: '',
-        notes: ''
-      });
-      setPaymentMethod('');
-    }, 7000);
-
-    return () => clearTimeout(whatsappTimer);
-
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
     setNotification({
@@ -1971,19 +1967,40 @@ const ClientPage = () => {
 // E o useEffect para gerenciar o contador:
 useEffect(() => {
   if (showWhatsappRedirect) {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
+    const timer = setTimeout(() => {
+      window.open(whatsappUrl, '_blank');
+      setShowWhatsappRedirect(false);
+      setShowSuccessModal(false);
+      
+      // Limpar carrinho e dados
+      setCart([]);
+      setDeliveryDetails({
+        firstName: '',
+        lastName: '',
+        address: '',
+        postalCode: '', 
+        phone: '',
+        notes: ''
+      });
+      setPaymentMethod('');
+    }, 10000); // 10 segundos
+
+    const interval = setInterval(() => {
+      setCountdown(prev => {
         if (prev <= 1) {
-          clearInterval(timer);
+          clearInterval(interval);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }
-}, [showWhatsappRedirect]);
+}, [showWhatsappRedirect, whatsappUrl]);
 
  const resetToHome = () => {
   setActiveCategory('all');
@@ -2041,7 +2058,7 @@ const changeLanguage = (lng) => {
   </div>
 )}
 
-  {showSuccessModal && (
+{showSuccessModal && (
   <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-90 p-4">
     <motion.div 
       className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
@@ -2093,7 +2110,7 @@ const changeLanguage = (lng) => {
           </div>
         </div>
 
-        {/* Temporizador visual */}
+        {/* Temporizador visual aumentado para 10 segundos */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium text-gray-500">
@@ -2108,7 +2125,7 @@ const changeLanguage = (lng) => {
               className="bg-gradient-to-r from-[#FFB501] to-[#E67E22] h-2.5 rounded-full"
               initial={{ width: '100%' }}
               animate={{ width: '0%' }}
-              transition={{ duration: 7, ease: "linear" }}
+              transition={{ duration: 10, ease: "linear" }}
             />
           </div>
         </div>
@@ -2126,6 +2143,7 @@ const changeLanguage = (lng) => {
                 firstName: '',
                 lastName: '',
                 address: '',
+                postalCode: '',
                 phone: '',
                 notes: ''
               });
@@ -2147,6 +2165,7 @@ const changeLanguage = (lng) => {
             onClick={() => {
               setShowSuccessModal(false);
               setShowWhatsappRedirect(false);
+              // Apenas fecha o modal, sem redirecionamento
             }}
             className="w-full border border-[#3D1106] text-[#3D1106] hover:bg-[#3D1106] hover:text-white py-3 px-6 rounded-lg font-medium transition-colors duration-300"
           >
@@ -2513,20 +2532,34 @@ const changeLanguage = (lng) => {
                     </div>
                     
                     {deliveryOption === 'delivery' && (
-                      <div>
-                        <label htmlFor="address" className="block text-sm font-medium text-[#3D1106] mb-1">{t('address')}</label>
-                        <input
-                          type="text"
-                          id="address"
-                          name="address"
-                          value={deliveryDetails.address}
-                          onChange={handleDeliveryDetailsChange}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3D1106] focus:border-transparent"
-                          required={deliveryOption === 'delivery'}
-                        />
-                      </div>
-                    )}
-                    
+                        <>
+                          <div>
+                            <label htmlFor="address" className="block text-sm font-medium text-[#3D1106] mb-1">{t('address')}</label>
+                            <input
+                              type="text"
+                              id="address"
+                              name="address"
+                              value={deliveryDetails.address}
+                              onChange={handleDeliveryDetailsChange}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3D1106] focus:border-transparent"
+                              required={deliveryOption === 'delivery'}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="postalCode" className="block text-sm font-medium text-[#3D1106] mb-1">{('Codigo Postal')}</label>
+                            <input
+                              type="text"
+                              id="postalCode"
+                              name="postalCode"
+                              value={deliveryDetails.postalCode}
+                              onChange={handleDeliveryDetailsChange}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3D1106] focus:border-transparent"
+                              required={deliveryOption === 'delivery'}
+                              placeholder="8500-000"
+                            />
+                          </div>
+                        </>
+                      )}
                     <div>
                       <label htmlFor="phone" className="block text-sm font-medium text-[#3D1106] mb-1">{t('phone')}</label>
                       <input
@@ -2605,11 +2638,12 @@ const changeLanguage = (lng) => {
                         </div>
                         <div className="flex-1">
                           <h3 className="font-bold text-[#3D1106]">MBWay</h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {i18n.language === 'pt' ? 'Pagamento rápido e seguro pelo telemóvel' : 
-                              i18n.language === 'en' ? 'Fast and secure payment via mobile' : 
-                              'Pago rápido y seguro por móvil'}
-                          </p>
+                         <p className="text-sm text-gray-600 mt-1">
+                          {i18n.language === 'pt' ? 'Receberá uma solicitação de pagamento do número 928145225' : 
+                          i18n.language === 'en' ? 'You will receive a payment request from the number 928145225' : 
+                          'Recibirá una solicitud de pago del número 928145225'}
+                        </p>
+
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                           paymentMethod === 'MBWay' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'

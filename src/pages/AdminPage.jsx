@@ -569,7 +569,7 @@ const AdminPage = () => {
       content += `\x1B\x21\x08`; // Fonte normal (sem negrito)
   
       // ============= CABEÇALHO PROFISSIONAL =============
-      content += `${centerText("RESTAURANTE COZINHA DA VIVI")}\n`;
+      content += `${centerText("COZINHA DA VIVI")}\n`;
       content += `${centerText("-------------------------------")}\n`;
       content += `${centerText(`COMANDA: #${orderId.slice(0, 8)}`)}\n`;
       content += `${centerText(new Date().toLocaleString('pt-BR'))}\n\n`;
@@ -598,11 +598,11 @@ const AdminPage = () => {
       items.forEach((item, index) => {
         // Linha principal do item
         content += `${item.quantity}x ${sanitizeText(item.name).toUpperCase()}\n`;
-        content += `   Preço: € ${(item.price * item.quantity).toFixed(2)}\n`;
+        content += `   Preço:  ${(item.price * item.quantity).toFixed(2)}\n`;
         
         // Processa customizações em português
         if (item.options && Object.keys(item.options).length > 0) {
-          content += `   PERSONALIZAÇÕES:\n`;
+          content += `   PERSONALIZACOES:\n`;
           
           Object.entries(item.options).forEach(([optionName, value]) => {
             if (!value || (Array.isArray(value) && value.length === 0)) return;
@@ -613,11 +613,12 @@ const AdminPage = () => {
               'size': 'Tamanho',
               'sideDishes': 'Acompanhamentos',
               'salad': 'Salada',
-              'beans': 'Feijão',
+              'beans': 'Feijao',
               'meats': 'Carnes',
               'toppings': 'Coberturas',
-              'drink': 'Bebida',
+              'drinks': 'Bebida',
               'dessert': 'Sobremesa'
+
             }[optionName] || optionName;
             
             // Traduz valores das opções
@@ -652,7 +653,7 @@ const AdminPage = () => {
         // Observações específicas do item
         if (item.notes || item.kitchenNotes) {
             const notes = sanitizeText(item.notes || item.kitchenNotes);
-            content += `   OBSERVAÇÕES: ${notes}\n`;
+            content += `   OBSERVACOES: ${notes}\n`;
         }
   
         // Espaçamento entre itens
@@ -661,8 +662,8 @@ const AdminPage = () => {
   
       // ============= RODAPÉ PROFISSIONAL =============
       content += "\n-------------------------------\n";
-      content += `${centerText("TOTAL: € " + items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2))}\n`;
-      content += `${centerText("OBRIGADO PELA PREFERÊNCIA!")}\n`;
+      content += `${centerText("TOTAL:  " + items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2))}\n`;
+      content += `${centerText("OBRIGADO PELA PREFERENCIA!")}\n`;
       content += `${centerText("-------------------------------")}\n`;
       
       // Finalização para corte automático
