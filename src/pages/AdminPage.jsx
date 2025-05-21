@@ -489,7 +489,6 @@ const AdminPage = () => {
   const categories = ['all', ...new Set(menuItems.map(item => item.category))];
   const navigate = useNavigate();
 
-
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
@@ -519,8 +518,20 @@ const AdminPage = () => {
     }
     
     const phoneNumber = order.customerPhone.replace(/\D/g, '');
-    let message = `Olá ${order.customerName || 'Cliente'}! Seu pedido #${order.id.slice(0, 6)} está pronto! `;
-    message += order.deliveryAddress ? 'Nosso entregador está a caminho! 🚴‍♂️' : 'Pode vir retirar no balcão! 🎉';
+    let message = '';
+    
+    if (status === 'preparing') {
+      message = `✅ Pedido recebido com sucesso!\n\nOlá ${order.customerName || 'Cliente'}! Recebemos o seu pedido #${order.id.slice(0, 6)} e ele já está sendo preparado com todo o cuidado.\n\n`;
+      message += order.deliveryAddress 
+        ? 'Você será notificado assim que estiver pronto para entrega.\n\n' 
+        : 'Você será notificado assim que estiver pronto para retirada.\n\n';
+      message += 'Agradecemos pela sua preferência!';
+    } else if (status === 'ready') {
+      message = `🍽️ Pedido pronto!\n\nOlá ${order.customerName || 'Cliente'}! Seu pedido #${order.id.slice(0, 6)} está pronto! `;
+      message += order.deliveryAddress 
+        ? 'Nosso entregador está a caminho! 🚴‍♂️' 
+        : 'Pode vir retirar no balcão! 🎉';
+    }
     
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
@@ -551,64 +562,47 @@ const AdminPage = () => {
     return () => unsubscribe();
   }, []);
 
-  const sanitizeText = (str) => {
-    if (typeof str !== 'string') return '';
-    
-    const charMap = {
-      'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a',
-      'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
-      'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
-      'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
-      'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
-      'ç': 'c', 'Ç': 'C',
-      'Á': 'A', 'À': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A',
-      'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
-      'Í': 'I', 'Ì': 'I', 'Î': 'I', 'Ï': 'I',
-      'Ó': 'O', 'Ò': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
-      'Ú': 'U', 'Ù': 'U', 'Û': 'U', 'Ü': 'U'
-    };
-  
-    return str
-      .replace(/[áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ]/g, match => charMap[match] || match)
-      .replace(/[^ -~À-ÿ]/g, '');
-  };
   const printKitchenOrder = async (items, orderId, customerInfo) => {
     try {
       // Configurações iniciais da impressora
       let content = `\x1B\x40`; // Inicializa a impressora
-      content += `\x1B\x21\x30`; // Fonte aumentada e negrito
+      content += `\x1B\x21\x08`; // Fonte normal (sem negrito)
   
-      // ============= CABEÇALHO =============
-      content += `${centerText("COZINHA DA VIVI")}\n`;
-      content += `${centerText("========================")}\n`;
-      content += `${centerText(`COMANDA #${orderId.slice(0, 8)}`)}\n\n`;
-      
+      // ============= CABEÇALHO PROFISSIONAL =============
+      content += `${centerText("RESTAURANTE COZINHA DA VIVI")}\n`;
+      content += `${centerText("-------------------------------")}\n`;
+      content += `${centerText(`COMANDA: #${orderId.slice(0, 8)}`)}\n`;
+      content += `${centerText(new Date().toLocaleString('pt-BR'))}\n\n`;
+  
       // ============= DADOS DO CLIENTE =============
       content += `\x1B\x21\x10`; // Negrito
-      content += `CLIENTE:\n`;
+      content += `DADOS DO CLIENTE:\n`;
       content += `\x1B\x21\x00`; // Fonte normal
       
-      content += `NOME: ${customerInfo.name || 'Não informado'}\n`;
-      content += `TEL: ${customerInfo.phone || 'Não informado'}\n`;
+      // Formatação consistente dos dados do cliente
+      content += `NOME: ${sanitizeText(customerInfo.name) || 'Não informado'}\n`;
+      content += `TEL: ${formatPhone(customerInfo.phone) || 'Não informado'}\n`;
       content += `TIPO: ${customerInfo.address ? 'ENTREGA' : 'BALCÃO'}\n`;
       if (customerInfo.address) {
-        content += `END: ${customerInfo.address}\n`;
+        content += `END: ${sanitizeText(customerInfo.address)}\n`;
       }
-      content += `PGTO: ${customerInfo.paymentMethod || 'Não especificado'}\n`;
-      content += `HORA: ${new Date().toLocaleTimeString('pt-BR')}\n`;
-      content += "------------------------\n\n";
+      content += `PGTO: ${sanitizeText(customerInfo.paymentMethod) || 'Não especificado'}\n`;
+      content += `OBS: ${sanitizeText(customerInfo.notes) || 'Nenhuma'}\n`;
+      content += "-------------------------------\n\n";
   
       // ============= ITENS DO PEDIDO =============
       content += `\x1B\x21\x10`; // Negrito
-      content += `ITENS:\n\n`;
+      content += `ITENS DO PEDIDO:\n\n`;
       content += `\x1B\x21\x00`; // Normal
       
       items.forEach((item, index) => {
-        content += `${item.quantity}x ${item.name.toUpperCase()}\n`;
+        // Linha principal do item
+        content += `${item.quantity}x ${sanitizeText(item.name).toUpperCase()}\n`;
+        content += `   Preço: € ${(item.price * item.quantity).toFixed(2)}\n`;
         
         // Processa customizações em português
         if (item.options && Object.keys(item.options).length > 0) {
-          content += `  PERSONALIZACOES:\n`;
+          content += `   PERSONALIZAÇÕES:\n`;
           
           Object.entries(item.options).forEach(([optionName, value]) => {
             if (!value || (Array.isArray(value) && value.length === 0)) return;
@@ -619,9 +613,11 @@ const AdminPage = () => {
               'size': 'Tamanho',
               'sideDishes': 'Acompanhamentos',
               'salad': 'Salada',
-              'beans': 'Feijao',
+              'beans': 'Feijão',
               'meats': 'Carnes',
-              'toppings': 'Coberturas'
+              'toppings': 'Coberturas',
+              'drink': 'Bebida',
+              'dessert': 'Sobremesa'
             }[optionName] || optionName;
             
             // Traduz valores das opções
@@ -634,7 +630,12 @@ const AdminPage = () => {
                 'mixed': 'Mista',
                 'complete': 'Completa',
                 'pure': 'Puro',
-                'custom': 'Personalizado'
+                'custom': 'Personalizado',
+                'small': 'Pequeno',
+                'medium': 'Médio',
+                'large': 'Grande',
+                'none': 'Sem',
+                'extra': 'Extra'
               };
               return translations[val] || val;
             };
@@ -643,24 +644,26 @@ const AdminPage = () => {
                 ? value.map(v => `› ${translateValue(v)}`).join('\n      ')
                 : `› ${translateValue(value)}`;
             
-            content += `  ${translatedOption}:\n`;
-            content += `    ${displayValue}\n`;
+            content += `   ${translatedOption}:\n`;
+            content += `     ${displayValue}\n`;
           });
         }
   
-        // Observações específicas
-        if (item.notes) {
-            content += `  OBS: ${item.notes}\n`;
+        // Observações específicas do item
+        if (item.notes || item.kitchenNotes) {
+            const notes = sanitizeText(item.notes || item.kitchenNotes);
+            content += `   OBSERVAÇÕES: ${notes}\n`;
         }
   
         // Espaçamento entre itens
         if (index < items.length - 1) content += '\n';
       });
   
-      // ============= RODAPÉ =============
-      content += "\n------------------------\n";
-      content += `${centerText("OBRIGADO PREFERENCIA!")}\n`;
-      content += `${centerText("========================")}\n`;
+      // ============= RODAPÉ PROFISSIONAL =============
+      content += "\n-------------------------------\n";
+      content += `${centerText("TOTAL: € " + items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2))}\n`;
+      content += `${centerText("OBRIGADO PELA PREFERÊNCIA!")}\n`;
+      content += `${centerText("-------------------------------")}\n`;
       
       // Finalização para corte automático
       content += `\n\n\n\n\n\x1D\x56\x41\x05`;
@@ -688,40 +691,40 @@ const AdminPage = () => {
     }
   };
   
-  // ============= FUNÇÕES AUXILIARES =============
+  // Função auxiliar para centralizar texto
   const centerText = (text, width = 32) => {
     const padding = Math.max(0, Math.floor((width - text.length) / 2));
     return ' '.repeat(padding) + text;
   };
   
+  // Função para formatar telefone
   const formatPhone = (phone) => {
     if (!phone) return '';
     const cleaned = phone.replace(/\D/g, '');
     return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
   };
   
-  const formatOptionName = (name) => {
-      // Garante que os nomes das opções estejam em português formatado
-      const translations = {
-          'point': 'PONTO DA CARNE',
-          'size': 'TAMANHO',
-          'sideDishes': 'ACOMPANHAMENTOS',
-          'salad': 'SALADA',
-          'beans': 'FEIJÃO'
-      };
-      return translations[name] || name.toUpperCase().replace(/_/g, ' ');
-  };
-  
-  const formatOptionValue = (value) => {
-      // Traduz valores comuns para português
-      const translations = {
-          'rare': 'MAL PASSADA',
-          'medium': 'AO PONTO',
-          'wellDone': 'BEM PASSADA',
-          'broth': 'CALDO',
-          'mixed': 'MISTA'
-      };
-      return translations[value] || value.toString().toUpperCase();
+  // Função para sanitizar texto (remover acentos e caracteres especiais)
+  const sanitizeText = (str) => {
+    if (typeof str !== 'string') return '';
+    
+    const charMap = {
+      'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a',
+      'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+      'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
+      'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+      'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
+      'ç': 'c', 'Ç': 'C',
+      'Á': 'A', 'À': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A',
+      'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
+      'Í': 'I', 'Ì': 'I', 'Î': 'I', 'Ï': 'I',
+      'Ó': 'O', 'Ò': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
+      'Ú': 'U', 'Ù': 'U', 'Û': 'U', 'Ü': 'U'
+    };
+    
+    return str
+      .replace(/[áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ]/g, match => charMap[match] || match)
+      .replace(/[^ -~À-ÿ]/g, '');
   };
 
 const printBarOrder = async (items, tableNumber) => {
@@ -822,6 +825,11 @@ const printBarOrder = async (items, tableNumber) => {
       if (printSuccess) {
         // Atualiza o status para "Em preparo"
         await updateOrderStatus(orderId, 'preparing');
+        
+        // Envia notificação via WhatsApp
+        if (order.customerPhone) {
+          sendWhatsAppNotification(order, 'preparing');
+        }
       }
     } catch (error) {
       console.error('Falha ao enviar para cozinha:', error);
