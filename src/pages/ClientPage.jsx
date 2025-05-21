@@ -644,8 +644,8 @@ const ClientPage = () => {
               items: [
                 { value: 'banana', label: t('options.sideDishesOptions.banana') },
                 { value: 'potato', label: t('options.sideDishesOptions.potato') },
-                { value: 'cassavaFried', label: ('Mandioca Frita') },
-                { value: 'cassavaCooked', label: ('Mandioca Cozida') }
+                { value: 'cassavaFried',label: t('options.sideDishesOptions.cassavaFried') },
+                { value: 'cassavaCooked', label: t('options.sideDishesOptions.cassavaCooked') }
               ]
             },
             salad: {
