@@ -69,11 +69,12 @@ i18n
             },
             "sideDishes": "Acompanhamentos",
             "sideDishesOptions": {
-              "banana": "Banana frita",
-              "potato": "Batata frita",
-              "Mandioca frita": "Mandioca frita",
-              "Mandioca cozida": "Mandioca cozida"
-            },
+            "banana": "Banana frita",
+            "potato": "Batata frita",
+            "cassavaFried": "Mandioca frita",
+            "cassavaCooked": "Mandioca cozida"
+          },
+
             "meats": "Escolha de Carnes",
             "meatsOptions": {
               "heart": "Coração de frango",
@@ -643,8 +644,8 @@ const ClientPage = () => {
               items: [
                 { value: 'banana', label: t('options.sideDishesOptions.banana') },
                 { value: 'potato', label: t('options.sideDishesOptions.potato') },
-                { value: 'cassavaFried', label: t('options.sideDishesOptions.cassavaFried') },
-                { value: 'cassavaCooked', label: t('options.sideDishesOptions.cassavaCooked') }
+                { value: 'cassavaFried', label: ('Mandioca Frita') },
+                { value: 'cassavaCooked', label: ('Mandioca Cozida') }
               ]
             },
             salad: {
