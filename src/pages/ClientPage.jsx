@@ -2259,7 +2259,7 @@ const changeLanguage = (lng) => {
           </div>
         </div>
       </div>
-  {activeCategory === 'burguers' && isDaytime && (
+      {activeCategory === 'burguers' && isDaytime && (
   <div className="col-span-full mb-6 animate-pulse">
     <div className="bg-gradient-to-r from-[#FF6B00] to-[#FFA800] rounded-xl shadow-lg overflow-hidden">
       <div className="p-4 md:p-5 flex items-start">
@@ -2300,6 +2300,7 @@ const changeLanguage = (lng) => {
     </div>
   </div>
 )}
+
       <main className="container mx-auto p-4 bg-[#FFF1E4] flex-1">
         <div className="mb-4">
           <h2 className="text-xl font-bold text-[#3D1106]">

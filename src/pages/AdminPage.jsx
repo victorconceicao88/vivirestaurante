@@ -1393,7 +1393,7 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
     }
   };
 
-// Esta função deve ser usada em toda a interface admin para calcular totais
+// Função para calcular o total incluindo a taxa de entrega
 const calculateTotal = (order) => {
   if (!order || !order.items) return 0;
   
@@ -1403,8 +1403,8 @@ const calculateTotal = (order) => {
     0
   );
   
-  // Adiciona taxa de entrega de 2€ se for pedido de entrega
-  const deliveryFee = order.deliveryAddress ? 2 : 0;
+  // Adiciona taxa de entrega se for pedido de entrega
+  const deliveryFee = order.deliveryAddress ? (order.deliveryFee || (order.isOver5km ? 3.5 : 2.0)) : 0;
   
   return subtotal + deliveryFee;
 };
@@ -1999,9 +1999,10 @@ const calculateTotal = (order) => {
                    
 {order.items && Object.entries(order.items).map(([key, item]) => {
   // Função para formatar opções em português
+// Função para formatar as opções em português
 const formatOptions = (options) => {
   if (!options) return '';
-
+  
   const translations = {
     'point': 'Ponto da Carne',
     'size': 'Tamanho',
@@ -2011,7 +2012,9 @@ const formatOptions = (options) => {
     'meats': 'Carnes',
     'toppings': 'Coberturas',
     'drinks': 'Bebida',
-    'dessert': 'Sobremesa'
+    'dessert': 'Sobremesa',
+    'broth': 'Feijão de caldo',
+    'tropeiro': 'Feijão tropeiro'
   };
 
   const valueTranslations = {
@@ -2039,7 +2042,6 @@ const formatOptions = (options) => {
         const translatedItems = value.map(item => valueTranslations[item] || item);
         return `${label}: ${translatedItems.join(', ')}`;
       } else if (typeof value === 'object' && value !== null) {
-        // Tenta extrair os valores selecionados dentro do objeto (se tiver 'items')
         if (value.items && Array.isArray(value.items)) {
           const selected = value.items.filter(item => item.default || item.selected);
           const translatedItems = selected.map(item => item.label || valueTranslations[item.value] || item.value);
@@ -2054,8 +2056,27 @@ const formatOptions = (options) => {
     .join('; ');
 };
 
-
-
+// Na exibição dos itens do pedido, use assim:
+{order.items && Object.entries(order.items).map(([key, item]) => (
+  <li key={key} className="flex justify-between text-sm sm:text-base">
+    <span className="truncate max-w-[70%]">
+      <span className="font-medium">{item.name}</span>
+      {item.options && (
+        <span className="text-xs text-gray-600 block ml-2">
+          {formatOptions(item.options)}
+        </span>
+      )}
+      {item.notes && (
+        <span className="text-xs text-red-600 ml-1 sm:ml-2">
+          (Obs: {item.notes})
+        </span>
+      )}
+    </span>
+    <span className="text-gray-700 whitespace-nowrap ml-2">
+      x{item.quantity} • € {(item.price * item.quantity).toFixed(2)}
+    </span>
+  </li>
+))}
   return (
  <li key={key} className="flex justify-between text-sm sm:text-base">
       <span className="truncate max-w-[70%]">
@@ -2759,6 +2780,7 @@ const formatOptions = (options) => {
               )}
             </div>
           )}
+          
 
           {activeSection === 'availability' && (
             <div className="space-y-4 sm:space-y-6">
