@@ -1997,9 +1997,8 @@ const calculateTotal = (order) => {
                           <h4 className="font-medium text-gray-700 mb-2 text-sm sm:text-base">Itens:</h4>
                           <ul className="space-y-1 sm:space-y-2">
                    
-{order.items && Object.entries(order.items).map(([key, item]) => {
-  // Função para formatar opções em português
-// Função para formatar as opções em português
+                           {order.items && Object.entries(order.items).map(([key, item]) => {
+
 const formatOptions = (options) => {
   if (!options) return '';
   
@@ -2056,27 +2055,29 @@ const formatOptions = (options) => {
     .join('; ');
 };
 
-// Na exibição dos itens do pedido, use assim:
-{order.items && Object.entries(order.items).map(([key, item]) => (
-  <li key={key} className="flex justify-between text-sm sm:text-base">
-    <span className="truncate max-w-[70%]">
-      <span className="font-medium">{item.name}</span>
-      {item.options && (
-        <span className="text-xs text-gray-600 block ml-2">
-          {formatOptions(item.options)}
-        </span>
-      )}
-      {item.notes && (
-        <span className="text-xs text-red-600 ml-1 sm:ml-2">
-          (Obs: {item.notes})
-        </span>
-      )}
-    </span>
-    <span className="text-gray-700 whitespace-nowrap ml-2">
-      x{item.quantity} • € {(item.price * item.quantity).toFixed(2)}
-    </span>
-  </li>
-))}
+
+<ul className="space-y-1 sm:space-y-2">
+  {order.items && Object.entries(order.items).map(([key, item]) => (
+    <li key={key} className="flex justify-between text-sm sm:text-base">
+      <span className="truncate max-w-[70%]">
+        <span className="font-medium">{item.name}</span>
+        {item.options && (
+          <span className="text-xs text-gray-600 block ml-2">
+            {formatOptions(item.options)}
+          </span>
+        )}
+        {item.notes && (
+          <span className="text-xs text-red-600 ml-1 sm:ml-2">
+            (Obs: {item.notes})
+          </span>
+        )}
+      </span>
+      <span className="text-gray-700 whitespace-nowrap ml-2">
+        x{item.quantity} • € {(item.price * item.quantity).toFixed(2)}
+      </span>
+    </li>
+  ))}
+</ul>
   return (
  <li key={key} className="flex justify-between text-sm sm:text-base">
       <span className="truncate max-w-[70%]">
@@ -2101,38 +2102,48 @@ const formatOptions = (options) => {
 </ul>
                         </div>
                         
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-                          <div className="text-base sm:text-lg font-semibold whitespace-nowrap">
-                            Total: € {Object.values(order.items || {}).reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
-                          </div>
-                          
-                          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                            {order.status === 'pending' && (
-                          <button 
-                          onClick={() => handleSendToKitchen(order.id)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-                        >
-                          <BsPrinter className="mr-2" />
-                          Enviar para Cozinha
-                        </button>
-                            )}
-                            {order.status === 'preparing' && (
-                              <button 
-                                onClick={() => updateOrderStatus(order.id, 'ready')}
-                                className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
-                              >
-                                <FiCheckCircle className="mr-1 sm:mr-2" />
-                                Pronto
-                              </button>
-                            )}
-                            {order.status === 'ready' && (
-                              <button 
-                                onClick={() => updateOrderStatus(order.id, 'delivered')}
-                                className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
-                              >
-                                <FiTruck className="mr-1 sm:mr-2" />
-                                Entregar
-                              </button>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+  <div className="text-base sm:text-lg font-semibold whitespace-nowrap">
+    {order.deliveryAddress && (
+      <>
+        <div className="text-sm text-gray-600">
+          Subtotal: € {Object.values(order.items || {}).reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
+        </div>
+        <div className="text-sm text-gray-600">
+          Taxa de entrega: € {order.isOver5km ? '3.50' : '2.00'}
+        </div>
+      </>
+    )}
+    <div className="mt-1">Total: € {calculateTotal(order).toFixed(2)}</div>
+  </div>
+  
+  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+    {order.status === 'pending' && (
+      <button 
+        onClick={() => handleSendToKitchen(order.id)}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+      >
+        <BsPrinter className="mr-2" />
+        Enviar para Cozinha
+      </button>
+    )}
+    {order.status === 'preparing' && (
+      <button 
+        onClick={() => updateOrderStatus(order.id, 'ready')}
+        className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
+      >
+        <FiCheckCircle className="mr-1 sm:mr-2" />
+        Pronto
+      </button>
+    )}
+    {order.status === 'ready' && (
+      <button 
+        onClick={() => updateOrderStatus(order.id, 'delivered')}
+        className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
+      >
+        <FiTruck className="mr-1 sm:mr-2" />
+        Entregar
+      </button>
                             )}
                           </div>
                         </div>

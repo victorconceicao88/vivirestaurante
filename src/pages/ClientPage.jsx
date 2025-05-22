@@ -1714,103 +1714,104 @@ const [deliveryDetails, setDeliveryDetails] = useState({
     setShowOptionsModal(true);
   };
 
-  const confirmAddToCart = (selectedOptions, additionalPrice) => {
-    try {
-      if (!selectedProduct) {
-        throw new Error("Nenhum produto selecionado");
-      }
-  
-      if (selectedProduct.options?.meats) {
-        const selectedMeats = selectedOptions.meats || [];
-        const hasOnlyTopSirloin = selectedMeats.includes('onlyTopSirloin');
-        
-        if (selectedMeats.length === 0) {
-          setMeatSelectionError(t('options.meatSelection'));
-          return false;
-        }
-        
-        if (hasOnlyTopSirloin && selectedMeats.length > 1) {
-          setMeatSelectionError(t('options.meatSelection'));
-          return false;
-        }
-      }
-  
-      const optionsDescription = [];
-      if (selectedProduct.options) {
-        Object.entries(selectedProduct.options).forEach(([optionName, optionData]) => {
-          const selectedValue = selectedOptions[optionName];
-          
-          if (optionName === 'toppings') {
-            if (selectedValue === 'complete') {
-              optionsDescription.push(`${optionData.title}: ${t('options.açaiOptions.complete')}`);
-            } else if (selectedValue === 'pure') {
-              optionsDescription.push(`${optionData.title}: ${t('options.açaiOptions.pure')}`);
-            } else if (selectedValue === 'custom' && selectedOptions.toppingsCustom) {
-              const customToppings = selectedProduct.options.toppings.customOptions.items
-                .filter(item => selectedOptions.toppingsCustom.includes(item.value))
-                .map(item => item.label)
-                .join(', ');
-              optionsDescription.push(`${optionData.title}: ${customToppings}`);
-            }
-          } else if (optionData.type === 'radio' && selectedValue && selectedValue !== 'none') {
-            const selectedItem = optionData.items.find(item => item.value === selectedValue);
-            if (selectedItem) {
-              optionsDescription.push(`${t(optionData.title)}: ${t(selectedItem.label)}`);
-            }
-          } else if (optionData.type === 'checkbox' && Array.isArray(selectedValue)) {
-            const selectedLabels = optionData.items
-              .filter(item => selectedValue.includes(item.value))
-              .map(item => item.label);
-            
-            if (selectedLabels.length > 0) {
-              optionsDescription.push(`${optionData.title}: ${selectedLabels.join(', ')}`);
-            }
-          }
-        });
+// Substituir a função confirmAddToCart completa no ClientPage
+const confirmAddToCart = (selectedOptions, additionalPrice) => {
+  try {
+    if (!selectedProduct) {
+      throw new Error("Nenhum produto selecionado");
+    }
+
+    if (selectedProduct.options?.meats) {
+      const selectedMeats = selectedOptions.meats || [];
+      const hasOnlyTopSirloin = selectedMeats.includes('onlyTopSirloin');
+      
+      if (selectedMeats.length === 0) {
+        setMeatSelectionError(t('options.meatSelection'));
+        return false;
       }
       
-      const cartItem = {
-        ...selectedProduct,
-        id: `${selectedProduct.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        quantity: 1,
-        selectedOptions,
-        additionalPrice,
-        finalPrice: selectedProduct.price + additionalPrice,
-        customizations: optionsDescription.join('; '),
-        type: selectedProduct.type || 'food',
-        category: selectedProduct.category || 'Geral'
-      };
-  
-      setCart(prevCart => {
-        const existingItemIndex = prevCart.findIndex(item => 
-          item.id === selectedProduct.id &&
-          JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
-        );
-  
-        if (existingItemIndex >= 0) {
-          const updatedCart = [...prevCart];
-          updatedCart[existingItemIndex].quantity += 1;
-          return updatedCart;
-        }
-        
-        return [...prevCart, cartItem];
-      });
-  
-      setNotification({
-        message: `${selectedProduct.name} ${t('options.addToCart')}`,
-        type: 'success'
-      });
-  
-      return true;
-  
-    } catch (error) {
-      setNotification({
-        message: error.message,
-        type: 'error'
-      });
-      return false;
+      if (hasOnlyTopSirloin && selectedMeats.length > 1) {
+        setMeatSelectionError(t('options.meatSelection'));
+        return false;
+      }
     }
-  };
+
+    const optionsDescription = [];
+    if (selectedProduct.options) {
+      Object.entries(selectedProduct.options).forEach(([optionName, optionData]) => {
+        const selectedValue = selectedOptions[optionName];
+        
+        if (optionName === 'toppings') {
+          if (selectedValue === 'complete') {
+            optionsDescription.push(`${optionData.title}: ${t('options.açaiOptions.complete')}`);
+          } else if (selectedValue === 'pure') {
+            optionsDescription.push(`${optionData.title}: ${t('options.açaiOptions.pure')}`);
+          } else if (selectedValue === 'custom' && selectedOptions.toppingsCustom) {
+            const customToppings = selectedProduct.options.toppings.customOptions.items
+              .filter(item => selectedOptions.toppingsCustom.includes(item.value))
+              .map(item => item.label)
+              .join(', ');
+            optionsDescription.push(`${optionData.title}: ${customToppings}`);
+          }
+        } else if (optionData.type === 'radio' && selectedValue && selectedValue !== 'none') {
+          const selectedItem = optionData.items.find(item => item.value === selectedValue);
+          if (selectedItem) {
+            optionsDescription.push(`${t(optionData.title)}: ${t(selectedItem.label)}`);
+          }
+        } else if (optionData.type === 'checkbox' && Array.isArray(selectedValue)) {
+          const selectedLabels = optionData.items
+            .filter(item => selectedValue.includes(item.value))
+            .map(item => item.label);
+          
+          if (selectedLabels.length > 0) {
+            optionsDescription.push(`${optionData.title}: ${selectedLabels.join(', ')}`);
+          }
+        }
+      });
+    }
+    
+    const cartItem = {
+      ...selectedProduct,
+      id: `${selectedProduct.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      quantity: 1,
+      selectedOptions,
+      additionalPrice,
+      finalPrice: selectedProduct.price + additionalPrice,
+      customizations: optionsDescription.join('; '),
+      type: selectedProduct.type || 'food',
+      category: selectedProduct.category || 'Geral'
+    };
+
+    setCart(prevCart => {
+      const existingItemIndex = prevCart.findIndex(item => 
+        item.id === selectedProduct.id &&
+        JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
+      );
+
+      if (existingItemIndex >= 0) {
+        const updatedCart = [...prevCart];
+        updatedCart[existingItemIndex].quantity += 1;
+        return updatedCart;
+      }
+      
+      return [...prevCart, cartItem];
+    });
+
+    setNotification({
+      message: `${selectedProduct.name} ${t('options.addToCart')}`,
+      type: 'success'
+    });
+
+    return true;
+
+  } catch (error) {
+    setNotification({
+      message: error.message,
+      type: 'error'
+    });
+    return false;
+  }
+};
   
   const removeFromCart = (id) => {
     setCart(prevCart => {
@@ -1899,6 +1900,7 @@ const proceedToPayment = () => {
   setCheckoutStep('payment');
 };
 
+// Substituir a função sendOrder completa no ClientPage
 const sendOrder = async () => {
   if (!paymentMethod) {
     setNotification({
@@ -1919,6 +1921,7 @@ const sendOrder = async () => {
   if (deliveryOption === 'delivery') {
     whatsappMessage += `*Endereço:* ${deliveryDetails.address}\n`;
     whatsappMessage += `*Código Postal:* ${deliveryDetails.postalCode}\n`;
+    whatsappMessage += `*Taxa de entrega:* €${deliveryDetails.isOver5km ? '3.50' : '2.00'}\n`;
   }
   
   whatsappMessage += `\n*Itens do Pedido:*\n`;
@@ -1938,11 +1941,11 @@ const sendOrder = async () => {
 
   // Codificar a mensagem para URL
   const encodedMessage = encodeURIComponent(whatsappMessage);
-  const whatsappNumber = '351928145225'; // Número do WhatsApp
+  const whatsappNumber = '351928145225';
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
   try {
-    // Salvar no Firebase (se necessário)
+    // Salvar no Firebase
     const orderRef = push(ref(database, 'orders'));
     await set(orderRef, {
       items: cart,
@@ -1954,6 +1957,7 @@ const sendOrder = async () => {
       createdAt: new Date().toISOString(),
       subtotal: cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0),
       deliveryFee: deliveryOption === 'delivery' ? (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0,
+      isOver5km: deliveryDetails.isOver5km || false,
       total: calculateTotal(),
       ...(deliveryOption === 'delivery' && { 
         deliveryAddress: deliveryDetails.address,
@@ -1964,9 +1968,9 @@ const sendOrder = async () => {
 
     // Configurar o redirecionamento para WhatsApp
     setWhatsappUrl(whatsappUrl);
-    setCountdown(40); // Resetar o contador
-    setShowSuccessModal(true); // Mostrar o modal de sucesso
-    setShowWhatsappRedirect(true); // Iniciar o contador para redirecionamento automático
+    setCountdown(40);
+    setShowSuccessModal(true);
+    setShowWhatsappRedirect(true);
 
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
