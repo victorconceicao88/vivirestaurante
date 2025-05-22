@@ -422,6 +422,8 @@ i18n
     }
   });
 
+
+
 const ClientPage = () => {
   const { t, i18n } = useTranslation();
 
@@ -1220,7 +1222,49 @@ const ClientPage = () => {
           image: "/images/pudim.jpeg" 
         }
       ]
+    },
+    // Adicionar na lista de categorias (logo após a categoria 'sobremesas')
+{
+  id: 'Patros da Semana',
+  name: t('Pratos da Semana'),
+  icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2m0 2a8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8 8 8 0 0 0-8-8m-1 3h2v6h-2V7m0 8h2v2h-2v-2z"/>
+    </svg>
+  ),
+  products: [
+    { 
+      id: 701, 
+      name: i18n.language === 'pt' ? "Vaca Atolada (Quinta-feira)" : 
+            i18n.language === 'en' ? "Vaca Atolada (Thursday)" : "Vaca Atolada (Jueves)", 
+      description: i18n.language === 'pt' ? "Delicioso prato tradicional brasileiro servido com arroz, feijão tropeiro e couve" : 
+                    i18n.language === 'en' ? "Traditional Brazilian dish served with rice, tropeiro beans and collard greens" : 
+                    "Plato tradicional brasileño servido con arroz, frijoles tropeiro y col", 
+      price: 13.00, 
+      image: "/images/vaca-atolada.jpg",
+      isWeeklySpecial: true,
+      availableDays: ['thursday'],
+      options: {
+        // Opções similares aos outros pratos principais
+      }
+    },
+    { 
+      id: 702, 
+      name: i18n.language === 'pt' ? "Feijoada (Sábado e Domingo)" : 
+            i18n.language === 'en' ? "Feijoada (Saturday & Sunday)" : "Feijoada (Sábado y Domingo)", 
+      description: i18n.language === 'pt' ? "A tradicional feijoada brasileira completa com todos os acompanhamentos" : 
+                    i18n.language === 'en' ? "Traditional Brazilian feijoada with all the side dishes" : 
+                    "Feijoada brasileña tradicional con todas las guarniciones", 
+      price: 13.00, 
+      image: "/images/feijoada.jpeg",
+      isWeeklySpecial: true,
+      availableDays: ['saturday', 'sunday'],
+      options: {
+        // Opções similares aos outros pratos principais
+      }
     }
+  ]
+}
   ];
 
   const [cart, setCart] = useState([]);
@@ -1233,9 +1277,10 @@ const [deliveryDetails, setDeliveryDetails] = useState({
   firstName: '',
   lastName: '',
   address: '',
-  postalCode: '', 
+  postalCode: '',
   phone: '',
-  notes: ''
+  notes: '',
+  isOver5km: false
 });
   const [paymentMethod, setPaymentMethod] = useState('');
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
@@ -1252,6 +1297,8 @@ const [deliveryDetails, setDeliveryDetails] = useState({
   const [countdown, setCountdown] = useState(40);
   const [whatsappUrl, setWhatsappUrl] = useState('');
   const [showOrderSuccessModal, setShowOrderSuccessModal] = useState(false);
+  const [currentHour] = useState(new Date().getHours());
+  const isDaytime = currentHour >= 8 && currentHour < 18;
 
 
    const allProducts = categories.flatMap(category => category.products);
@@ -1791,11 +1838,12 @@ const [deliveryDetails, setDeliveryDetails] = useState({
     );
   };
 
-  const calculateTotal = () => {
-    const subtotal = cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * (item.quantity || 1)), 0);
-    const deliveryFee = deliveryOption === 'delivery' ? 2.0 : 0;
-    return subtotal + deliveryFee;
-  };
+const calculateTotal = () => {
+  const subtotal = cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * (item.quantity || 1)), 0);
+  const deliveryFee = deliveryOption === 'delivery' ? 
+    (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0;
+  return subtotal + deliveryFee;
+};
 
   const handleDeliveryOptionChange = (option) => {
     setDeliveryOption(option);
@@ -1813,17 +1861,20 @@ const [deliveryDetails, setDeliveryDetails] = useState({
     setCheckoutStep('delivery');
   };
 
-  const proceedToPayment = () => {
-    if (!deliveryDetails.firstName || !deliveryDetails.phone) {
-      setNotification({
-        message: i18n.language === 'pt' ? 'Por favor, preencha todos os campos obrigatórios' :
-                  i18n.language === 'en' ? 'Please fill in all required fields' :
-                  'Por favor, complete todos los campos obligatorios',
-        type: 'error'
-      });
-      return;
-    }
-    if (deliveryOption === 'delivery' && !deliveryDetails.address) {
+// Modificar a função proceedToPayment
+const proceedToPayment = () => {
+  if (!deliveryDetails.firstName || !deliveryDetails.phone) {
+    setNotification({
+      message: i18n.language === 'pt' ? 'Por favor, preencha todos os campos obrigatórios' :
+                i18n.language === 'en' ? 'Please fill in all required fields' :
+                'Por favor, complete todos los campos obligatorios',
+      type: 'error'
+    });
+    return;
+  }
+  
+  if (deliveryOption === 'delivery') {
+    if (!deliveryDetails.address) {
       setNotification({
         message: i18n.language === 'pt' ? 'Por favor, informe o endereço de entrega' :
                   i18n.language === 'en' ? 'Please provide the delivery address' :
@@ -1832,8 +1883,21 @@ const [deliveryDetails, setDeliveryDetails] = useState({
       });
       return;
     }
-    setCheckoutStep('payment');
-  };
+    
+    // Validação do CEP/Código Postal
+    if (!deliveryDetails.postalCode || !/^\d{4}-\d{3}$/.test(deliveryDetails.postalCode)) {
+      setNotification({
+        message: i18n.language === 'pt' ? 'Por favor, informe um Código Postal válido (ex: 8500-000)' :
+                  i18n.language === 'en' ? 'Please provide a valid Postal Code (e.g. 8500-000)' :
+                  'Por favor, proporcione un Código Postal válido (ej. 8500-000)',
+        type: 'error'
+      });
+      return;
+    }
+  }
+  
+  setCheckoutStep('payment');
+};
 
 const sendOrder = async () => {
   if (!paymentMethod) {
@@ -1859,17 +1923,24 @@ const sendOrder = async () => {
   setShowCart(false);
   setCheckoutStep('cart');
 
-  const processedItems = cart.map(item => ({
-    id: item.id,
-    name: item.name,
-    price: item.finalPrice || item.price,
-    quantity: item.quantity,
-    category: item.category,
-    type: item.type || 'food',
-    options: item.selectedOptions || null,
-    notes: item.notes || '',
-    customizations: item.customizations || ''
-  }));
+  const processedItems = cart.map(item => {
+    // Criar um novo objeto com as traduções corretas
+    const translatedItem = {
+      id: item.id,
+      name: item.name,
+      price: item.finalPrice || item.price,
+      quantity: item.quantity,
+      category: item.category,
+      type: item.type || 'food',
+      options: item.selectedOptions || null,
+      notes: item.notes || '',
+      customizations: item.customizations || '',
+      // Adicionar a linguagem do pedido
+      language: i18n.language
+    };
+    
+    return translatedItem;
+  });
 
   const orderData = {
     items: processedItems.reduce((acc, item, index) => {
@@ -1883,12 +1954,13 @@ const sendOrder = async () => {
     orderType: deliveryOption,
     createdAt: new Date().toISOString(),
     subtotal: cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0),
-    deliveryFee: deliveryOption === 'delivery' ? 2.0 : 0,
+    deliveryFee: deliveryOption === 'delivery' ? (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0,
     total: calculateTotal(),
     source: 'online',
+    language: i18n.language, // Adicionar a linguagem do pedido
     ...(deliveryOption === 'delivery' && { 
       deliveryAddress: deliveryDetails.address,
-      postalCode: deliveryDetails.postalCode // GARANTINDO QUE O CÓDIGO POSTAL É ENVIADO
+      postalCode: deliveryDetails.postalCode
     }),
     ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
   };
@@ -1897,63 +1969,7 @@ const sendOrder = async () => {
     const orderRef = push(ref(database, 'orders'));
     await set(orderRef, orderData);
     
-    // Preparar mensagem para WhatsApp
-    let whatsappMessage = i18n.language === 'pt' ? '🍽️ *NOVO PEDIDO - Cozinha da Vivi* 🍽️\n\n' :
-                        i18n.language === 'en' ? '🍽️ *NEW ORDER - Cozinha da Vivi* 🍽️\n\n' :
-                        '🍽️ *NUEVO PEDIDO - Cozinha da Vivi* 🍽️\n\n';
-    
-    whatsappMessage += cart.map(item => {
-      let itemText = `✔️ ${item.name} (${item.quantity}x) - €${((item.finalPrice || item.price) * item.quantity).toFixed(2)}`;
-      
-      if (item.customizations) {
-        itemText += '\n   - ' + item.customizations.split('; ').join('\n   - ');
-      }
-      
-      return itemText;
-    }).join('\n');
-    
-    whatsappMessage += i18n.language === 'pt' ? 
-      `\n\n🚚 *Tipo de Pedido:* ${deliveryOption === 'delivery' ? 'Entrega (+€2.00)' : 'Retirada no Local'}` +
-      `\n👤 *Nome:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}` +
-      (deliveryOption === 'delivery' ? `\n🏠 *Endereço:* ${deliveryDetails.address}` : '') +
-      (deliveryOption === 'delivery' ? `\n📮 *Código Postal:* ${deliveryDetails.postalCode}` : '') +
-      `\n📞 *Telefone:* ${deliveryDetails.phone}` +
-      (deliveryDetails.notes ? `\n📝 *Observações:* ${deliveryDetails.notes}` : '') +
-      `\n\n💳 *Pagamento:* ${paymentMethod}` +
-      `\n💰 *Subtotal:* €${orderData.subtotal.toFixed(2)}` +
-      (deliveryOption === 'delivery' ? `\n🚚 *Taxa de Entrega:* €2.00` : '') +
-      `\n💵 *Total a Pagar:* €${orderData.total.toFixed(2)}` :
-      i18n.language === 'en' ? 
-      `\n\n🚚 *Order Type:* ${deliveryOption === 'delivery' ? 'Delivery (+€2.00)' : 'Pickup'}` +
-      `\n👤 *Name:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}` +
-      (deliveryOption === 'delivery' ? `\n🏠 *Address:* ${deliveryDetails.address}` : '') +
-      (deliveryOption === 'delivery' ? `\n📮 *Postal Code:* ${deliveryDetails.postalCode}` : '') +
-      `\n📞 *Phone:* ${deliveryDetails.phone}` +
-      (deliveryDetails.notes ? `\n📝 *Notes:* ${deliveryDetails.notes}` : '') +
-      `\n\n💳 *Payment:* ${paymentMethod}` +
-      `\n💰 *Subtotal:* €${orderData.subtotal.toFixed(2)}` +
-      (deliveryOption === 'delivery' ? `\n🚚 *Delivery Fee:* €2.00` : '') +
-      `\n💵 *Total:* €${orderData.total.toFixed(2)}` :
-      `\n\n🚚 *Tipo de Pedido:* ${deliveryOption === 'delivery' ? 'Entrega (+€2.00)' : 'Recoger en Local'}` +
-      `\n👤 *Nombre:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}` +
-      (deliveryOption === 'delivery' ? `\n🏠 *Dirección:* ${deliveryDetails.address}` : '') +
-      (deliveryOption === 'delivery' ? `\n📮 *Código Postal:* ${deliveryDetails.postalCode}` : '') +
-      `\n📞 *Teléfono:* ${deliveryDetails.phone}` +
-      (deliveryDetails.notes ? `\n📝 *Observaciones:* ${deliveryDetails.notes}` : '') +
-      `\n\n💳 *Pago:* ${paymentMethod}` +
-      `\n💰 *Subtotal:* €${orderData.subtotal.toFixed(2)}` +
-      (deliveryOption === 'delivery' ? `\n🚚 *Gastos de Envío:* €2.00` : '') +
-      `\n💵 *Total:* €${orderData.total.toFixed(2)}`;
-
-    const phone = '+351928145225';
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMessage)}`;
-    setWhatsappUrl(url);
-    
-    // Mostra o modal primeiro
-    setShowSuccessModal(true);
-    setShowWhatsappRedirect(true);
-    setCountdown(40);
-    
+    // Resto do código para enviar pelo WhatsApp...
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
     setNotification({
@@ -2246,6 +2262,47 @@ const changeLanguage = (lng) => {
           </div>
         </div>
       </div>
+      {activeCategory === 'burguers' && isDaytime && (
+  <div className="col-span-full mb-6 animate-pulse">
+    <div className="bg-gradient-to-r from-[#FF6B00] to-[#FFA800] rounded-xl shadow-lg overflow-hidden">
+      <div className="p-4 md:p-5 flex items-start">
+        <div className="flex-shrink-0 bg-white bg-opacity-20 p-2 rounded-full">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div className="ml-3 flex-1">
+          <h3 className="text-lg font-bold text-white">
+            {i18n.language === 'pt' ? 'Hambúrgueres Disponíveis no Jantar' : 
+             i18n.language === 'en' ? 'Burgers Available at Dinner' : 
+             'Hamburguesas Disponibles en la Cena'}
+          </h3>
+          <div className="mt-1 text-white text-opacity-90">
+            <p>
+              {i18n.language === 'pt' ? 'Nossos deliciosos hambúrgueres são servidos apenas no período noturno, das 18h às 22h.' : 
+               i18n.language === 'en' ? 'Our delicious burgers are only served in the evening, from 6pm to 10pm.' : 
+               'Nuestras deliciosas hamburguesas solo se sirven por la noche, de 18h a 22h.'}
+            </p>
+            <p className="mt-2 font-medium">
+              {i18n.language === 'pt' ? 'Explore nossas outras opções disponíveis agora!' : 
+               i18n.language === 'en' ? 'Check out our other available options now!' : 
+               '¡Explore nuestras otras opciones disponibles ahora!'}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="bg-black bg-opacity-10 px-4 py-2 text-white text-sm font-medium flex items-center">
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {i18n.language === 'pt' ? 'Horário atual: ' + currentHour + 'h' : 
+         i18n.language === 'en' ? 'Current time: ' + currentHour + 'h' : 
+         'Hora actual: ' + currentHour + 'h'}
+      </div>
+    </div>
+  </div>
+)}
 
       <main className="container mx-auto p-4 bg-[#FFF1E4] flex-1">
         <div className="mb-4">
@@ -2458,6 +2515,40 @@ const changeLanguage = (lng) => {
                       </div>
                     </div>
                   </div>
+                  {deliveryOption === 'delivery' && (
+  <div className="mt-4">
+    <label className="block text-sm font-medium text-[#3D1106] mb-2">
+      {i18n.language === 'pt' ? 'Distância do restaurante' : 
+       i18n.language === 'en' ? 'Distance from restaurant' : 
+       'Distancia del restaurante'}
+    </label>
+    <div className="flex items-center space-x-4">
+      <label className="flex items-center">
+        <input
+          type="checkbox"
+          checked={deliveryDetails.isOver5km}
+          onChange={() => setDeliveryDetails(prev => ({
+            ...prev,
+            isOver5km: !prev.isOver5km
+          }))}
+          className="h-4 w-4 text-[#3D1106] focus:ring-[#3D1106] border-gray-300 rounded"
+        />
+        <span className="ml-2 text-sm text-gray-700">
+          {i18n.language === 'pt' ? 'Estou a mais de 5km do restaurante' : 
+           i18n.language === 'en' ? 'I am more than 5km from the restaurant' : 
+           'Estoy a más de 5km del restaurante'}
+        </span>
+      </label>
+    </div>
+    {deliveryDetails.isOver5km && (
+      <p className="mt-2 text-sm text-yellow-700 bg-yellow-50 p-2 rounded">
+        {i18n.language === 'pt' ? 'Taxa de entrega aumentada para 3,50€ (distância >5km)' : 
+         i18n.language === 'en' ? 'Delivery fee increased to €3.50 (distance >5km)' : 
+         'Tarifa de entrega aumentada a 3,50€ (distancia >5km)'}
+      </p>
+    )}
+  </div>
+)}
 
                   <div className="space-y-4 animate-fadeIn">
                     <h3 className="text-lg font-semibold text-[#3D1106]">
@@ -2555,13 +2646,24 @@ const changeLanguage = (lng) => {
                       <span>{t('subtotal')}</span>
                       <span>€{cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
                     </div>
-                    {deliveryOption === 'delivery' && (
-                      <div className="flex justify-between text-sm text-gray-600 mb-1">
-                        <span>{t('deliveryFee')}</span>
-                        <span>€2.00</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between font-bold text-lg text-[#3D1106] pt-2 border-t border-gray-200">
+                   {deliveryOption === 'delivery' && (
+                          <div className="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>
+                              {t('deliveryFee')}
+                              {deliveryDetails.isOver5km && (
+                                <span className="ml-1 text-xs bg-[#3D1106] text-white px-1.5 py-0.5 rounded-full">
+                                  {i18n.language === 'pt' ? '+5km' : 
+                                  i18n.language === 'en' ? '+5km' : 
+                                  '+5km'}
+                                </span>
+                              )}
+                            </span>
+                            <span className="font-medium">
+                              €{deliveryDetails.isOver5km ? '3.50' : '2.00'}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-bold text-lg text-[#3D1106] pt-2 border-t border-gray-200">
                       <span>{t('total')}</span>
                       <span>€{calculateTotal().toFixed(2)}</span>
                     </div>

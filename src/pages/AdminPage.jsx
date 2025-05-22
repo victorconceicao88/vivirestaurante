@@ -636,12 +636,33 @@ const printKitchenOrder = async (items, orderId, customerInfo) => {
       content += '\x1B\x21\x00'; // Normal
 
       items.forEach((item, index) => {
-        const itemNameMap = {
-          'water': 'Agua Mineral',
-          'fries': 'Mandioca Frita',
-          'fries': 'Mandioca cozida'
-        };
-        const displayName = itemNameMap[item.name.toLowerCase()] || item.name;
+        // Mapeamento completo dos nomes em inglês para português
+const itemNameMap = {
+  "topSirloin": "Maminha",
+  "water": "Água Mineral",
+  "fries": "Mandioca Frita", 
+  "cassava fried": "Mandioca Frita",
+  "cassava cooked": "Mandioca Cozida",
+  "cassava": "Mandioca",
+  "steak": "Bife",
+  "chicken": "Frango",
+  "pork": "Porco",
+  "rice": "Arroz",
+  "beans": "Feijão",
+  "salad": "Salada",
+  "ice cream": "Sorvete",
+  "cake": "Bolo",
+  "soda": "Refrigerante",
+  "juice": "Suco",
+  "beer": "Cerveja",
+  "wine": "Vinho",
+  "torresmo": "Torresmo",
+  "açaí grande": "Açaí Grande",
+  "açaí pequeno": "Açaí Pequeno",
+  // Adicione todas as outras traduções necessárias
+};
+
+const displayName = itemNameMap[item.name.toLowerCase()] || item.name;
 
         content += `${item.quantity}x ${sanitizeText(displayName).toUpperCase()}\n`;
 
@@ -674,12 +695,10 @@ const printKitchenOrder = async (items, orderId, customerInfo) => {
                 'pure': 'Puro',
                 'custom': 'Personalizado',
                 'small': 'Pequeno',
-                'medium': 'Medio',
+                'medium': 'Médio',
                 'large': 'Grande',
                 'none': 'Sem',
-                'extra': 'Extra',
-                'cassavaCooked':'Mandioca cozida',
-                'cassavaFried':'Mandioca frita',
+                'extra': 'Extra'
               };
               return translations[val] || val;
             };
@@ -704,9 +723,17 @@ const printKitchenOrder = async (items, orderId, customerInfo) => {
       content += '\n';
     });
 
-    // Rodape
-    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    // Rodape - Incluindo taxa de entrega quando for entrega
+   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryFee = customerInfo.deliveryAddress ? 
+      (customerInfo.isOver5km ? 3.5 : 2.0) : 0;
+    const total = subtotal + deliveryFee;
+
     content += `-------------------------------\n`;
+    content += `${centerText("SUBTOTAL: " + subtotal.toFixed(2))}\n`;
+    if (deliveryFee > 0) {
+      content += `${centerText("TAXA DE ENTREGA: " + deliveryFee.toFixed(2))}\n`;
+    }
     content += `${centerText("TOTAL: " + total.toFixed(2))}\n`;
     content += `${centerText("OBRIGADO PELA PREFERENCIA")}\n`;
     content += `${centerText("-------------------------------")}\n`;
@@ -1393,11 +1420,44 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
     }
   };
 
-  const calculateTotal = (table) => {
-    if (!table || !table.order) return 0;
-    return Object.values(table.order || {}).reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
-  };
+// Esta função deve ser usada em toda a interface admin para calcular totais
+const calculateTotal = (order) => {
+  if (!order || !order.items) return 0;
+  
+  // Calcula subtotal somando todos os itens
+  const subtotal = Object.values(order.items).reduce(
+    (sum, item) => sum + (item.price * (item.quantity || 1)), 
+    0
+  );
+  
+  // Adiciona taxa de entrega de 2€ se for pedido de entrega
+  const deliveryFee = order.deliveryAddress ? 2 : 0;
+  
+  return subtotal + deliveryFee;
+};
 
+// Exemplo de uso na exibição de pedidos:
+{filteredOrders.map(order => (
+  <div key={order.id}>
+    {/* ... outros dados do pedido ... */}
+    <div className="total-section">
+      <span>Subtotal: € {Object.values(order.items || {}).reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</span>
+      {order.deliveryAddress && (
+        <span>Taxa de entrega: € 2.00</span>
+      )}
+      <span className="font-bold">
+        Total: € {calculateTotal(order).toFixed(2)}
+      </span>
+    </div>
+  </div>
+))}
+
+// E também nas mesas:
+{selectedTable && (
+  <div>
+    <span>Total: € {calculateTotal(selectedTable).toFixed(2)}</span>
+  </div>
+)}
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -1966,46 +2026,53 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
                    
 {order.items && Object.entries(order.items).map(([key, item]) => {
   // Função para formatar opções em português
-  const formatOptions = (options) => {
-    if (!options) return '';
-    
-    const translations = {
-      'point': 'Ponto da Carne',
-      'size': 'Tamanho',
-      'sideDishes': 'Acompanhamentos',
-      'salad': 'Salada',
-      'beans': 'Feijão',
-      'meats': 'Carnes',
-      'toppings': 'Coberturas'
-    };
-
-    const valueTranslations = {
-      'rare': 'Mal passada',
-      'medium': 'Ao ponto',
-      'wellDone': 'Bem passada',
-      'broth': 'Caldo',
-      'mixed': 'Mista',
-      'complete': 'Completa',
-      'pure': 'Puro',
-      'custom': 'Personalizado'
-    };
-
-    return Object.entries(options)
-      .map(([optKey, optValue]) => {
-        const translatedKey = translations[optKey] || optKey;
-        
-        let translatedValue;
-        if (Array.isArray(optValue)) {
-          translatedValue = optValue.map(v => valueTranslations[v] || v).join(', ');
-        } else {
-          translatedValue = valueTranslations[optValue] || optValue;
-        }
-        
-        return `${translatedKey}: ${translatedValue}`;
-      })
-      .join('; ');
+ // Função para formatar opções em português
+const formatOptions = (options) => {
+  if (!options) return '';
+  
+  const translations = {
+    'point': 'Ponto da Carne',
+    'size': 'Tamanho',
+    'sideDishes': 'Acompanhamentos',
+    'salad': 'Salada',
+    'beans': 'Feijão',
+    'meats': 'Carnes',
+    'toppings': 'Coberturas',
+    'drinks': 'Bebida',
+    'dessert': 'Sobremesa'
   };
 
+  const valueTranslations = {
+    'rare': 'Mal passada',
+    'medium': 'Ao ponto',
+    'wellDone': 'Bem passada',
+    'broth': 'Caldo',
+    'mixed': 'Mista',
+    'complete': 'Completa',
+    'pure': 'Puro',
+    'custom': 'Personalizado',
+    'small': 'Pequeno',
+    'medium': 'Médio',
+    'large': 'Grande',
+    'none': 'Sem',
+    'extra': 'Extra'
+  };
+
+  return Object.entries(options)
+    .map(([optKey, optValue]) => {
+      const translatedKey = translations[optKey] || optKey;
+      
+      let translatedValue;
+      if (Array.isArray(optValue)) {
+        translatedValue = optValue.map(v => valueTranslations[v] || v).join(', ');
+      } else {
+        translatedValue = valueTranslations[optValue] || optValue;
+      }
+      
+      return `${translatedKey}: ${translatedValue}`;
+    })
+    .join('; ');
+};
   return (
     <li key={key} className="flex justify-between text-sm sm:text-base">
       <span className="truncate max-w-[70%]">
