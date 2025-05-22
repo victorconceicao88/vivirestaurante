@@ -1999,11 +1999,11 @@ const calculateTotal = (order) => {
                    
                            {order.items && Object.entries(order.items).map(([key, item]) => {
 
-const formatOptions = (options) => {
-  if (!options) return '';
-  
-  const translations = {
-    'point': 'Ponto da Carne',
+const formatOptionsForAdmin = (options) => {
+  if (!options) return null;
+
+  const optionTranslations = {
+    'point': 'Ponto da carne',
     'size': 'Tamanho',
     'sideDishes': 'Acompanhamentos',
     'salad': 'Salada',
@@ -2011,80 +2011,69 @@ const formatOptions = (options) => {
     'meats': 'Carnes',
     'toppings': 'Coberturas',
     'drinks': 'Bebida',
-    'dessert': 'Sobremesa',
-    'broth': 'Feijão de caldo',
-    'tropeiro': 'Feijão tropeiro'
+    'dessert': 'Sobremesa'
   };
 
   const valueTranslations = {
     'rare': 'Mal passada',
     'medium': 'Ao ponto',
     'wellDone': 'Bem passada',
-    'broth': 'Feijão de caldo',
-    'tropeiro': 'Feijão tropeiro',
-    'mixed': 'Mista',
-    'complete': 'Completa',
-    'pure': 'Puro',
-    'custom': 'Personalizado',
     'small': 'Pequeno',
     'medium': 'Médio',
     'large': 'Grande',
     'none': 'Sem',
-    'extra': 'Extra'
+    'extra': 'Extra',
+    'complete': 'Completo',
+    'pure': 'Puro',
+    'custom': 'Personalizado'
   };
 
-  return Object.entries(options)
-    .map(([key, value]) => {
-      const label = translations[key] || key;
-
-      if (Array.isArray(value)) {
-        const translatedItems = value.map(item => valueTranslations[item] || item);
-        return `${label}: ${translatedItems.join(', ')}`;
-      } else if (typeof value === 'object' && value !== null) {
-        if (value.items && Array.isArray(value.items)) {
-          const selected = value.items.filter(item => item.default || item.selected);
-          const translatedItems = selected.map(item => item.label || valueTranslations[item.value] || item.value);
-          return `${label}: ${translatedItems.join(', ')}`;
-        } else {
-          return `${label}: ${valueTranslations[value.value] || value.value || ''}`;
-        }
-      } else {
-        return `${label}: ${valueTranslations[value] || value}`;
+  return Object.entries(options).map(([key, value]) => {
+    const translatedKey = optionTranslations[key] || key;
+    
+    if (Array.isArray(value)) {
+      const translatedValues = value.map(v => valueTranslations[v] || v);
+      return `${translatedKey}: ${translatedValues.join(', ')}`;
+    } else if (typeof value === 'object') {
+      if (value.items) {
+        const selectedItems = value.items.filter(item => item.selected || item.default);
+        const translatedValues = selectedItems.map(item => valueTranslations[item.value] || item.label);
+        return `${translatedKey}: ${translatedValues.join(', ')}`;
       }
-    })
-    .join('; ');
+      return `${translatedKey}: ${valueTranslations[value.value] || value.value}`;
+    }
+    return `${translatedKey}: ${valueTranslations[value] || value}`;
+  }).filter(Boolean).join('; ');
 };
 
 
-<ul className="space-y-1 sm:space-y-2">
-  {order.items && Object.entries(order.items).map(([key, item]) => (
-    <li key={key} className="flex justify-between text-sm sm:text-base">
-      <span className="truncate max-w-[70%]">
-        <span className="font-medium">{item.name}</span>
-        {item.options && (
-          <span className="text-xs text-gray-600 block ml-2">
-            {formatOptions(item.options)}
-          </span>
-        )}
-        {item.notes && (
-          <span className="text-xs text-red-600 ml-1 sm:ml-2">
-            (Obs: {item.notes})
-          </span>
-        )}
+{order.items && Object.entries(order.items).map(([key, item]) => (
+  <div key={key} className="mb-2">
+    <div className="flex justify-between">
+      <span className="font-medium">
+        {item.quantity}x {item.name}
       </span>
-      <span className="text-gray-700 whitespace-nowrap ml-2">
-        x{item.quantity} • € {(item.price * item.quantity).toFixed(2)}
-      </span>
-    </li>
-  ))}
-</ul>
+      <span>€{(item.price * item.quantity).toFixed(2)}</span>
+    </div>
+    {item.options && (
+      <div className="text-sm text-gray-600 ml-2 mt-1">
+        {formatOptionsForAdmin(item.options)}
+      </div>
+    )}
+    {item.notes && (
+      <div className="text-sm text-red-600 ml-2 mt-1">
+        <strong>Obs:</strong> {item.notes}
+      </div>
+    )}
+  </div>
+))}
   return (
  <li key={key} className="flex justify-between text-sm sm:text-base">
       <span className="truncate max-w-[70%]">
         <span className="font-medium">{item.name}</span>
         {item.options && (
           <span className="text-xs text-gray-600 block ml-2">
-            {formatOptions(item.options)}
+            {formatOptionsForAdmin(item.options)}
           </span>
         )}
         {item.notes && (

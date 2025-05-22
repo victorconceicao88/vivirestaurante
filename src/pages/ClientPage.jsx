@@ -1843,7 +1843,11 @@ const calculateTotal = () => {
   const subtotal = cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * (item.quantity || 1)), 0);
   const deliveryFee = deliveryOption === 'delivery' ? 
     (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0;
-  return subtotal + deliveryFee;
+  return {
+    subtotal,
+    deliveryFee,
+    total: subtotal + deliveryFee
+  };
 };
 
   const handleDeliveryOptionChange = (option) => {
@@ -2642,33 +2646,32 @@ const changeLanguage = (lng) => {
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex justify-between text-sm text-gray-600 mb-1">
-                      <span>{t('subtotal')}</span>
-                      <span>€{cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
-                    </div>
-                   {deliveryOption === 'delivery' && (
-                          <div className="flex justify-between text-sm text-gray-600 mb-1">
-                            <span>
-                              {t('deliveryFee')}
-                              {deliveryDetails.isOver5km && (
-                                <span className="ml-1 text-xs bg-[#3D1106] text-white px-1.5 py-0.5 rounded-full">
-                                  {i18n.language === 'pt' ? '+5km' : 
-                                  i18n.language === 'en' ? '+5km' : 
-                                  '+5km'}
-                                </span>
-                              )}
-                            </span>
-                            <span className="font-medium">
-                              €{deliveryDetails.isOver5km ? '3.50' : '2.00'}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between font-bold text-lg text-[#3D1106] pt-2 border-t border-gray-200">
-                      <span>{t('total')}</span>
-                      <span>€{calculateTotal().toFixed(2)}</span>
-                    </div>
-                  </div>
+
+<div className="bg-gray-50 p-4 rounded-lg mb-6">
+  <div className="flex justify-between text-sm text-gray-600 mb-1">
+    <span>{t('subtotal')}</span>
+    <span>€{calculateTotal().subtotal.toFixed(2)}</span>
+  </div>
+  {deliveryOption === 'delivery' && (
+    <div className="flex justify-between text-sm text-gray-600 mb-1">
+      <span>
+        {t('deliveryFee')}
+        {deliveryDetails.isOver5km && (
+          <span className="ml-1 text-xs bg-[#3D1106] text-white px-1.5 py-0.5 rounded-full">
+            +5km
+          </span>
+        )}
+      </span>
+      <span className="font-medium">
+        €{deliveryDetails.isOver5km ? '3.50' : '2.00'}
+      </span>
+    </div>
+  )}
+  <div className="flex justify-between font-bold text-lg text-[#3D1106] pt-2 border-t border-gray-200">
+    <span>{t('total')}</span>
+    <span>€{calculateTotal().total.toFixed(2)}</span>
+  </div>
+</div>
                   
                   <button
                     onClick={proceedToPayment}
