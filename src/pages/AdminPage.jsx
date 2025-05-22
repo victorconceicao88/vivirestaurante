@@ -2001,7 +2001,7 @@ const calculateTotal = (order) => {
   // Função para formatar opções em português
 const formatOptions = (options) => {
   if (!options) return '';
-  
+
   const translations = {
     'point': 'Ponto da Carne',
     'size': 'Tamanho',
@@ -2011,9 +2011,7 @@ const formatOptions = (options) => {
     'meats': 'Carnes',
     'toppings': 'Coberturas',
     'drinks': 'Bebida',
-    'dessert': 'Sobremesa',
-    'broth': 'Feijão de caldo',
-    'tropeiro': 'Feijão tropeiro'
+    'dessert': 'Sobremesa'
   };
 
   const valueTranslations = {
@@ -2055,6 +2053,8 @@ const formatOptions = (options) => {
     })
     .join('; ');
 };
+
+
 
   return (
  <li key={key} className="flex justify-between text-sm sm:text-base">
