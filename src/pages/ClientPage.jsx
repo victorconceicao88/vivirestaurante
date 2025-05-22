@@ -1910,66 +1910,64 @@ const sendOrder = async () => {
     return;
   }
 
-  if (deliveryOption === 'delivery' && !deliveryDetails.postalCode) {
-    setNotification({
-      message: i18n.language === 'pt' ? 'Por favor, informe o código postal' :
-                i18n.language === 'en' ? 'Please provide the postal code' :
-                'Por favor, proporcione el código postal',
-      type: 'error'
-    });
-    return;
+  // Construir mensagem para WhatsApp
+  let whatsappMessage = `*Novo Pedido - Cozinha da Vivi*\n\n`;
+  whatsappMessage += `*Cliente:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}\n`;
+  whatsappMessage += `*Telefone:* ${deliveryDetails.phone}\n`;
+  whatsappMessage += `*Tipo de Entrega:* ${deliveryOption === 'delivery' ? 'Entrega' : 'Retirada'}\n`;
+  
+  if (deliveryOption === 'delivery') {
+    whatsappMessage += `*Endereço:* ${deliveryDetails.address}\n`;
+    whatsappMessage += `*Código Postal:* ${deliveryDetails.postalCode}\n`;
+  }
+  
+  whatsappMessage += `\n*Itens do Pedido:*\n`;
+  cart.forEach(item => {
+    whatsappMessage += `- ${item.name} (${item.quantity}x) - €${(item.finalPrice * item.quantity).toFixed(2)}\n`;
+    if (item.customizations) {
+      whatsappMessage += `  *Opcões:* ${item.customizations}\n`;
+    }
+  });
+  
+  whatsappMessage += `\n*Total:* €${calculateTotal().toFixed(2)}\n`;
+  whatsappMessage += `*Método de Pagamento:* ${paymentMethod}\n`;
+  
+  if (deliveryDetails.notes) {
+    whatsappMessage += `\n*Observações:* ${deliveryDetails.notes}\n`;
   }
 
-  setShowCart(false);
-  setCheckoutStep('cart');
-
-  const processedItems = cart.map(item => {
-    // Criar um novo objeto com as traduções corretas
-    const translatedItem = {
-      id: item.id,
-      name: item.name,
-      price: item.finalPrice || item.price,
-      quantity: item.quantity,
-      category: item.category,
-      type: item.type || 'food',
-      options: item.selectedOptions || null,
-      notes: item.notes || '',
-      customizations: item.customizations || '',
-      // Adicionar a linguagem do pedido
-      language: i18n.language
-    };
-    
-    return translatedItem;
-  });
-
-  const orderData = {
-    items: processedItems.reduce((acc, item, index) => {
-      acc[`item_${index}`] = item;
-      return acc;
-    }, {}),
-    customerName: deliveryDetails.firstName + (deliveryDetails.lastName ? ' ' + deliveryDetails.lastName : ''),
-    customerPhone: deliveryDetails.phone,
-    paymentMethod,
-    status: 'pending',
-    orderType: deliveryOption,
-    createdAt: new Date().toISOString(),
-    subtotal: cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0),
-    deliveryFee: deliveryOption === 'delivery' ? (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0,
-    total: calculateTotal(),
-    source: 'online',
-    language: i18n.language, // Adicionar a linguagem do pedido
-    ...(deliveryOption === 'delivery' && { 
-      deliveryAddress: deliveryDetails.address,
-      postalCode: deliveryDetails.postalCode
-    }),
-    ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
-  };
+  // Codificar a mensagem para URL
+  const encodedMessage = encodeURIComponent(whatsappMessage);
+  const whatsappNumber = '351928145225'; // Número do WhatsApp
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
   try {
+    // Salvar no Firebase (se necessário)
     const orderRef = push(ref(database, 'orders'));
-    await set(orderRef, orderData);
-    
-    // Resto do código para enviar pelo WhatsApp...
+    await set(orderRef, {
+      items: cart,
+      customerName: deliveryDetails.firstName + (deliveryDetails.lastName ? ' ' + deliveryDetails.lastName : ''),
+      customerPhone: deliveryDetails.phone,
+      paymentMethod,
+      status: 'pending',
+      orderType: deliveryOption,
+      createdAt: new Date().toISOString(),
+      subtotal: cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0),
+      deliveryFee: deliveryOption === 'delivery' ? (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0,
+      total: calculateTotal(),
+      ...(deliveryOption === 'delivery' && { 
+        deliveryAddress: deliveryDetails.address,
+        postalCode: deliveryDetails.postalCode
+      }),
+      ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
+    });
+
+    // Configurar o redirecionamento para WhatsApp
+    setWhatsappUrl(whatsappUrl);
+    setCountdown(40); // Resetar o contador
+    setShowSuccessModal(true); // Mostrar o modal de sucesso
+    setShowWhatsappRedirect(true); // Iniciar o contador para redirecionamento automático
+
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
     setNotification({
@@ -1980,7 +1978,6 @@ const sendOrder = async () => {
     });
   }
 };
-
 // E o useEffect para gerenciar o contador:
 useEffect(() => {
   if (showWhatsappRedirect) {
@@ -2877,19 +2874,18 @@ const changeLanguage = (lng) => {
                       <span>€{calculateTotal().toFixed(2)}</span>
                     </div>
                   </div>
-                  
-                  <button
-                    onClick={sendOrder}
-                    disabled={!paymentMethod}
-                    className={`w-full py-3 px-4 rounded-lg font-bold transition-all duration-300 ${
-                      paymentMethod 
-                        ? 'bg-[#3D1106] text-white hover:bg-[#280B04] shadow-md' 
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {t('completeOrder')}
-                  </button>
-                </div>
+                        <button
+              onClick={sendOrder}
+              disabled={!paymentMethod}
+              className={`w-full py-3 px-4 rounded-lg font-bold transition-all duration-300 ${
+                paymentMethod 
+                  ? 'bg-[#3D1106] text-white hover:bg-[#280B04] shadow-md' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {t('completeOrder')}
+            </button>
+              </div>
               )}
             </div>
           </div>
