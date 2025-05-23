@@ -303,7 +303,7 @@ const printKitchenOrder = async (item, orderId, customerInfo, deliveryFee = 0) =
 
     // RODAPÉ
     content += `\n${centerText(''.padEnd(32, '-'))}\n`;
-    content += `${centerText("PRONTO PARA PREPARO")}\n`;
+    content += `${centerText("OBRIGADO PELA PREFERENCIA")}\n`;
     content += '\n\n\n\n\x1D\x56\x00'; // Corta papel
 
     // =============================================
