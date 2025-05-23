@@ -1074,7 +1074,8 @@ const ClientPage = () => {
                           i18n.language === 'en' ? "Select your favorite meats to build your special platter." : 
                           "Selecciona tus carnes preferidas para crear tu porción especial.", 
           price: 10.00, 
-          image: "/images/carnes.jpg" 
+          image: "/images/carnes.jpg" ,
+          
         }
       ]
     },
