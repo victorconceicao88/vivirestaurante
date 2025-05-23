@@ -63,10 +63,10 @@ i18n
             "close": "Fechar"
           },
           "options": {
-            "beans": "Tipo de Feijão",
+            "beans": "Tipo de Feijao",
             "beansOptions": {
-              "broth": "Feijão de caldo",
-              "tropeiro": "Feijão tropeiro"
+              "broth": "Feijao de caldo",
+              "tropeiro": "Feijao tropeiro"
             },
             "sideDishes": "Acompanhamentos",
             "sideDishesOptions": {
@@ -1069,14 +1069,28 @@ const ClientPage = () => {
         { 
           id: 406, 
           name: i18n.language === 'pt' ? "Porção de Carnes" : 
-                i18n.language === 'en' ? "Meat Platter" : "Tabla de Carnes", 
-          description: i18n.language === 'pt' ? "Selecione suas carnes preferidas para montar sua porção especial." : 
-                          i18n.language === 'en' ? "Select your favorite meats to build your special platter." : 
-                          "Selecciona tus carnes preferidas para crear tu porción especial.", 
+                i18n.language === 'en' ? "Mixed Grill" : "Parrillada Mixta", 
+          description: "", 
           price: 10.00, 
-          image: "/images/carnes.jpg" ,
-          
-        }
+          image: "/images/mistadecarne.jpeg",
+          options: {
+            meats: {
+              title: t('options.meats'),
+              required: true,
+              type: 'checkbox',
+              max: 2,
+              items: [
+                { value: 'heart', label: t('options.meatsOptions.heart') },
+                { value: 'ribs', label: t('options.meatsOptions.ribs') },
+                { value: 'fillet', label: t('options.meatsOptions.fillet') },
+                { value: 'sausage', label: t('options.meatsOptions.sausage') },
+                { value: 'topSirloin', label: t('options.meatsOptions.topSirloin') },
+                { value: 'cracklings', label: t('options.meatsOptions.cracklings') },
+                { value: 'onlyTopSirloin', label: t('options.meatsOptions.onlyTopSirloin'), price: 1.00, exclusive: true }
+              ]
+            },
+          }
+        },      
       ]
     },
     {
@@ -1726,7 +1740,7 @@ const formatOptionForDisplay = (optionName, value, allOptions) => {
       size: { pt: "Tamanho" },
       sideDishes: { pt: "Acompanhamentos" },
       salad: { pt: "Salada" },
-      beans: { pt: "Feijão" },
+      beans: { pt: "Feijao" },
       meats: { pt: "Carnes" },
       toppings: { pt: "Coberturas" },
       drinks: { pt: "Bebida" },
@@ -2454,7 +2468,7 @@ const changeLanguage = (lng) => {
         {item.selectedOptions && Object.entries(item.selectedOptions).map(([optionName, optionData]) => (
           <div key={optionName} className="text-xs text-gray-500 mt-1">
             <span className="font-semibold">
-              {optionName === 'beans' && 'Feijão: '}
+              {optionName === 'beans' && 'Feijao: '}
               {optionName === 'salad' && 'Salada: '}
               {optionName === 'sideDishes' && 'Acompanhamentos: '}
               {optionName === 'meats' && 'Carnes: '}
@@ -3029,131 +3043,139 @@ const changeLanguage = (lng) => {
         />
       )}
 
-      <footer className="bg-[#FEB300] text-[#280B04] py-8 md:py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
-            <div className="space-y-4 md:space-y-5">
-              <h3 className="text-lg md:text-xl font-bold flex items-center justify-center md:justify-start">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {t('openingHours')}
-              </h3>
-              <ul className="space-y-2 md:space-y-3">
-                <li className="flex justify-between items-center border-b border-[#280B04] border-opacity-20 pb-2 md:pb-3">
-                  <span className="text-[#280B04] opacity-80 text-sm md:text-base">{t('monday')}</span>
-                  <span className="font-medium bg-[#FFF1E4] px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs md:text-sm">
-                    {t('closed')}
-                  </span>
-                </li>
-                <li className="flex justify-between border-b border-[#280B04] border-opacity-20 pb-2 md:pb-3">
-                  <span className="text-[#280B04] opacity-80 text-sm md:text-base">{t('tuesdayToSaturday')}</span>
-                  <span className="font-medium text-sm md:text-base">12:00 – 15:30 | 19:00 – 22:00</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-[#280B04] opacity-80 text-sm md:text-base">{t('sunday')}</span>
-                  <span className="font-medium text-sm md:text-base">12:00 – 15:30</span>
-                </li>
-              </ul>
-            </div>
+<footer className="bg-[#FEB300] text-[#280B04] py-8 md:py-12">
+  <div className="container mx-auto px-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
+      {/* Horários de funcionamento */}
+      <div className="space-y-4 md:space-y-5">
+        <h3 className="text-lg md:text-xl font-bold flex items-center justify-center md:justify-start">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {t('openingHours')}
+        </h3>
+        <ul className="space-y-2 md:space-y-3">
+          <li className="flex justify-between items-center border-b border-[#280B04] border-opacity-20 pb-2 md:pb-3">
+            <span className="text-[#280B04] opacity-80 text-sm md:text-base">{t('monday')}</span>
+            <span className="font-medium bg-[#FFF1E4] px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs md:text-sm">
+              {t('closed')}
+            </span>
+          </li>
+          <li className="flex justify-between border-b border-[#280B04] border-opacity-20 pb-2 md:pb-3">
+            <span className="text-[#280B04] opacity-80 text-sm md:text-base">{t('tuesdayToSaturday')}</span>
+            <span className="font-medium text-sm md:text-base">12:00 – 15:30 | 19:00 – 22:00</span>
+          </li>
+          <li className="flex justify-between">
+            <span className="text-[#280B04] opacity-80 text-sm md:text-base">{t('sunday')}</span>
+            <span className="font-medium text-sm md:text-base">12:00 – 15:30</span>
+          </li>
+        </ul>
+      </div>
 
-            <div className="space-y-4 md:space-y-5">
-              <h3 className="text-lg md:text-xl font-bold flex items-center justify-center md:justify-start">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                {t('addressText')}
-              </h3>
-              <address className="not-italic text-center md:text-left">
-                <div className="flex flex-col items-center md:items-start">
-                  <div className="font-medium">
-                    <p className="font-bold">Cozinha da Vivi</p>
-                    <p className="text-sm md:text-base">Estrada de Alvor, São Sebastião</p>
-                    <p className="text-sm md:text-base">8500-769 Portimão</p>
-                  </div>
-                </div>
-              </address>
-            </div>
-
-            <div className="space-y-4 md:space-y-5">
-              <h3 className="text-lg md:text-xl font-bold flex items-center justify-center md:justify-start">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                {t('contact')}
-              </h3>
-              
-              <div className="flex flex-col items-center space-y-3 md:space-y-4 md:items-start">
-                <a 
-                  href="https://wa.me/351928145225" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="flex items-center bg-[#280B04] text-[#FEB300] p-3 rounded-lg hover:bg-[#3D1106] transition-all group w-full max-w-xs"
-                >
-                  <div className="bg-[#FEB300] text-[#280B04] p-2 rounded-full mr-3 md:mr-4 group-hover:scale-110 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm md:text-base">WhatsApp</div>
-                    <div className="text-xs md:text-sm opacity-90">+351 928 145 225</div>
-                  </div>
-                </a>
-
-                <a 
-                  href="mailto:vivianebistro@gmail.com" 
-                  className="flex items-center bg-white text-[#280B04] p-3 rounded-lg hover:bg-gray-100 transition-all group border border-[#280B04] w-full max-w-xs"
-                >
-                  <div className="bg-[#280B04] text-[#FEB300] p-2 rounded-full mr-3 md:mr-4 group-hover:scale-110 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm md:text-base">E-mail</div>
-                    <div className="text-xs md:text-sm opacity-90">vivianebistro@gmail.com</div>
-                  </div>
-                </a>
-              </div>
+      {/* Endereço */}
+      <div className="space-y-4 md:space-y-5">
+        <h3 className="text-lg md:text-xl font-bold flex items-center justify-center md:justify-start">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          {t('addressText')}
+        </h3>
+        <address className="not-italic text-center md:text-left">
+          <div className="flex flex-col items-center md:items-start">
+            <div className="font-medium">
+              <p className="font-bold">Cozinha da Vivi</p>
+              <p className="text-sm md:text-base">Estrada de Alvor, São Sebastião</p>
+              <p className="text-sm md:text-base">8500-769 Portimão</p>
             </div>
           </div>
+        </address>
+      </div>
 
-          <div className="mt-8 md:mt-12 text-center">
-            <h4 className="text-lg font-medium mb-4">Siga-nos</h4>
-            <div className="flex justify-center space-x-6">
-              <a 
-                href="https://www.tripadvisor.com/Restaurant_Review-g189120-d33062978-Reviews-Cozinha_Da_Vivi-Portimao_Faro_District_Algarve.html?m=69573" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-[#280B04] text-[#FEB300] p-2 rounded-full hover:scale-110 transition-transform hover:shadow-md"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0a12 12 0 100 24 12 12 0 000-24zm4.5 16.5c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1zm-9 0c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1zm9-9c.6 0 1.1.5 1.1 1.1s-.5 1.1-1.1 1.1-1.1-.5-1.1-1.1.5-1.1 1.1-1.1zm-9 0c.6 0 1.1.5 1.1 1.1s-.5 1.1-1.1 1.1-1.1-.5-1.1-1.1.5-1.1 1.1-1.1zm4.5 4.5c-2.5 0-4.5 2-4.5 4.5h9c0-2.5-2-4.5-4.5-4.5z"/>
-                </svg>
-              </a>
-              
-              <a 
-                href="https://www.instagram.com/cozinhadavivipt?igsh=MTd0NDI1a2c5Y3Uydg==" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-[#280B04] text-[#FEB300] p-2 rounded-full hover:scale-110 transition-transform hover:shadow-md"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-                </svg>
-              </a>
+      {/* Contato */}
+      <div className="space-y-4 md:space-y-5">
+        <h3 className="text-lg md:text-xl font-bold flex items-center justify-center md:justify-start">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          {t('contact')}
+        </h3>
+        <div className="flex flex-col items-center space-y-3 md:space-y-4 md:items-start">
+          {/* WhatsApp */}
+          <a 
+            href="https://wa.me/351928145225" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center bg-[#280B04] text-[#FEB300] p-3 rounded-lg hover:bg-[#3D1106] transition-all group w-full max-w-xs"
+          >
+            <div className="bg-[#FEB300] text-[#280B04] p-2 rounded-full mr-3 group-hover:scale-110 transition-transform">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" />
+              </svg>
             </div>
-          </div>
-
-          <div className="mt-8 pt-4 border-t border-[#280B04] border-opacity-20 text-center">
-            <p className="text-xs md:text-sm text-[#280B04] opacity-80">
-              {t('copyright', { year: new Date().getFullYear() })}
-            </p>
-          </div>
+            <div>
+              <div className="font-bold text-sm md:text-base">WhatsApp</div>
+              <div className="text-xs md:text-sm opacity-90">+351 928 145 225</div>
+            </div>
+          </a>
         </div>
-      </footer>
+      </div>
+    </div>
+
+    {/* Seção Criativa para Eventos */}
+    <div className="mt-12 text-center">
+      <h4 className="text-xl md:text-2xl font-bold mb-4">🎉 Que tal fazer sua festa de aniversário ou evento conosco?</h4>
+      <p className="mb-6 text-sm md:text-base opacity-90">
+        Transforme sua ocasião especial em uma experiência inesquecível com o toque da Cozinha da Vivi.
+      </p>
+      <a
+        href="https://wa.me/351928145225?text=Olá%2C+gostaria+de+saber+mais+sobre+eventos+e+festas+na+Cozinha+da+Vivi"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block bg-[#280B04] text-[#FEB300] px-6 py-3 rounded-lg font-semibold hover:bg-[#3D1106] transition-all"
+      >
+        Solicitar mais informações
+      </a>
+    </div>
+
+    {/* Redes Sociais */}
+    <div className="mt-12 text-center">
+      <h4 className="text-lg font-medium mb-4">Siga-nos</h4>
+      <div className="flex justify-center space-x-6">
+        {/* TripAdvisor */}
+        <a 
+          href="https://www.tripadvisor.com/Restaurant_Review-g189120-d33062978-Reviews-Cozinha_Da_Vivi-Portimao_Faro_District_Algarve.html?m=69573"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-[#280B04] text-[#FEB300] p-2 rounded-full hover:scale-110 transition-transform hover:shadow-md"
+        >
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0a12 12 0 100 24 12 12 0 000-24zm4.5 16.5c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1zm-9 0c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1z"/>
+          </svg>
+        </a>
+        {/* Instagram */}
+        <a 
+          href="https://www.instagram.com/cozinhadavivipt?igsh=MTd0NDI1a2c5Y3Uydg=="
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-[#280B04] text-[#FEB300] p-2 rounded-full hover:scale-110 transition-transform hover:shadow-md"
+        >
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    {/* Direitos Autorais */}
+    <div className="mt-8 pt-4 border-t border-[#280B04] border-opacity-20 text-center">
+      <p className="text-xs md:text-sm text-[#280B04] opacity-80">
+        {t('copyright', { year: new Date().getFullYear() })}
+      </p>
+    </div>
+  </div>
+</footer>
+
     </div>
   );
 };

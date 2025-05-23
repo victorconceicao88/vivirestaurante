@@ -159,7 +159,7 @@ const printKitchenOrder = async (order) => {
       size: "Tamanho",
       sideDishes: "Acompanhamentos",
       salad: "Salada",
-      beans: "Feijão",
+      beans: "Feijao",
       meats: "Carnes",
       toppings: "Coberturas",
       drinks: "Bebida",
@@ -218,7 +218,7 @@ const printKitchenOrder = async (order) => {
       let result = '';
 
       const translations = {
-        'beans': 'Feijão',
+        'beans': 'Feijao',
         'salad': 'Salada',
         'sideDishes': 'Acompanhamentos',
         'meats': 'Carnes',
@@ -278,7 +278,7 @@ const printKitchenOrder = async (order) => {
 
     if (order.deliveryAddress) {
       content += `ENTREGA: ${sanitizeText(order.deliveryAddress)}\n`;
-      content += `CEP: ${formatPostalCode(order.postalCode) || 'Não informado'}\n`;
+      content += `CODIGO POSTAL: ${formatPostalCode(order.postalCode) || 'Não informado'}\n`;
     } else {
       content += `TIPO: BALCAO\n`;
     }
@@ -286,7 +286,6 @@ const printKitchenOrder = async (order) => {
 
     // ITENS DO PEDIDO
     content += `\n${centerText('\x1B\x21\x10ITENS DO PEDIDO')}\n`;
-    content += '\x1B\x21\x00';
 
     let subtotal = 0;
     const items = Array.isArray(order.items) ? order.items : Object.values(order.items || {});
@@ -871,7 +870,7 @@ const formatAdminOptions = (options) => {
       size: "Tamanho",
       sideDishes: "Acompanhamentos",
       salad: "Salada",
-      beans: "Feijão",
+      beans: "Feijao",
       meats: "Carnes",
       toppings: "Coberturas",
       drinks: "Bebida",
