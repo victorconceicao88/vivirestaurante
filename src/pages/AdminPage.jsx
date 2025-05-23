@@ -1,498 +1,56 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { ref, onValue, off, update, push, remove, set, get } from 'firebase/database';
-import { database } from '../firebase';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FiLogOut, FiPlus, FiTrash2, FiChevronLeft, FiClock, FiCheckCircle, 
-  FiTruck, FiCoffee, FiHome, FiUsers, FiPrinter, FiX, FiEdit, 
-  FiSearch, FiPhone, FiUser, FiMapPin, FiDollarSign, FiMenu, FiEye, FiEyeOff
-} from 'react-icons/fi';
-import { BsClockHistory, BsReceipt, BsCashStack, BsPrinter } from 'react-icons/bs';
-import { IoFastFoodOutline, IoWineOutline, IoClose } from 'react-icons/io5';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ref, onValue, off, update, push, remove, set, get } from 'firebase/database';
+import { signOut } from 'firebase/auth';
+import { database, auth } from '../firebase';
+import { FiHome, FiUsers, FiClock, FiCoffee, FiCheckCircle, FiTruck, FiLogOut, FiMenu, FiX, FiChevronLeft, FiSearch, FiPlus, FiTrash2, FiPhone, FiMapPin, FiUser, FiEye } from 'react-icons/fi';
+import { BsReceipt, BsCashStack, BsClockHistory, BsPrinter } from 'react-icons/bs';
+import { IoFastFoodOutline, IoClose } from 'react-icons/io5';
 import { GiMeal, GiChopsticks, GiSodaCan } from 'react-icons/gi';
-import { FaWineBottle, FaGlassWhiskey, FaBluetoothB } from 'react-icons/fa';
+import { FaGlassWhiskey, FaWineBottle } from 'react-icons/fa';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { motion, AnimatePresence } from 'framer-motion';
-import 'react-datepicker/dist/react-datepicker.css';
+import { useTranslation } from 'react-i18next';
+
+
 
 const AdminPage = () => {
-  const [orders, setOrders] = useState([]);
-  const [tables, setTables] = useState([]);
-  const [activeTab, setActiveTab] = useState('pending');
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [newTableNumber, setNewTableNumber] = useState('');
-  const [selectedTable, setSelectedTable] = useState(null);
-  const [addingItems, setAddingItems] = useState(false);
+  const [activeTab, setActiveTab] = useState('pending');
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showSummary, setShowSummary] = useState(false);
-  const [notification, setNotification] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  const [orders, setOrders] = useState([]);
+  const [tables, setTables] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [unavailableItems, setUnavailableItems] = useState([]);
+  const [selectedTable, setSelectedTable] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [addingItems, setAddingItems] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
+  const [quantity, setQuantity] = useState(1);
+  const [itemOptions, setItemOptions] = useState({});
+  const [itemNotes, setItemNotes] = useState('');
+  const [showSummary, setShowSummary] = useState(false);
+  const [newTableNumber, setNewTableNumber] = useState('');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [historyFilter, setHistoryFilter] = useState('all');
+  const [notification, setNotification] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [swipeStartX, setSwipeStartX] = useState(null);
   const [swipeEndX, setSwipeEndX] = useState(null);
-  const [unavailableItems, setUnavailableItems] = useState([]);
-  const [cartItems, setCartItems] = useState([]);
-  const [itemOptions, setItemOptions] = useState({});
-  const [itemNotes, setItemNotes] = useState('');
+  const [order, setOrder] = useState(null);
+  const { i18n } = useTranslation(); 
 
-  const stats = {
-    pendingOrders: orders.filter(o => o.status === 'pending').length,
-    preparingOrders: orders.filter(o => o.status === 'preparing').length,
-    activeTables: tables.filter(t => t.status !== 'closed').length
+  const categories = ['all', ...new Set(menuItems?.map(item => item?.category) || [])];
+  const navigate = useNavigate();
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
   };
-  const menuItems = [
-    // Churrasco Misto
-    {
-      id: 1,
-      name: 'Churrasco Misto',
-      category: 'Churrasco',
-      price: 15.00,
-      type: 'food',
-      iconName: 'meat',
-      options: {
-        feijao: {
-          title: 'Feijão',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Feijão de caldo', value: 'feijaoCaldo' },
-            { label: 'Feijão tropeiro', value: 'feijaoTropeiro' }
-          ]
-        },
-        acompanhamentos: {
-          title: 'Acompanhamentos',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Banana frita', value: 'bananaFrita' },
-            { label: 'Mandioca cozida', value: 'mandiocaCozida' },
-            { label: 'Mandioca frita', value: 'mandiocaFrita' }
-          ]
-        },
-        carnes: {
-          title: 'Carnes (Escolha até 2)',
-          required: true,
-          type: 'checkbox',
-          max: 2,
-          items: [
-            { label: 'Coração de galinha', value: 'coracao' },
-            { label: 'Costelinha de porco', value: 'costelinha' },
-            { label: 'Filé de frango', value: 'fileFrango' },
-            { label: 'Linguiça', value: 'linguica' },
-            { label: 'Maminha', value: 'maminha' },
-            { label: 'Torresmo', value: 'torresmo' },
-            { label: 'Só Maminha (+€1,00)', value: 'soMaminha', price: 1.00 }
-          ]
-        },
-        pontoCarne: {
-          title: 'Ponto da Carne',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Selada', value: 'selada' },
-            { label: 'Mal passada', value: 'malPassada' },
-            { label: 'Ao ponto', value: 'aoPonto' },
-            { label: 'Ao ponto para bem', value: 'aoPontoBem' },
-            { label: 'Bem passado', value: 'bemPassado' },
-            { label: 'Indiferente', value: 'indiferente' }
-          ]
-        },
-        salada: {
-          title: 'Salada',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Salada mista', value: 'saladaMista' },
-            { label: 'Vinagrete', value: 'vinagrete' },
-            { label: 'Não quero salada', value: 'semSalada' }
-          ]
-        },
-        observacoes: {
-          title: 'Observações para Cozinha',
-          type: 'textarea',
-          placeholder: 'Ex: Mais mandioca, carne bem passada...'
-        }
-      }
-    },
-    {
-      id: 2,
-      name: 'Maminha',
-      category: 'Churrasco',
-      price: 16.00,
-      type: 'food',
-      iconName: 'meat',
-      options: {
-        feijao: {
-          title: 'Feijão',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Feijão de caldo', value: 'feijaoCaldo' },
-            { label: 'Feijão tropeiro', value: 'feijaoTropeiro' }
-          ]
-        },
-        acompanhamentos: {
-          title: 'Acompanhamentos',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Banana frita', value: 'bananaFrita' },
-            { label: 'Mandioca cozida', value: 'mandiocaCozida' },
-            { label: 'Mandioca frita', value: 'mandiocaFrita' }
-          ]
-        },
-        pontoCarne: {
-          title: 'Ponto da Carne',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Selada', value: 'selada' },
-            { label: 'Mal passada', value: 'malPassada' },
-            { label: 'Ao ponto', value: 'aoPonto' },
-            { label: 'Ao ponto para bem', value: 'aoPontoBem' },
-            { label: 'Bem passado', value: 'bemPassado' },
-            { label: 'Indiferente', value: 'indiferente' }
-          ]
-        },
-        salada: {
-          title: 'Salada',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Salada mista', value: 'saladaMista' },
-            { label: 'Vinagrete', value: 'vinagrete' },
-            { label: 'Não quero salada', value: 'semSalada' }
-          ]
-        },
-        observacoes: {
-          title: 'Observações para Cozinha',
-          type: 'textarea',
-          placeholder: 'Ex: Ponto bem passado, sem vinagrete...'
-        }
-      }
-    },
-    {
-      id: 3,
-      name: 'Linguiça Toscana',
-      category: 'Churrasco',
-      price: 13.00,
-      type: 'food',
-      iconName: 'meat',
-      options: {
-        feijao: {
-          title: 'Feijão',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Feijão de caldo', value: 'feijaoCaldo' },
-            { label: 'Feijão tropeiro', value: 'feijaoTropeiro' }
-          ]
-        },
-        acompanhamentos: {
-          title: 'Acompanhamentos',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Banana frita', value: 'bananaFrita' },
-            { label: 'Mandioca cozida', value: 'mandiocaCozida' },
-            { label: 'Mandioca frita', value: 'mandiocaFrita' }
-          ]
-        },
-        pontoCarne: {
-          title: 'Ponto da Carne',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Selada', value: 'selada' },
-            { label: 'Mal passada', value: 'malPassada' },
-            { label: 'Ao ponto', value: 'aoPonto' },
-            { label: 'Ao ponto para bem', value: 'aoPontoBem' },
-            { label: 'Bem passado', value: 'bemPassado' },
-            { label: 'Indiferente', value: 'indiferente' }
-          ]
-        },
-        salada: {
-          title: 'Salada',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Salada mista', value: 'saladaMista' },
-            { label: 'Vinagrete', value: 'vinagrete' },
-            { label: 'Não quero salada', value: 'semSalada' }
-          ]
-        },
-        observacoes: {
-          title: 'Observações para Cozinha',
-          type: 'textarea',
-          placeholder: 'Ex: Linguiça bem assada, mandioca extra...'
-        }
-      }
-    },
-    {
-      id: 4,
-      name: 'Costelinha de Porco',
-      category: 'Churrasco',
-      price: 14.00,
-      type: 'food',
-      iconName: 'meat',
-      options: {
-        feijao: {
-          title: 'Feijão',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Feijão de caldo', value: 'feijaoCaldo' },
-            { label: 'Feijão tropeiro', value: 'feijaoTropeiro' }
-          ]
-        },
-        acompanhamentos: {
-          title: 'Acompanhamentos',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Banana frita', value: 'bananaFrita' },
-            { label: 'Mandioca cozida', value: 'mandiocaCozida' },
-            { label: 'Mandioca frita', value: 'mandiocaFrita' }
-          ]
-        },
-        pontoCarne: {
-          title: 'Ponto da Carne',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Selada', value: 'selada' },
-            { label: 'Mal passada', value: 'malPassada' },
-            { label: 'Ao ponto', value: 'aoPonto' },
-            { label: 'Ao ponto para bem', value: 'aoPontoBem' },
-            { label: 'Bem passado', value: 'bemPassado' },
-            { label: 'Indiferente', value: 'indiferente' }
-          ]
-        },
-        salada: {
-          title: 'Salada',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Salada mista', value: 'saladaMista' },
-            { label: 'Vinagrete', value: 'vinagrete' },
-            { label: 'Não quero salada', value: 'semSalada' }
-          ]
-        },
-        observacoes: {
-          title: 'Observações para Cozinha',
-          type: 'textarea',
-          placeholder: 'Ex: Costelinha bem assada, banana extra...'
-        }
-      }
-    },
-    {
-      id: 5,
-      name: 'Peito de Frango Grelhado',
-      category: 'Churrasco',
-      price: 12.00,
-      type: 'food',
-      iconName: 'meat',
-      options: {
-        feijao: {
-          title: 'Feijão',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Feijão de caldo', value: 'feijaoCaldo' },
-            { label: 'Feijão tropeiro', value: 'feijaoTropeiro' }
-          ]
-        },
-        acompanhamentos: {
-          title: 'Acompanhamentos',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Banana frita', value: 'bananaFrita' },
-            { label: 'Mandioca cozida', value: 'mandiocaCozida' },
-            { label: 'Mandioca frita', value: 'mandiocaFrita' }
-          ]
-        },
-        pontoCarne: {
-          title: 'Ponto da Carne',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Selada', value: 'selada' },
-            { label: 'Mal passada', value: 'malPassada' },
-            { label: 'Ao ponto', value: 'aoPonto' },
-            { label: 'Ao ponto para bem', value: 'aoPontoBem' },
-            { label: 'Bem passado', value: 'bemPassado' },
-            { label: 'Indiferente', value: 'indiferente' }
-          ]
-        },
-        salada: {
-          title: 'Salada',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Salada mista', value: 'saladaMista' },
-            { label: 'Vinagrete', value: 'vinagrete' },
-            { label: 'Não quero salada', value: 'semSalada' }
-          ]
-        },
-        observacoes: {
-          title: 'Observações para Cozinha',
-          type: 'textarea',
-          placeholder: 'Ex: Frango bem passado, sem salada...'
-        }
-      }
-    },
-    {
-      id: 26,
-      name: 'Açaí Pequeno',
-      category: 'Sobremesas',
-      price: 4.50,
-      type: 'dessert',
-      iconName: 'acai',
-      options: {
-        tamanho: {
-          title: 'Tamanho',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Pequeno (300ml)', value: 'pequeno' },
-            { label: 'Grande (500ml) +€2.00', value: 'grande', price: 2.00 }
-          ]
-        },
-        base: {
-          title: 'Base',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Açaí puro', value: 'puro' },
-            { label: 'Açaí com banana', value: 'banana' }
-          ]
-        },
-        acompanhamentos: {
-          title: 'Acompanhamentos',
-          required: false,
-          type: 'checkbox',
-          items: [ // Removido o max: 3
-            { label: 'Granola', value: 'granola' },
-            { label: 'Leite condensado', value: 'leite_condensado' },
-            { label: 'Leite em pó', value: 'leite_po' },
-            { label: 'Paçoca', value: 'pacoca' },
-            { label: 'Morango', value: 'morango' },
-            { label: 'Banana', value: 'banana' }
-          ]
-        },
-        observacoes: {
-          title: 'Observações',
-          type: 'textarea',
-          placeholder: 'Ex: Mais granola, menos leite condensado...'
-        }
-      }
-    },
-    {
-      id: 27,
-      name: 'Açaí Grande',
-      category: 'Sobremesas',
-      price: 6.50,
-      type: 'dessert',
-      iconName: 'acai',
-      options: {
-        base: {
-          title: 'Base',
-          required: true,
-          type: 'radio',
-          items: [
-            { label: 'Açaí puro', value: 'puro' },
-            { label: 'Açaí com banana', value: 'banana' }
-          ]
-        },
-        acompanhamentos: {
-          title: 'Acompanhamentos (Escolha até 5)',
-          required: false,
-          type: 'checkbox',
-          max: 5,
-          items: [
-            { label: 'Granola', value: 'granola' },
-            { label: 'Leite condensado', value: 'leite_condensado' },
-            { label: 'Leite em pó', value: 'leite_po' },
-            { label: 'Paçoca', value: 'pacoca' },
-            { label: 'Morango', value: 'morango' },
-            { label: 'Banana', value: 'banana' },
-            { label: 'Nutella +€1.50', value: 'nutella', price: 1.50 }
-          ]
-        },
-        observacoes: {
-          title: 'Observações',
-          type: 'textarea',
-          placeholder: 'Ex: Mais granola, menos leite condensado...'
-        }
-      }
-    },
-    { id: 6, name: 'X-Salada', price: 6.90, category: 'Burguers', type: 'food', iconName: 'burger' },
-    { id: 7, name: 'X-Bacon', price: 7.90, category: 'Burguers', type: 'food', iconName: 'burger' },
-    { id: 8, name: 'X-Frango', price: 7.50, category: 'Burguers', type: 'food', iconName: 'burger' },
-    { id: 9, name: 'X-Especial', price: 8.90, category: 'Burguers', type: 'food', iconName: 'burger' },
-    { id: 10, name: 'X-Tudo', price: 9.90, category: 'Burguers', type: 'food', iconName: 'burger' },
-    { id: 11, name: 'Porção de Arroz', price: 3.00, category: 'Porções', type: 'food', iconName: 'rice' },
-    { id: 12, name: 'Queijo Coalho', price: 5.50, category: 'Porções', type: 'food', iconName: 'cheese' },
-    { id: 13, name: 'Torresmo', price: 4.50, category: 'Porções', type: 'food', iconName: 'pork' },
-    { id: 14, name: 'Porção de Mandioca', price: 4.00, category: 'Porções', type: 'food', iconName: 'cassava' },
-    { id: 15, name: 'Porção de Batata Frita', price: 4.00, category: 'Porções', type: 'food', iconName: 'fries' },
-    { id: 16, name: 'Porção de Carnes', price: 10.00, category: 'Porções', type: 'food', iconName: 'meat' },
-    { id: 17, name: 'Coca-Cola', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
-    { id: 18, name: 'Coca-Cola Zero', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
-    { id: 19, name: '7Up', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
-    { id: 20, name: 'Fanta Laranja', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
-    { id: 21, name: 'Guaraná Antarctica', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'soda' },
-    { id: 22, name: 'Ice Tea de Manga', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'tea' },
-    { id: 23, name: 'Água sem gás 500ml', price: 1.00, category: 'Bebidas', type: 'drink', iconName: 'water' },
-    { id: 24, name: 'Água com gás Castelo (pequena)', price: 1.50, category: 'Bebidas', type: 'drink', iconName: 'water' },
-    { id: 25, name: 'Água com gás Pedras (pequena)', price: 1.50, category: 'Bebidas', type: 'drink', iconName: 'water' },
-    { id: 28, name: 'Garrafa de Vinho', price: 13.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 29, name: 'Garrafa Vinho Tinto', price: 10.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 30, name: 'Caneca de Cerveja', price: 3.50, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'beer' },
-    { id: 31, name: 'Imperial', price: 2.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'beer' },
-    { id: 32, name: 'Jarra de Vinho', price: 10.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 33, name: 'Meia Jarra de Vinho', price: 6.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 34, name: 'Sagres', price: 2.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'beer' },
-    { id: 35, name: 'Sangria', price: 15.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 36, name: 'Sangria 0.5L', price: 8.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 37, name: 'Sangria Taça', price: 5.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 38, name: 'Summersby', price: 2.50, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'cider' },
-    { id: 39, name: 'Super Bock', price: 2.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'beer' },
-    { id: 40, name: 'Taça de Vinho', price: 3.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 41, name: 'Cachaça', price: 1.50, category: 'Cafés & Licores', type: 'drink', iconName: 'shot' },
-    { id: 42, name: 'Café', price: 1.00, category: 'Cafés & Licores', type: 'drink', iconName: 'coffee' },
-    { id: 43, name: 'Galão', price: 1.50, category: 'Cafés & Licores', type: 'drink', iconName: 'coffee' },
-    { id: 44, name: 'Constantino', price: 2.00, category: 'Cafés & Licores', type: 'drink', iconName: 'liqueur' },
-    { id: 45, name: 'Compal', price: 2.00, category: 'Bebidas', type: 'drink', iconName: 'water' },
-    { id: 46, name: 'Esporão Monte Velho', price: 15.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 47, name: 'Grão Vasco', price: 12.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 48, name: 'Caipirinha', price: 6.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 49, name: 'Panaché', price: 4.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 50, name: 'Papa Figos', price: 15.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 51, name: 'Vinho da Casa', price: 10.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 52, name: 'Sossego', price: 15.00, category: 'Vinhos & Cervejas', type: 'drink', iconName: 'wine' },
-    { id: 53, name: 'Sumo Natural', price: 3.00, category: 'Bebidas', type: 'drink', iconName: 'water' },
-    { id: 54, name: 'Fogão', price: 15.90, category: 'Churrasco', type: 'food', iconName: 'meat' },
-    { id: 55, name: 'Fogão Kids', price: 8.00, category: 'Churrasco', type: 'food', iconName: 'meat' },
-  ];
-
-const categories = ['all', ...new Set(menuItems?.map(item => item?.category) || [])];
-const navigate = useNavigate();
-
-const showNotification = (message, type = 'success') => {
-  setNotification({ message, type });
-  setTimeout(() => setNotification(null), 3000);
-};
 
   const toggleItemAvailability = async (productId) => {
     try {
@@ -564,30 +122,106 @@ const showNotification = (message, type = 'success') => {
 
 const printKitchenOrder = async (items, orderId, customerInfo) => {
   try {
-    let content = '\x1B\x40'; // Reset printer
-    content += '\x1B\x21\x00'; // Default font
+    let content = '\x1B\x40'; // Reset da impressora
+    content += '\x1B\x21\x00'; // Fonte padrão
 
+    // Centraliza o texto em 32 caracteres de largura
     const centerText = (text) => {
       const lineWidth = 32;
       const spaces = Math.max(0, Math.floor((lineWidth - text.length) / 2));
       return ' '.repeat(spaces) + text;
     };
 
+    // Sanitiza texto e mantém quebras de linha
     const sanitizeText = (text) => {
-      return (text || '')
-        .toString()
+      if (!text) return '';
+      if (typeof text !== 'string') text = text.toString();
+
+      return text
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remove accents
-        .replace(/ç/g, 'c')              // Replace ç
-        .replace(/\^/g, '')              // Remove ^
-        .replace(/[€£¥$¢]/g, '')         // Remove currency symbols
-        .replace(/[^\x20-\x7E]/g, '')    // Remove other non-printable ASCII
+        .replace(/[\u0300-\u036f]/g, '') // remove acentos
+        .replace(/ç/g, 'c')
+        .replace(/\^/g, '')
+        .replace(/[€£¥$¢]/g, '')
+        .replace(/[^\x20-\x7E\n]/g, '') // permite quebra de linha \n
         .trim();
     };
 
-    const formatPhone = (phone) => {
-      if (!phone) return '';
-      return phone.replace(/[^0-9]/g, '').replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
+    // Traduções (exemplo, adicione conforme seu código original)
+    const optionTranslations = {
+      point: "Ponto da Carne",
+      size: "Tamanho",
+      sideDishes: "Acompanhamentos",
+      salad: "Salada",
+      beans: "Feijão",
+      meats: "Carnes",
+      toppings: "Coberturas",
+      drinks: "Bebida",
+      dessert: "Sobremesa",
+      accompaniments: "Acompanhamentos",
+      cooking: "Ponto da Carne",
+      beverage: "Bebida",
+      meatsSelection: "Seleção de Carnes",
+      toppingsSelection: "Seleção de Coberturas",
+      customToppings: "Coberturas Personalizadas"
+    };
+
+    const valueTranslations = {
+      rare: "Mal passada",
+      medium: "Ao ponto",
+      wellDone: "Bem passada",
+      small: "Pequeno",
+      mediumSize: "Médio",
+      large: "Grande",
+      none: "Sem",
+      extra: "Extra",
+      complete: "Completo",
+      pure: "Puro",
+      custom: "Personalizado",
+      broth: "Com caldo",
+      mixed: "Mista",
+      cassavaCooked: "Mandioca cozida",
+      cassavaFried: "Mandioca frita",
+      farofa: "Farofa",
+      vinagrete: "Vinagrete",
+      rice: "Arroz",
+      fries: "Batata frita",
+      water: "Água",
+      soda: "Refrigerante",
+      juice: "Suco",
+      coraçãoDeFrango: "Coração de frango",
+      costelinhaDePorco: "Costelinha de porco",
+      filéDeFrango: "Filé de frango",
+      linguiça: "Linguiça",
+      maminha: "Maminha",
+      torresmo: "Torresmo",
+      onlyTopSirloin: "Só Maminha (+€1,00)",
+      granola: "Granola",
+      leiteCondensado: "Leite condensado",
+      banana: "Banana",
+      morango: "Morango",
+      leiteNinho: "Leite Ninho"
+    };
+
+    // Função recursiva para converter qualquer valor em texto legível, evitando [object Object]
+    const stringifyOptionValue = (val) => {
+      if (val === null || val === undefined) return '';
+
+      if (Array.isArray(val)) {
+        return val.map(stringifyOptionValue).join(', ');
+      } 
+
+      if (typeof val === 'object') {
+        return Object.entries(val)
+          .map(([k, v]) => {
+            const key = optionTranslations[k] || k;
+            const value = valueTranslations[v] || stringifyOptionValue(v);
+            return `${key}: ${value}`;
+          })
+          .join(', ');
+      }
+
+      return valueTranslations[val] || val;
     };
 
     // Cabeçalho
@@ -597,12 +231,11 @@ const printKitchenOrder = async (items, orderId, customerInfo) => {
     content += `${centerText(new Date().toLocaleString('pt-BR'))}\n\n`;
 
     // Dados do cliente
-    content += '\x1B\x21\x10'; // Bold
+    content += '\x1B\x21\x10'; // Negrito
     content += `DADOS DO CLIENTE:\n`;
     content += '\x1B\x21\x00'; // Normal
-
     content += `NOME: ${sanitizeText(customerInfo.customerName) || 'Nao informado'}\n`;
-    content += `TEL: ${formatPhone(customerInfo.customerPhone) || 'Nao informado'}\n`;
+    content += `TEL: ${sanitizeText(customerInfo.customerPhone) || 'Nao informado'}\n`;
     content += `TIPO: ${customerInfo.deliveryAddress ? 'ENTREGA' : 'BALCAO'}\n`;
 
     if (customerInfo.deliveryAddress) {
@@ -614,113 +247,52 @@ const printKitchenOrder = async (items, orderId, customerInfo) => {
     content += `OBS: ${sanitizeText(customerInfo.notes) || 'Nenhuma'}\n`;
     content += `-------------------------------\n\n`;
 
-    // Categorias
-    const allCategories = ['Bebidas', 'Porcoes', 'Churrasco', 'Sobremesas', 'Outros'];
-    const categorizedItems = Object.fromEntries(allCategories.map(cat => [cat, []]));
-
-    items.forEach(item => {
-      const category = allCategories.includes(item.category) ? item.category : 'Outros';
-      categorizedItems[category].push(item);
-    });
-
-    // Itens do pedido
-    content += '\x1B\x21\x10'; // Bold
+    // Itens
+    content += '\x1B\x21\x10'; // Negrito
     content += `ITENS DO PEDIDO:\n\n`;
     content += '\x1B\x21\x00'; // Normal
 
-    Object.entries(categorizedItems).forEach(([category, items]) => {
-      if (items.length === 0) return;
+    items.forEach((item, idx) => {
+      content += `${item.quantity}x ${sanitizeText(item.name).toUpperCase()}\n`;
 
-      content += '\x1B\x21\x10'; // Bold
-      content += `${category.toUpperCase()}:\n`;
-      content += '\x1B\x21\x00'; // Normal
+      if (item.options && Object.keys(item.options).length > 0) {
+        content += `   PERSONALIZACOES:\n`;
+        for (const [optKey, optVal] of Object.entries(item.options)) {
+          if (!optVal || (Array.isArray(optVal) && optVal.length === 0)) continue;
 
-      items.forEach((item, index) => {
-        const itemNameMap = {
-          'water': 'Agua Mineral',
-          'fries': 'Mandioca Frita',
-          'fries': 'Mandioca cozida'
-        };
-        const displayName = itemNameMap[item.name.toLowerCase()] || item.name;
+          const optionName = optionTranslations[optKey] || optKey;
+          const optionValue = stringifyOptionValue(optVal);
 
-        content += `${item.quantity}x ${sanitizeText(displayName).toUpperCase()}\n`;
+          const optionValueSanitized = sanitizeText(optionValue).replace(/, /g, '\n      > ');
 
-        if (item.options && Object.keys(item.options).length > 0) {
-          content += `   PERSONALIZACOES:\n`;
-
-          Object.entries(item.options).forEach(([optionName, value]) => {
-            if (!value || (Array.isArray(value) && value.length === 0)) return;
-
-            const translatedOption = {
-              'point': 'Ponto da Carne',
-              'size': 'Tamanho',
-              'sideDishes': 'Acompanhamentos',
-              'salad': 'Salada',
-              'beans': 'Feijao',
-              'meats': 'Carnes',
-              'toppings': 'Coberturas',
-              'drinks': 'Bebida',
-              'dessert': 'Sobremesa'
-            }[optionName] || optionName;
-
-            const translateValue = (val) => {
-              const translations = {
-                'rare': 'Mal passada',
-                'medium': 'Ao ponto',
-                'wellDone': 'Bem passada',
-                'broth': 'Caldo',
-                'mixed': 'Mista',
-                'complete': 'Completa',
-                'pure': 'Puro',
-                'custom': 'Personalizado',
-                'small': 'Pequeno',
-                'medium': 'Medio',
-                'large': 'Grande',
-                'none': 'Sem',
-                'extra': 'Extra',
-                'cassavaCooked':'Mandioca cozida',
-                'cassavaFried':'Mandioca frita',
-              };
-              return translations[val] || val;
-            };
-
-            const displayValue = Array.isArray(value)
-              ? value.map(v => `> ${translateValue(v)}`).join('\n      ')
-              : `> ${translateValue(value)}`;
-
-            content += `   ${sanitizeText(translatedOption)}:\n`;
-            content += `      ${sanitizeText(displayValue)}\n`;
-          });
+          content += `   ${optionName}:\n      > ${optionValueSanitized}\n`;
         }
+      }
 
-        if (item.notes || item.kitchenNotes) {
-          const notes = sanitizeText(item.notes || item.kitchenNotes);
-          content += `   OBS: ${notes}\n`;
-        }
+      if (item.notes || item.kitchenNotes) {
+        content += `   OBS: ${sanitizeText(item.notes || item.kitchenNotes)}\n`;
+      }
 
-        if (index < items.length - 1) content += '\n';
-      });
-
-      content += '\n';
+      if (idx < items.length - 1) content += '\n';
     });
 
-    // Rodape
+    // Rodapé
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     content += `-------------------------------\n`;
     content += `${centerText("TOTAL: " + total.toFixed(2))}\n`;
     content += `${centerText("OBRIGADO PELA PREFERENCIA")}\n`;
     content += `${centerText("-------------------------------")}\n`;
 
-    // Cortar papel
+    // Corte do papel
     content += '\n\n\n\n\n';
-    content += '\x1D\x56\x00'; // Corte total
+    content += '\x1D\x56\x00';
 
     const printSuccess = await sendToPrinter(content);
 
     if (!printSuccess) {
       const fallbackText = content
-        .replace(/[\x1B\x1D][^\n]*?/g, '') // Remove comandos ESC/POS
-        .replace(/[^\x20-\x7E\n]/g, '');   // Remove caracteres especiais
+        .replace(/[\x1B\x1D][^\n]*?/g, '')
+        .replace(/[^\x20-\x7E\n]/g, '');
 
       alert(`FALHA NA IMPRESSAO! Copie manualmente:\n\n${fallbackText}`);
       return false;
@@ -735,14 +307,12 @@ const printKitchenOrder = async (items, orderId, customerInfo) => {
   }
 };
 
-
-
 const formatPostalCode = (postalCode) => {
   if (!postalCode) return '';
   const cleaned = postalCode.replace(/\D/g, '');
   return cleaned.replace(/(\d{5})(\d{3})/, '$1-$2');
 };
-  
+
 // Função para centralizar texto
 const centerText = (text, width = 32) => {
   const padding = Math.max(0, Math.floor((width - text.length) / 2));
@@ -780,165 +350,148 @@ const sanitizeText = (str) => {
 };
 
 
-const printBarOrder = async (items, tableNumber) => {
-  try {
-    // Simulação da lógica de impressão
-    console.log(`Imprimindo itens do bar para a mesa ${tableNumber}:`, items);
+  const printBarOrder = async (items, tableNumber) => {
+    try {
+      // Simulação da lógica de impressão
+      console.log(`Imprimindo itens do bar para a mesa ${tableNumber}:`, items);
 
-    // Aqui entraria a integração com a impressora ou sistema de impressão
-    // Ex: await printer.print(drinkItems)
+      // Aqui entraria a integração com a impressora ou sistema de impressão
+      // Ex: await printer.print(drinkItems)
 
-    return true; // Retorna true se a impressão for bem-sucedida
-  } catch (error) {
-    console.error('Erro ao imprimir itens do bar:', error);
-    return false;
-  }
-};
-
-const sendToPrinter = async (content) => {
-  try {
-    console.log('Tentando imprimir via Bluetooth...');
-    
-    if (!navigator.bluetooth) {
-      throw new Error('Bluetooth não suportado neste navegador');
+      return true; // Retorna true se a impressão for bem-sucedida
+    } catch (error) {
+      console.error('Erro ao imprimir itens do bar:', error);
+      return false;
     }
+  };
 
-    const device = await navigator.bluetooth.requestDevice({
-      filters: [{ name: "BlueTooth Printer" }],
-      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-    });
-
-    console.log('Conectando à impressora:', device.name);
-    
-    const server = await device.gatt.connect();
-    const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-    const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-
-    console.log('Enviando dados para impressão...');
-    
-    const chunkSize = 100;
-    const encoder = new TextEncoder();
-    
-    for (let i = 0; i < content.length; i += chunkSize) {
-      const chunk = content.slice(i, i + chunkSize);
-      await characteristic.writeValue(encoder.encode(chunk));
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-
-    // Comando para cortar o papel
-    const cutCommand = new Uint8Array([0x1D, 0x56, 0x41, 0x05]);
-    await characteristic.writeValue(cutCommand);
-
-    console.log('Impressão concluída com sucesso!');
-    return true;
-    
-  } catch (error) {
-    console.error('Erro na impressão:', error);
-    
-    const printableContent = content
-      .replace(/\x1B\[[0-9;]*[mGKH]/g, '')
-      .replace(/\x1B\x40/g, '')
-      .replace(/\x1B\x74\x10/g, '')
-      .replace(/\x1B\x21\x01/g, '');
-    
-    alert(`ERRO DE IMPRESSÃO\n\nCopie e cole manualmente na impressora:\n\n${printableContent}`);
-    
-    return false;
-  }
-};
-
-// Função auxiliar para preparar o conteúdo da impressão
-const preparePrintContent = (text) => {
-  // Primeiro normaliza os caracteres (NFD = decomposição canônica)
-  let normalized = text.normalize('NFD');
-  
-  // Remove caracteres de controle e mantém apenas imprimíveis
-  return normalized
-    .replace(/[\u0300-\u036f]/g, '')  // Remove diacríticos (acentos)
-    .replace(/[^\x20-\x7E]/g, '')     // Mantém apenas ASCII básico
-    .replace(/\r\n/g, '\n')           // Normaliza quebras de linha
-    .replace(/\t/g, '    ');          // Substitui tabs por espaços
-};
-
-const handleSendToKitchen = async (orderId) => {
-  try {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-
-    // Prepara os dados do cliente incluindo o postalCode
-    const customerInfo = {
-      customerName: order.customerName,
-      customerPhone: order.customerPhone,
-      deliveryAddress: order.deliveryAddress,
-      postalCode: order.postalCode, // GARANTE QUE O CEP ESTÁ SENDO ENVIADO
-      paymentMethod: order.paymentMethod,
-      notes: order.notes
-    };
-
-    // Chama a função de impressão com todos os dados
-    const printSuccess = await printKitchenOrder(
-      Object.values(order.items || {}),
-      order.id,
-      customerInfo
-    );
-
-    if (printSuccess) {
-      await updateOrderStatus(orderId, 'preparing');
-      if (order.customerPhone) {
-        sendWhatsAppNotification(order, 'preparing');
+  const sendToPrinter = async (content) => {
+    try {
+      console.log('Tentando imprimir via Bluetooth...');
+      
+      if (!navigator.bluetooth) {
+        throw new Error('Bluetooth não suportado neste navegador');
       }
-    }
-  } catch (error) {
-    console.error('Falha ao enviar para cozinha:', error);
-    showNotification('Erro ao enviar para cozinha', 'error');
-  }
-};
 
-// Atualize a função updateOrderStatus para processar corretamente as opções
-const updateOrderStatus = useCallback(async (orderId, status) => {
-  try {
-    const orderRef = ref(database, `orders/${orderId}`);
-    const order = orders.find(o => o.id === orderId);
-    
-    if (!order) {
-      showNotification('Pedido não encontrado', 'error');
-      return;
-    }
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ name: "BlueTooth Printer" }],
+        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+      });
 
-    // Atualiza o status e o timestamp
-    await update(orderRef, { 
-      status,
-      updatedAt: new Date().toISOString()
-    });
+      console.log('Conectando à impressora:', device.name);
+      
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+      const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
 
-    // Notificação de sucesso
-    let statusMessage = '';
-    switch(status) {
-      case 'preparing': 
-        statusMessage = 'Pedido enviado para cozinha';
-        break;
-      case 'ready': 
-        statusMessage = 'Pedido marcado como pronto';
-        break;
-      case 'delivered': 
-        statusMessage = 'Pedido marcado como entregue';
-        break;
-    }
-    
-    if (statusMessage) {
-      showNotification(statusMessage);
-    }
+      console.log('Enviando dados para impressão...');
+      
+      const chunkSize = 100;
+      const encoder = new TextEncoder();
+      
+      for (let i = 0; i < content.length; i += chunkSize) {
+        const chunk = content.slice(i, i + chunkSize);
+        await characteristic.writeValue(encoder.encode(chunk));
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
 
-    // Se for marcado como pronto e tiver telefone, enviar WhatsApp
-    if (status === 'ready' && order.customerPhone) {
-      sendWhatsAppNotification(order, status);
-    }
+      // Comando para cortar o papel
+      const cutCommand = new Uint8Array([0x1D, 0x56, 0x41, 0x05]);
+      await characteristic.writeValue(cutCommand);
 
-  } catch (error) {
-    console.error('Erro ao atualizar pedido:', error);
-    showNotification(`Erro ao atualizar pedido: ${error.message}`, 'error');
-  }
-}, [orders]);
+      console.log('Impressão concluída com sucesso!');
+      return true;
+      
+    } catch (error) {
+      console.error('Erro na impressão:', error);
+      
+      const printableContent = content
+        .replace(/\x1B\[[0-9;]*[mGKH]/g, '')
+        .replace(/\x1B\x40/g, '')
+        .replace(/\x1B\x74\x10/g, '')
+        .replace(/\x1B\x21\x01/g, '');
+      
+      alert(`ERRO DE IMPRESSÃO\n\nCopie e cole manualmente na impressora:\n\n${printableContent}`);
+      
+      return false;
+    }
+  };
+
+  const handleSendToKitchen = async (orderId) => {
+    try {
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      // Prepara os dados do cliente incluindo o postalCode
+      const customerInfo = {
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        deliveryAddress: order.deliveryAddress,
+        postalCode: order.postalCode,
+        paymentMethod: order.paymentMethod,
+        notes: order.notes
+      };
+
+      // Chama a função de impressão com todos os dados
+      const printSuccess = await printKitchenOrder(
+        Object.values(order.items || {}),
+        order.id,
+        customerInfo
+      );
+
+      if (printSuccess) {
+        await updateOrderStatus(orderId, 'preparing');
+        if (order.customerPhone) {
+          sendWhatsAppNotification(order, 'preparing');
+        }
+      }
+    } catch (error) {
+      console.error('Falha ao enviar para cozinha:', error);
+      showNotification('Erro ao enviar para cozinha', 'error');
+    }
+  };
+
+  const updateOrderStatus = useCallback(async (orderId, status) => {
+    try {
+      const orderRef = ref(database, `orders/${orderId}`);
+      const order = orders.find(o => o.id === orderId);
+      
+      if (!order) {
+        showNotification('Pedido não encontrado', 'error');
+        return;
+      }
+
+      await update(orderRef, { 
+        status,
+        updatedAt: new Date().toISOString()
+      });
+
+      let statusMessage = '';
+      switch(status) {
+        case 'preparing': 
+          statusMessage = 'Pedido enviado para cozinha';
+          break;
+        case 'ready': 
+          statusMessage = 'Pedido marcado como pronto';
+          break;
+        case 'delivered': 
+          statusMessage = 'Pedido marcado como entregue';
+          break;
+      }
+      
+      if (statusMessage) {
+        showNotification(statusMessage);
+      }
+
+      if (status === 'ready' && order.customerPhone) {
+        sendWhatsAppNotification(order, status);
+      }
+
+    } catch (error) {
+      console.error('Erro ao atualizar pedido:', error);
+      showNotification(`Erro ao atualizar pedido: ${error.message}`, 'error');
+    }
+  }, [orders]);
 
   const handleLogout = async () => {
     try {
@@ -1067,13 +620,11 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
           printed: false,
           options: item.options || null,
           notes: item.kitchenNotes || null,
-          source: 'table' // Adiciona identificação de origem
+          source: 'table'
         };
       }
       
       await update(ref(database), updates);
-      
-      // REMOVIDA A CHAMADA PARA IMPRESSORA PARA PEDIDOS DE MESA
       
       showNotification(`${cartItems.length} itens adicionados à mesa #${selectedTable.number}`);
       setCartItems([]);
@@ -1153,7 +704,6 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
   const hasUnprintedDrinkItems = useMemo(() => getUnprintedDrinkItems().length > 0, [getUnprintedDrinkItems]);
   
   const confirmPrintKitchenItems = useCallback(async (foodItems) => {
-    // Adiciona verificação de origem
     if (selectedTable.source === 'table') {
       showNotification('Impressão de pedidos de mesa temporariamente desativada', 'info');
       return;
@@ -1276,9 +826,9 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
       case 'juice': return <GiSodaCan />;
       case 'risotto': return <GiMeal />;
       case 'steak': return <GiMeal />;
-      case 'water': return <FaGlassWhiskey />; // Água
-      case 'soda': return <GiSodaCan />;      // Refrigerante
-      case 'juice': return <GiSodaCan />;     // Suco
+      case 'water': return <FaGlassWhiskey />;
+      case 'soda': return <GiSodaCan />;
+      case 'juice': return <GiSodaCan />;
       default: return <IoFastFoodOutline />;
     }
   };
@@ -1300,39 +850,93 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
       default: return 'Status desconhecido';
     }
   };
+// Função para formatar as opções com traduções fixas para PT
+const formatAdminOptions = (options) => {
+  if (!options) return "";
 
-  const formatItemOptions = (options) => {
-    if (!options) return '';
-    
-    return Object.entries(options)
-      .map(([key, value]) => {
-        if (!value || (Array.isArray(value) && value.length === 0)) return '';
-        
-        // Exibe diretamente os valores em português
-        const formattedValue = Array.isArray(value) 
-          ? value.join(', ')
-          : String(value);
-        
-        return `${key}: ${formattedValue}`;
-      })
-      .filter(Boolean)
-      .join('; ');
+  const translations = {
+    options: {
+      point: "Ponto da Carne",
+      size: "Tamanho",
+      sideDishes: "Acompanhamentos",
+      salad: "Salada",
+      beans: "Feijão",
+      meats: "Carnes",
+      toppings: "Coberturas",
+      drinks: "Bebida",
+      dessert: "Sobremesa",
+      accompaniments: "Acompanhamentos",
+      cooking: "Ponto da Carne",
+      beverage: "Bebida",
+      meatsSelection: "Seleção de Carnes",
+      toppingsSelection: "Seleção de Coberturas",
+      customToppings: "Coberturas Personalizadas"
+    },
+    values: {
+      rare: "Mal passada",
+      medium: "Ao ponto",
+      wellDone: "Bem passada",
+      small: "Pequeno",
+      mediumSize: "Médio",
+      large: "Grande",
+      none: "Sem",
+      extra: "Extra",
+      complete: "Completo",
+      pure: "Puro",
+      custom: "Personalizado",
+      broth: "Com caldo",
+      mixed: "Mista",
+      cassavaCooked: "Mandioca cozida",
+      cassavaFried: "Mandioca frita",
+      farofa: "Farofa",
+      vinagrete: "Vinagrete",
+      rice: "Arroz",
+      fries: "Batata frita",
+      water: "Água",
+      soda: "Refrigerante",
+      juice: "Suco",
+
+      // Carnes
+      "coraçãoDeFrango": "Coração de frango",
+      "costelinhaDePorco": "Costelinha de porco",
+      "filéDeFrango": "Filé de frango",
+      "linguiça": "Linguiça",
+      "maminha": "Maminha",
+      "torresmo": "Torresmo",
+      "onlyTopSirloin": "Só Maminha (+€1,00)",
+
+      // Açaí
+      "granola": "Granola",
+      "leiteCondensado": "Leite condensado",
+      "banana": "Banana",
+      "morango": "Morango",
+      "leiteNinho": "Leite Ninho"
+    }
   };
-  
-  // Exemplo de uso no componente de pedidos:
-  {orders.items && Object.entries(orders.items).map(([key, item]) => (
-    <li key={key} className="flex justify-between text-sm">
-      <span>
-        {item.quantity}x {item.name}
-        {item.options && (
-          <div className="text-xs text-gray-600 ml-2">
-            {formatItemOptions(item.options)}
-          </div>
-        )}
-      </span>
-      <span>€ {(item.price * item.quantity).toFixed(2)}</span>
-    </li>
-  ))}
+
+  // Traduz a chave da opção (ex: 'meats' => 'Carnes')
+  const translateOption = (key) => translations.options[key] || key;
+
+  // Traduz o valor da opção (ex: 'maminha' => 'Maminha'), suporta array de valores
+  const translateValue = (val) => {
+    if (Array.isArray(val)) {
+      return val.map(v => translations.values[v] || v).join(", ");
+    }
+    return translations.values[val] || val;
+  };
+
+  return Object.entries(options)
+    .map(([key, val]) => `${translateOption(key)}: ${translateValue(val)}`)
+    .join("\n");
+};
+
+// Função que formata o item inteiro (nome, preço, opções)
+const formatAdminItem = (item) => {
+  return `1x ${item.name}
+€${item.price.toFixed(2)}
+${formatAdminOptions(item.options)}`;
+};
+
 
   const filteredOrders = orders.filter(order => {
     if (activeSection !== 'online') return false;
@@ -1393,44 +997,80 @@ const updateOrderStatus = useCallback(async (orderId, status) => {
     }
   };
 
-// Função para calcular o total incluindo a taxa de entrega
-const calculateTotal = (order) => {
-  if (!order || !order.items) return 0;
-  
-  // Calcula subtotal somando todos os itens
-  const subtotal = Object.values(order.items).reduce(
-    (sum, item) => sum + (item.price * (item.quantity || 1)), 
-    0
-  );
-  
-  // Adiciona taxa de entrega se for pedido de entrega
-  const deliveryFee = order.deliveryAddress ? (order.deliveryFee || (order.isOver5km ? 3.5 : 2.0)) : 0;
-  
-  return subtotal + deliveryFee;
+  // Função ultra-robusta para calcular totais
+const getOrderTotal = (order) => {
+  try {
+    if (!order) return 0;
+    
+    // Caso o pedido já tenha um total calculado e válido
+    if (typeof order.total === 'number' && !isNaN(order.total)) {
+      return order.total;
+    }
+    
+    // Se for string, tenta converter para número
+    if (typeof order.total === 'string') {
+      const parsedTotal = parseFloat(order.total);
+      if (!isNaN(parsedTotal)) {
+        return parsedTotal;
+      }
+    }
+
+    // Calcula subtotal dos itens com verificações robustas
+    let subtotal = 0;
+    if (order.items && typeof order.items === 'object') {
+      Object.values(order.items).forEach(item => {
+        if (!item) return;
+        
+        // Garante que price seja um número válido
+        const price = typeof item.price === 'number' ? item.price : 
+                     typeof item.price === 'string' ? parseFloat(item.price) : 0;
+        
+        // Garante que quantity seja um número válido (mínimo 1)
+        const quantity = typeof item.quantity === 'number' ? Math.max(1, item.quantity) :
+                         typeof item.quantity === 'string' ? Math.max(1, parseInt(item.quantity)) : 1;
+        
+        if (!isNaN(price) && !isNaN(quantity)) {
+          subtotal += price * quantity;
+        }
+      });
+    }
+
+    // Adiciona taxa de entrega se aplicável com verificações
+    let deliveryFee = 0;
+    if (order.deliveryAddress) {
+      if (typeof order.deliveryFee === 'number') {
+        deliveryFee = order.deliveryFee;
+      } else if (typeof order.deliveryFee === 'string') {
+        const parsedFee = parseFloat(order.deliveryFee);
+        deliveryFee = isNaN(parsedFee) ? (order.isOver5km ? 3.5 : 2.0) : parsedFee;
+      } else {
+        deliveryFee = order.isOver5km ? 3.5 : 2.0;
+      }
+    }
+
+    // Retorna o total garantindo que seja número
+    const total = subtotal + deliveryFee;
+    return typeof total === 'number' ? total : 0;
+    
+  } catch (error) {
+    console.error('Error calculating order total:', error);
+    return 0; // Fallback seguro
+  }
 };
 
-// Exemplo de uso na exibição de pedidos:
-{filteredOrders.map(order => (
-  <div key={order.id}>
-    {/* ... outros dados do pedido ... */}
-    <div className="total-section">
-      <span>Subtotal: € {Object.values(order.items || {}).reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</span>
-      {order.deliveryAddress && (
-        <span>Taxa de entrega: € 2.00</span>
-      )}
-      <span className="font-bold">
-        Total: € {calculateTotal(order).toFixed(2)}
-      </span>
-    </div>
-  </div>
-))}
+const total = getOrderTotal(order);
+ 
+  // Função 100% segura para formatar valores
+  const formatCurrency = (value) => {
+    const number = parseFloat(value) || 0;
+    return number.toLocaleString('pt-PT', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
 
-// E também nas mesas:
-{selectedTable && (
-  <div>
-    <span>Total: € {calculateTotal(selectedTable).toFixed(2)}</span>
-  </div>
-)}
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -1478,6 +1118,7 @@ const calculateTotal = (order) => {
     const ordersRef = ref(database, 'orders');
     const tablesRef = ref(database, 'tables');
     const unavailableItemsRef = ref(database, 'unavailableItems');
+    const menuItemsRef = ref(database, 'menuItems');
   
     const ordersListener = onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
@@ -1503,11 +1144,21 @@ const calculateTotal = (order) => {
       const items = Object.keys(data).filter(key => data[key] === true);
       setUnavailableItems(items);
     });
+
+    const menuItemsListener = onValue(menuItemsRef, (snapshot) => {
+      const data = snapshot.val();
+      const menuItemsArray = data ? Object.entries(data).map(([key, value]) => ({
+        id: key,
+        ...value
+      })) : [];
+      setMenuItems(menuItemsArray);
+    });
   
     return () => {
       off(ordersRef, ordersListener);
       off(tablesRef, tablesListener);
       off(unavailableItemsRef, unavailableItemsListener);
+      off(menuItemsRef, menuItemsListener);
     };
   }, []);
 
@@ -1573,6 +1224,14 @@ const calculateTotal = (order) => {
         return null;
     }
   };
+
+  const stats = useMemo(() => {
+    return {
+      pendingOrders: orders.filter(o => o.status === 'pending').length,
+      preparingOrders: orders.filter(o => o.status === 'preparing').length,
+      activeTables: tables.filter(t => t.status === 'open').length
+    };
+  }, [orders, tables]);
 
   return (
     <div 
@@ -1965,7 +1624,6 @@ const calculateTotal = (order) => {
                                   <p className="text-gray-800 truncate">
                                     {order.deliveryAddress}
                                   </p>
-                                  {/* LINHA ADICIONADA PARA MOSTRAR O CEP SEPARADAMENTE */}
                                   {order.postalCode && (
                                     <p className="text-gray-800 truncate">
                                       <span className="font-medium">Codigo Postal:</span> {order.postalCode}
@@ -1996,143 +1654,75 @@ const calculateTotal = (order) => {
                         <div className="mb-3 sm:mb-4">
                           <h4 className="font-medium text-gray-700 mb-2 text-sm sm:text-base">Itens:</h4>
                           <ul className="space-y-1 sm:space-y-2">
-                   
-                           {order.items && Object.entries(order.items).map(([key, item]) => {
-
-const formatOptionsForAdmin = (options) => {
-  if (!options) return null;
-
-  const optionTranslations = {
-    'point': 'Ponto da carne',
-    'size': 'Tamanho',
-    'sideDishes': 'Acompanhamentos',
-    'salad': 'Salada',
-    'beans': 'Feijão',
-    'meats': 'Carnes',
-    'toppings': 'Coberturas',
-    'drinks': 'Bebida',
-    'dessert': 'Sobremesa'
-  };
-
-  const valueTranslations = {
-    'rare': 'Mal passada',
-    'medium': 'Ao ponto',
-    'wellDone': 'Bem passada',
-    'small': 'Pequeno',
-    'medium': 'Médio',
-    'large': 'Grande',
-    'none': 'Sem',
-    'extra': 'Extra',
-    'complete': 'Completo',
-    'pure': 'Puro',
-    'custom': 'Personalizado'
-  };
-
-  return Object.entries(options).map(([key, value]) => {
-    const translatedKey = optionTranslations[key] || key;
-    
-    if (Array.isArray(value)) {
-      const translatedValues = value.map(v => valueTranslations[v] || v);
-      return `${translatedKey}: ${translatedValues.join(', ')}`;
-    } else if (typeof value === 'object') {
-      if (value.items) {
-        const selectedItems = value.items.filter(item => item.selected || item.default);
-        const translatedValues = selectedItems.map(item => valueTranslations[item.value] || item.label);
-        return `${translatedKey}: ${translatedValues.join(', ')}`;
-      }
-      return `${translatedKey}: ${valueTranslations[value.value] || value.value}`;
-    }
-    return `${translatedKey}: ${valueTranslations[value] || value}`;
-  }).filter(Boolean).join('; ');
-};
-
-
-{order.items && Object.entries(order.items).map(([key, item]) => (
-  <div key={key} className="mb-2">
-    <div className="flex justify-between">
-      <span className="font-medium">
-        {item.quantity}x {item.name}
-      </span>
-      <span>€{(item.price * item.quantity).toFixed(2)}</span>
-    </div>
-    {item.options && (
-      <div className="text-sm text-gray-600 ml-2 mt-1">
-        {formatOptionsForAdmin(item.options)}
-      </div>
-    )}
-    {item.notes && (
-      <div className="text-sm text-red-600 ml-2 mt-1">
-        <strong>Obs:</strong> {item.notes}
-      </div>
-    )}
-  </div>
-))}
-  return (
- <li key={key} className="flex justify-between text-sm sm:text-base">
-      <span className="truncate max-w-[70%]">
-        <span className="font-medium">{item.name}</span>
-        {item.options && (
-          <span className="text-xs text-gray-600 block ml-2">
-            {formatOptionsForAdmin(item.options)}
-          </span>
-        )}
-        {item.notes && (
-          <span className="text-xs text-red-600 ml-1 sm:ml-2">
-            (Obs: {item.notes})
-          </span>
-        )}
-      </span>
-      <span className="text-gray-700 whitespace-nowrap ml-2">
-        x{item.quantity} • € {(item.price * item.quantity).toFixed(2)}
-      </span>
-    </li>
-  );
-})}
-</ul>
+                            {order.items && Object.entries(order.items).map(([key, item]) => (
+                              <div key={key} className="mb-2">
+                                <div className="flex justify-between">
+                                  <span className="font-medium">
+                                    {item.quantity}x {item.name}
+                                  </span>
+                                  <span>€{(item.price * item.quantity).toFixed(2)}</span>
+                                </div>
+                                    {item.selectedOptions && (
+                                          <div className="text-sm text-gray-600 ml-2 mt-1">
+                                            {Object.entries(item.selectedOptions).map(([key, opt]) => (
+                                              <div key={key}>
+                                                <strong>{key}:</strong> {opt.display}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                {item.notes && (
+                                  <div className="text-sm text-red-600 ml-2 mt-1">
+                                    <strong>Obs:</strong> {item.notes}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </ul>
                         </div>
                         
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-  <div className="text-base sm:text-lg font-semibold whitespace-nowrap">
-    {order.deliveryAddress && (
-      <>
-        <div className="text-sm text-gray-600">
-          Subtotal: € {Object.values(order.items || {}).reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
-        </div>
-        <div className="text-sm text-gray-600">
-          Taxa de entrega: € {order.isOver5km ? '3.50' : '2.00'}
-        </div>
-      </>
-    )}
-    <div className="mt-1">Total: € {calculateTotal(order).toFixed(2)}</div>
-  </div>
-  
-  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-    {order.status === 'pending' && (
-      <button 
-        onClick={() => handleSendToKitchen(order.id)}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-      >
-        <BsPrinter className="mr-2" />
-        Enviar para Cozinha
-      </button>
-    )}
-    {order.status === 'preparing' && (
-      <button 
-        onClick={() => updateOrderStatus(order.id, 'ready')}
-        className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
-      >
-        <FiCheckCircle className="mr-1 sm:mr-2" />
-        Pronto
-      </button>
-    )}
-    {order.status === 'ready' && (
-      <button 
-        onClick={() => updateOrderStatus(order.id, 'delivered')}
-        className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
-      >
-        <FiTruck className="mr-1 sm:mr-2" />
-        Entregar
-      </button>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                          <div className="text-base sm:text-lg font-semibold whitespace-nowrap">
+                            {order.deliveryAddress && (
+                              <>
+                                <div className="text-sm text-gray-600">
+                                  Subtotal: € {Object.values(order.items || {}).reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  Taxa de entrega: € {order.isOver5km ? '3.50' : '2.00'}
+                                </div>
+                              </>
+                            )}
+                            <div className="mt-1">Total: € {(getOrderTotal(order) || 0).toFixed(2)}</div>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                            {order.status === 'pending' && (
+                              <button 
+                                onClick={() => handleSendToKitchen(order.id)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                              >
+                                <BsPrinter className="mr-2" />
+                                Enviar para Cozinha
+                              </button>
+                            )}
+                            {order.status === 'preparing' && (
+                              <button 
+                                onClick={() => updateOrderStatus(order.id, 'ready')}
+                                className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
+                              >
+                                <FiCheckCircle className="mr-1 sm:mr-2" />
+                                Pronto
+                              </button>
+                            )}
+                            {order.status === 'ready' && (
+                              <button 
+                                onClick={() => updateOrderStatus(order.id, 'delivered')}
+                                className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
+                              >
+                                <FiTruck className="mr-1 sm:mr-2" />
+                                Entregar
+                              </button>
                             )}
                           </div>
                         </div>
@@ -2306,7 +1896,7 @@ const formatOptionsForAdmin = (options) => {
                           <div className="flex justify-between items-center text-base sm:text-lg font-bold">
                             <span>Total:</span>
                             <span className="text-emerald-600">
-                              € {calculateTotal(selectedTable).toFixed(2)}
+                              {formatCurrency(getOrderTotal(selectedTable))}
                             </span>
                           </div>
                         </div>
@@ -2396,7 +1986,6 @@ const formatOptionsForAdmin = (options) => {
                                 </div>
                               </div>
                               
-                              {/* Item Options */}
                               {selectedItem.options && (
                                 <div className="space-y-4 mb-4 sm:mb-6">
                                   {Object.entries(selectedItem.options).map(([optionKey, option]) => (
@@ -2626,7 +2215,7 @@ const formatOptionsForAdmin = (options) => {
                           
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                             <div className="text-base sm:text-lg font-semibold whitespace-nowrap">
-                              Total: € {calculateTotal(selectedTable).toFixed(2)}
+                              Total: € {getOrderTotal(selectedTable).toFixed(2)}
                             </div>
                     
                             <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
@@ -2757,7 +2346,7 @@ const formatOptionsForAdmin = (options) => {
                               </td>
                               <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {activeTab === 'open' ? `€ ${calculateTotal(table).toFixed(2)}` : `€ ${parseFloat(table.total || 0).toFixed(2)}`}
+                                  {activeTab === 'open' ? `€ ${getOrderTotal(table).toFixed(2)}` : `€ ${parseFloat(table.total || 0).toFixed(2)}`}
                                 </div>
                               </td>
                               <td className="px-4 sm:px-6 py-4 whitespace-nowrap">

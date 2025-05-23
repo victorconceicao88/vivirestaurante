@@ -6,6 +6,7 @@ import { database, ref, push, set, onValue } from '../firebase';
 import { motion } from 'framer-motion';
 
 
+
 // Configuração de internacionalização
 i18n
   .use(initReactI18next)
@@ -1422,6 +1423,8 @@ const [deliveryDetails, setDeliveryDetails] = useState({
       setMeatSelectionError('');
       return true;
     };
+
+    
   
     const handleOptionSelect = (optionName, value, price = 0, isChecked = false, optionData = {}) => {
       setSelectedOptions(prev => {
@@ -1714,7 +1717,100 @@ const [deliveryDetails, setDeliveryDetails] = useState({
     setShowOptionsModal(true);
   };
 
-// Substituir a função confirmAddToCart completa no ClientPage
+// Adicione esta função dentro do componente ClientPage, antes da função confirmAddToCart
+const formatOptionForDisplay = (optionName, value, allOptions) => {
+  const translations = {
+    options: {
+      point: { pt: "Ponto da Carne" },
+      size: { pt: "Tamanho" },
+      sideDishes: { pt: "Acompanhamentos" },
+      salad: { pt: "Salada" },
+      beans: { pt: "Feijão" },
+      meats: { pt: "Carnes" },
+      toppings: { pt: "Coberturas" },
+      drinks: { pt: "Bebida" },
+      dessert: { pt: "Sobremesa" },
+      accompaniments: { pt: "Acompanhamentos" },
+      cooking: { pt: "Ponto da Carne" },
+      beverage: { pt: "Bebida" },
+      meatsSelection: { pt: "Seleção de Carnes" },
+      toppingsSelection: { pt: "Seleção de Coberturas" },
+      customToppings: { pt: "Coberturas Personalizadas" }
+    },
+    values: {
+      rare: { pt: "Mal passada" },
+      medium: { pt: "Ao ponto" },
+      wellDone: { pt: "Bem passada" },
+      small: { pt: "Pequeno" },
+      mediumSize: { pt: "Médio" },
+      large: { pt: "Grande" },
+      none: { pt: "Sem" },
+      extra: { pt: "Extra" },
+      complete: { pt: "Completo" },
+      pure: { pt: "Puro" },
+      custom: { pt: "Personalizado" },
+      broth: { pt: "Com caldo" },
+      mixed: { pt: "Mista" },
+      cassavaCooked: { pt: "Mandioca cozida" },
+      cassavaFried: { pt: "Mandioca frita" },
+      farofa: { pt: "Farofa" },
+      vinagrete: { pt: "Vinagrete" },
+      rice: { pt: "Arroz" },
+      fries: { pt: "Batata frita" },
+      water: { pt: "Água" },
+      soda: { pt: "Refrigerante" },
+      juice: { pt: "Suco" },
+      onlyTopSirloin: { pt: "Apenas Alcatra (+€1,00)" },
+
+      // Carnes
+      heart: { pt: "Coração de frango" },
+      ribs: { pt: "Costelinha de porco" },
+      fillet: { pt: "Filé de frango" },
+      sausage: { pt: "Linguiça" },
+      maminha: { pt: "Maminha" },
+      cracklings: { pt: "Torresmo" },
+      topSirloin: { pt: "Maminha" }, 
+
+      // Açaí
+      granola: { pt: "Granola" },
+      condensedMilk: { pt: "Leite condensado" },
+      banana: { pt: "Banana" },
+      strawberry: { pt: "Morango" },
+      powderedMilk: { pt: "Leite Ninho" }
+    }
+  };
+
+  // Força sempre o idioma pt
+  const translate = (key, type = 'values') => {
+    return translations[type][key]?.pt || key;
+  };
+
+  if (Array.isArray(value)) {
+    return value.map(v => translate(v, 'values')).join(", ");
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    if (value.items) {
+      return value.items
+        .filter(item => item.selected)
+        .map(item => translate(item.value, 'values') || item.label)
+        .join(", ");
+    }
+    return JSON.stringify(value);
+  }
+
+  if (optionName === 'toppings' && value === 'custom' && allOptions?.toppingsCustom) {
+    const customToppings = allOptions.toppingsCustom.map(item =>
+      translate(item.value, 'values') || item.label
+    ).join(", ");
+    return `${translate('custom', 'values')} (${customToppings})`;
+  }
+
+  return translate(value, 'values');
+};
+
+
+
 const confirmAddToCart = (selectedOptions, additionalPrice) => {
   try {
     if (!selectedProduct) {
@@ -1724,68 +1820,41 @@ const confirmAddToCart = (selectedOptions, additionalPrice) => {
     if (selectedProduct.options?.meats) {
       const selectedMeats = selectedOptions.meats || [];
       const hasOnlyTopSirloin = selectedMeats.includes('onlyTopSirloin');
-      
+
       if (selectedMeats.length === 0) {
-        setMeatSelectionError(t('options.meatSelection'));
+        setMeatSelectionError("Selecione ao menos uma carne");
         return false;
       }
-      
+
       if (hasOnlyTopSirloin && selectedMeats.length > 1) {
-        setMeatSelectionError(t('options.meatSelection'));
+        setMeatSelectionError("Você só pode escolher apenas Alcatra ou outras carnes, não ambos.");
         return false;
       }
     }
 
-    const optionsDescription = [];
-    if (selectedProduct.options) {
-      Object.entries(selectedProduct.options).forEach(([optionName, optionData]) => {
-        const selectedValue = selectedOptions[optionName];
-        
-        if (optionName === 'toppings') {
-          if (selectedValue === 'complete') {
-            optionsDescription.push(`${optionData.title}: ${t('options.açaiOptions.complete')}`);
-          } else if (selectedValue === 'pure') {
-            optionsDescription.push(`${optionData.title}: ${t('options.açaiOptions.pure')}`);
-          } else if (selectedValue === 'custom' && selectedOptions.toppingsCustom) {
-            const customToppings = selectedProduct.options.toppings.customOptions.items
-              .filter(item => selectedOptions.toppingsCustom.includes(item.value))
-              .map(item => item.label)
-              .join(', ');
-            optionsDescription.push(`${optionData.title}: ${customToppings}`);
-          }
-        } else if (optionData.type === 'radio' && selectedValue && selectedValue !== 'none') {
-          const selectedItem = optionData.items.find(item => item.value === selectedValue);
-          if (selectedItem) {
-            optionsDescription.push(`${t(optionData.title)}: ${t(selectedItem.label)}`);
-          }
-        } else if (optionData.type === 'checkbox' && Array.isArray(selectedValue)) {
-          const selectedLabels = optionData.items
-            .filter(item => selectedValue.includes(item.value))
-            .map(item => item.label);
-          
-          if (selectedLabels.length > 0) {
-            optionsDescription.push(`${optionData.title}: ${selectedLabels.join(', ')}`);
-          }
-        }
-      });
-    }
-    
+    const formattedOptions = {};
+    Object.entries(selectedOptions).forEach(([optionName, value]) => {
+      formattedOptions[optionName] = {
+        value,
+        display: formatOptionForDisplay(optionName, value, selectedOptions)
+      };
+    });
+
     const cartItem = {
       ...selectedProduct,
       id: `${selectedProduct.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       quantity: 1,
-      selectedOptions,
+      selectedOptions: formattedOptions,
       additionalPrice,
       finalPrice: selectedProduct.price + additionalPrice,
-      customizations: optionsDescription.join('; '),
       type: selectedProduct.type || 'food',
       category: selectedProduct.category || 'Geral'
     };
 
     setCart(prevCart => {
-      const existingItemIndex = prevCart.findIndex(item => 
+      const existingItemIndex = prevCart.findIndex(item =>
         item.id === selectedProduct.id &&
-        JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
+        JSON.stringify(item.selectedOptions) === JSON.stringify(formattedOptions)
       );
 
       if (existingItemIndex >= 0) {
@@ -1793,12 +1862,12 @@ const confirmAddToCart = (selectedOptions, additionalPrice) => {
         updatedCart[existingItemIndex].quantity += 1;
         return updatedCart;
       }
-      
+
       return [...prevCart, cartItem];
     });
 
     setNotification({
-      message: `${selectedProduct.name} ${t('options.addToCart')}`,
+      message: `${selectedProduct.name} adicionado ao carrinho`,
       type: 'success'
     });
 
@@ -1812,6 +1881,8 @@ const confirmAddToCart = (selectedOptions, additionalPrice) => {
     return false;
   }
 };
+
+
   
   const removeFromCart = (id) => {
     setCart(prevCart => {
@@ -1936,7 +2007,7 @@ const sendOrder = async () => {
     }
   });
   
-  whatsappMessage += `\n*Total:* €${calculateTotal().toFixed(2)}\n`;
+whatsappMessage += `*Total:* €${calculateTotal().total.toFixed(2)}\n`;
   whatsappMessage += `*Método de Pagamento:* ${paymentMethod}\n`;
   
   if (deliveryDetails.notes) {
@@ -2267,13 +2338,12 @@ const changeLanguage = (lng) => {
           </div>
         </div>
       </div>
-      {activeCategory === 'burguers' && isDaytime && (
+{activeCategory === 'burguers' && isDaytime && (
   <div className="col-span-full mb-6 animate-pulse">
     <div className="bg-gradient-to-r from-[#FF6B00] to-[#FFA800] rounded-xl shadow-lg overflow-hidden">
       <div className="p-4 md:p-5 flex items-start">
         <div className="flex-shrink-0 bg-white bg-opacity-20 p-2 rounded-full">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
@@ -2374,20 +2444,26 @@ const changeLanguage = (lng) => {
                   ) : (
                     <>
                       <div className="space-y-4 mb-6">
-                        {cart.map(item => (
-                          <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center space-x-4">
-                              <img src={item.image} alt={item.name} className="w-16 h-16 rounded-md object-cover border border-[#3D1106]" />
-                              <div>
-                                <h3 className="font-medium text-[#3D1106]">{item.name}</h3>
-                                {item.customizations && (
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {item.customizations.split('; ').map((custom, index) => (
-                                      <div key={index}>{custom}</div>
-                                    ))}
-                                  </div>
-                                )}
-                                <p className="text-sm text-gray-500">€{(item.finalPrice || item.price).toFixed(2)}</p>
+                      {cart.map(item => (
+  <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+    <div className="flex items-center space-x-4">
+      <img src={item.image} alt={item.name} className="w-16 h-16 rounded-md object-cover border border-[#3D1106]" />
+      <div>
+        <h3 className="font-medium text-[#3D1106]">{item.name}</h3>
+        {item.selectedOptions && Object.entries(item.selectedOptions).map(([optionName, optionData]) => (
+          <div key={optionName} className="text-xs text-gray-500 mt-1">
+            <span className="font-semibold">
+              {optionName === 'beans' && 'Feijão: '}
+              {optionName === 'salad' && 'Salada: '}
+              {optionName === 'sideDishes' && 'Acompanhamentos: '}
+              {optionName === 'meats' && 'Carnes: '}
+              {optionName === 'drinks' && 'Bebida: '}
+              {/* Pode adicionar outros nomes aqui conforme necessário */}
+            </span>
+            {optionData.display}
+          </div>
+        ))}
+        <p className="text-sm text-gray-500">€{(item.finalPrice || item.price).toFixed(2)}</p>
                               </div>
                             </div>
                             <div className="flex items-center space-x-3">
@@ -2878,7 +2954,7 @@ const changeLanguage = (lng) => {
                     )}
                     <div className="flex justify-between font-bold text-xl text-[#3D1106] pt-2 border-t border-gray-200">
                       <span>{t('total')}</span>
-                      <span>€{calculateTotal().toFixed(2)}</span>
+                     <span>€{calculateTotal().total.toFixed(2)}</span>
                     </div>
                   </div>
                         <button
