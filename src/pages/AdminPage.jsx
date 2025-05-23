@@ -120,24 +120,40 @@ const AdminPage = () => {
   }, []);
 
 const printKitchenOrder = async (item, orderId, customerInfo, deliveryFee = 0) => {
-  let content = '\x1B\x40\x1B\x21\x00'; // Inicializa impressora
-
+  // Configuração inicial da impressora
+  let content = '\x1B\x40\x1B\x21\x00'; // Inicializa impressora (Reset + fonte padrão)
+  
   try {
-    // Funções auxiliares locais
+    // =============================================
+    // FUNÇÕES AUXILIARES
+    // =============================================
+    
     const centerText = (text, width = 32) => {
       const spaces = Math.max(0, Math.floor((width - text.length) / 2));
       return ' '.repeat(spaces) + text;
     };
 
     const sanitizeText = (text) => {
-      if (!text) return '';
+      if (text === null || text === undefined) return '';
       return String(text)
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove acentos
         .replace(/ç/g, 'c')
+        .replace(/[^\x20-\x7E]/g, '') // Remove caracteres não-ASCII
         .trim();
     };
 
-    // Traduções
+    const formatPostalCode = (code) => {
+      if (!code) return '';
+      const cleaned = String(code).replace(/\D/g, '');
+      return cleaned.length === 8 ? cleaned.replace(/(\d{5})(\d{3})/, '$1-$2') : cleaned;
+    };
+
+    const formatPhone = (phone) => {
+      if (!phone) return '';
+      const cleaned = String(phone).replace(/\D/g, '');
+      return cleaned.length === 11 ? cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : cleaned;
+    };
+
     const optionTranslations = {
       point: "Ponto da Carne",
       size: "Tamanho",
@@ -193,76 +209,107 @@ const printKitchenOrder = async (item, orderId, customerInfo, deliveryFee = 0) =
       leiteNinho: "Leite Ninho"
     };
 
-    const translate = (key) => optionTranslations[key] || valueTranslations[key] || key;
+    const translate = (key) => {
+      return optionTranslations[key] || valueTranslations[key] || sanitizeText(key);
+    };
 
+    // FUNÇÃO QUE RESOLVE DEFINITIVAMENTE O PROBLEMA DOS OBJECTS
     const formatOptions = (options) => {
       if (!options || typeof options !== 'object') return '';
       
       let result = '';
+      
+      // Caso seja um array de strings
+      if (Array.isArray(options)) {
+        return options.map(opt => `   • ${sanitizeText(opt)}`).join('\n');
+      }
+      
+      // Caso seja um objeto com propriedades value e display
+      if (options.value !== undefined && options.display !== undefined) {
+        return `   • ${sanitizeText(options.display)}`;
+      }
+      
+      // Caso seja um objeto complexo
       for (const [key, value] of Object.entries(options)) {
-        if (value == null) continue;
+        if (value === null || value === undefined) continue;
         
-        // Se for array
-        if (Array.isArray(value)) {
-          result += `   • ${translate(key)}: ${value.map(v => sanitizeText(v)).join(', ')}\n`;
-        }
-        // Se for objeto
-        else if (typeof value === 'object') {
-          result += `   • ${translate(key)}:\n`;
-          for (const [subKey, subValue] of Object.entries(value)) {
-            if (subValue != null) {
-              result += `     - ${translate(subKey)}: ${sanitizeText(subValue)}\n`;
+        // Se for um objeto com propriedades value/display
+        if (value.value !== undefined && value.display !== undefined) {
+          result += `   • ${sanitizeText(key)}: ${sanitizeText(value.display)}\n`;
+        } 
+        // Se for um array
+        else if (Array.isArray(value)) {
+          result += `   • ${sanitizeText(key)}: ${value.map(v => {
+            if (typeof v === 'object' && v !== null) {
+              return sanitizeText(v.display || v.value || JSON.stringify(v));
             }
+            return sanitizeText(v);
+          }).join(', ')}\n`;
+        }
+        // Se for um objeto simples
+        else if (typeof value === 'object') {
+          result += `   • ${sanitizeText(key)}:\n`;
+          for (const [subKey, subValue] of Object.entries(value)) {
+            result += `     - ${sanitizeText(subKey)}: ${sanitizeText(subValue)}\n`;
           }
         }
         // Valor simples
         else {
-          result += `   • ${translate(key)}: ${sanitizeText(value)}\n`;
+          result += `   • ${sanitizeText(key)}: ${sanitizeText(value)}\n`;
         }
       }
+      
       return result;
     };
 
-    // Cabeçalho
+    // =============================================
+    // CONSTRUÇÃO DO CONTEÚDO DA COMANDA
+    // =============================================
+
+    // CABEÇALHO
     content += `${centerText(`COMANDA #${orderId.slice(-4)}`)}\n`;
     content += `${centerText(new Date().toLocaleString('pt-BR'))}\n`;
     content += `${centerText(''.padEnd(32, '-'))}\n`;
 
-    // Dados do Cliente
-    content += '\x1B\x21\x10'; // Negrito
-    content += `CLIENTE: ${sanitizeText(customerInfo.customerName || 'Não informado')}\n`;
-    content += `TEL: ${sanitizeText(customerInfo.customerPhone || 'Não informado')}\n`;
+    // DADOS DO CLIENTE (FORMATADOS CORRETAMENTE)
+    content += '\x1B\x21\x10'; // Ativa negrito
+    content += `CLIENTE: ${sanitizeText(customerInfo.customerName) || 'Não informado'}\n`;
+    content += `TEL: ${formatPhone(customerInfo.customerPhone) || 'Não informado'}\n`;
     
     if (customerInfo.deliveryAddress) {
       content += `ENTREGA: ${sanitizeText(customerInfo.deliveryAddress)}\n`;
-      content += `CEP: ${sanitizeText(customerInfo.postalCode || 'Não informado')}\n`;
-      content += `TAXA: €${deliveryFee.toFixed(2)}\n`;
+      content += `CEP: ${formatPostalCode(customerInfo.postalCode) || 'Não informado'}\n`;
+      content += `TAXA: ${Number(deliveryFee).toFixed(2)}\n`;
     } else {
       content += `TIPO: BALCÃO\n`;
     }
-    content += '\x1B\x21\x00'; // Normal
+    content += '\x1B\x21\x00'; // Desativa negrito
 
-    // Item do Pedido
-    content += '\n\x1B\x21\x10'; // Negrito
+    // ITEM DO PEDIDO
+    content += '\n\x1B\x21\x10'; // Ativa negrito
     content += `${item.quantity}x ${sanitizeText(item.name).toUpperCase()}\n`;
-    content += '\x1B\x21\x00'; // Normal
+    content += '\x1B\x21\x00'; // Desativa negrito
 
-    // Personalizações
-    if (item.options && Object.keys(item.options).length > 0) {
-      content += `\nPERSONALIZAÇÕES:\n${formatOptions(item.options)}`;
+    // PERSONALIZAÇÕES (AGORA FUNCIONANDO CORRETAMENTE)
+    if (item.selectedOptions && Object.keys(item.selectedOptions).length > 0) {
+      content += `\nPERSONALIZACOES:\n`;
+      content += formatOptions(item.selectedOptions);
     }
 
-    // Observações
-    if (item.notes || item.kitchenNotes) {
-      content += `\nOBS: ${sanitizeText(item.notes || item.kitchenNotes)}\n`;
+    // OBSERVAÇÕES
+    if (customerInfo.notes) {
+      content += `\nOBS: ${sanitizeText(customerInfo.notes)}\n`;
     }
 
-    // Rodapé
+    // RODAPÉ
     content += `\n${centerText(''.padEnd(32, '-'))}\n`;
     content += `${centerText("PRONTO PARA PREPARO")}\n`;
     content += '\n\n\n\n\x1D\x56\x00'; // Corta papel
 
-    // Envia para impressora
+    // =============================================
+    // ENVIO PARA IMPRESSORA
+    // =============================================
+    
     const printSuccess = await sendToPrinter(content);
     
     if (!printSuccess) {
@@ -279,11 +326,10 @@ const printKitchenOrder = async (item, orderId, customerInfo, deliveryFee = 0) =
 
   } catch (error) {
     console.error('Erro na impressão:', error);
-    alert('Erro grave ao imprimir. Verifique o console.');
+    alert('ERRO GRAVE: Verifique o console para detalhes.');
     return false;
   }
 };
-
 
 // Função para sanitizar texto
 const sanitizeText = (str) => {
@@ -384,6 +430,7 @@ const handleSendToKitchen = async (orderId) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) {
       console.error('Pedido não encontrado:', orderId);
+      showNotification('Pedido não encontrado', 'error');
       return;
     }
 
@@ -398,7 +445,7 @@ const handleSendToKitchen = async (orderId) => {
 
     const deliveryFee = order.deliveryFee || 0;
 
-    // Garante que existe ao menos um item
+    // Garante que os itens sejam tratados como array
     const itemsArray = Array.isArray(order.items)
       ? order.items
       : Object.values(order.items || {});
@@ -417,10 +464,11 @@ const handleSendToKitchen = async (orderId) => {
     showNotification('Pedido enviado para a cozinha com sucesso!', 'success');
 
   } catch (error) {
-    console.error('Erro ao enviar pedido para a cozinha:', error);
+    console.error('Erro ao enviar para a cozinha:', error);
     showNotification('Erro ao processar pedido', 'error');
   }
 };
+
 
 
   const updateOrderStatus = useCallback(async (orderId, status) => {
