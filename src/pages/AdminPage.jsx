@@ -14,7 +14,6 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useTranslation } from 'react-i18next';
 
 
-
 const AdminPage = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [activeTab, setActiveTab] = useState('pending');
@@ -120,34 +119,25 @@ const AdminPage = () => {
     return () => unsubscribe();
   }, []);
 
-const printKitchenOrder = async (items, orderId, customerInfo) => {
-  try {
-    let content = '\x1B\x40'; // Reset da impressora
-    content += '\x1B\x21\x00'; // Fonte padrão
+const printKitchenOrder = async (item, orderId, customerInfo, deliveryFee = 0) => {
+  let content = '\x1B\x40\x1B\x21\x00'; // Inicializa impressora
 
-    // Centraliza o texto em 32 caracteres de largura
-    const centerText = (text) => {
-      const lineWidth = 32;
-      const spaces = Math.max(0, Math.floor((lineWidth - text.length) / 2));
+  try {
+    // Funções auxiliares locais
+    const centerText = (text, width = 32) => {
+      const spaces = Math.max(0, Math.floor((width - text.length) / 2));
       return ' '.repeat(spaces) + text;
     };
 
-    // Sanitiza texto e mantém quebras de linha
     const sanitizeText = (text) => {
       if (!text) return '';
-      if (typeof text !== 'string') text = text.toString();
-
-      return text
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // remove acentos
+      return String(text)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/ç/g, 'c')
-        .replace(/\^/g, '')
-        .replace(/[€£¥$¢]/g, '')
-        .replace(/[^\x20-\x7E\n]/g, '') // permite quebra de linha \n
         .trim();
     };
 
-    // Traduções (exemplo, adicione conforme seu código original)
+    // Traduções
     const optionTranslations = {
       point: "Ponto da Carne",
       size: "Tamanho",
@@ -203,128 +193,97 @@ const printKitchenOrder = async (items, orderId, customerInfo) => {
       leiteNinho: "Leite Ninho"
     };
 
-    // Função recursiva para converter qualquer valor em texto legível, evitando [object Object]
-    const stringifyOptionValue = (val) => {
-      if (val === null || val === undefined) return '';
+    const translate = (key) => optionTranslations[key] || valueTranslations[key] || key;
 
-      if (Array.isArray(val)) {
-        return val.map(stringifyOptionValue).join(', ');
-      } 
-
-      if (typeof val === 'object') {
-        return Object.entries(val)
-          .map(([k, v]) => {
-            const key = optionTranslations[k] || k;
-            const value = valueTranslations[v] || stringifyOptionValue(v);
-            return `${key}: ${value}`;
-          })
-          .join(', ');
+    const formatOptions = (options) => {
+      if (!options || typeof options !== 'object') return '';
+      
+      let result = '';
+      for (const [key, value] of Object.entries(options)) {
+        if (value == null) continue;
+        
+        // Se for array
+        if (Array.isArray(value)) {
+          result += `   • ${translate(key)}: ${value.map(v => sanitizeText(v)).join(', ')}\n`;
+        }
+        // Se for objeto
+        else if (typeof value === 'object') {
+          result += `   • ${translate(key)}:\n`;
+          for (const [subKey, subValue] of Object.entries(value)) {
+            if (subValue != null) {
+              result += `     - ${translate(subKey)}: ${sanitizeText(subValue)}\n`;
+            }
+          }
+        }
+        // Valor simples
+        else {
+          result += `   • ${translate(key)}: ${sanitizeText(value)}\n`;
+        }
       }
-
-      return valueTranslations[val] || val;
+      return result;
     };
 
     // Cabeçalho
-    content += `${centerText("COZINHA DA VIVI")}\n`;
-    content += `${centerText("-------------------------------")}\n`;
-    content += `${centerText("COMANDA: #" + orderId.slice(0, 8))}\n`;
-    content += `${centerText(new Date().toLocaleString('pt-BR'))}\n\n`;
+    content += `${centerText(`COMANDA #${orderId.slice(-4)}`)}\n`;
+    content += `${centerText(new Date().toLocaleString('pt-BR'))}\n`;
+    content += `${centerText(''.padEnd(32, '-'))}\n`;
 
-    // Dados do cliente
+    // Dados do Cliente
     content += '\x1B\x21\x10'; // Negrito
-    content += `DADOS DO CLIENTE:\n`;
-    content += '\x1B\x21\x00'; // Normal
-    content += `NOME: ${sanitizeText(customerInfo.customerName) || 'Nao informado'}\n`;
-    content += `TEL: ${sanitizeText(customerInfo.customerPhone) || 'Nao informado'}\n`;
-    content += `TIPO: ${customerInfo.deliveryAddress ? 'ENTREGA' : 'BALCAO'}\n`;
-
+    content += `CLIENTE: ${sanitizeText(customerInfo.customerName || 'Não informado')}\n`;
+    content += `TEL: ${sanitizeText(customerInfo.customerPhone || 'Não informado')}\n`;
+    
     if (customerInfo.deliveryAddress) {
-      content += `END: ${sanitizeText(customerInfo.deliveryAddress)}\n`;
-      content += `CEP: ${sanitizeText(customerInfo.postalCode) || 'NAO INFORMADO'}\n`;
+      content += `ENTREGA: ${sanitizeText(customerInfo.deliveryAddress)}\n`;
+      content += `CEP: ${sanitizeText(customerInfo.postalCode || 'Não informado')}\n`;
+      content += `TAXA: €${deliveryFee.toFixed(2)}\n`;
+    } else {
+      content += `TIPO: BALCÃO\n`;
+    }
+    content += '\x1B\x21\x00'; // Normal
+
+    // Item do Pedido
+    content += '\n\x1B\x21\x10'; // Negrito
+    content += `${item.quantity}x ${sanitizeText(item.name).toUpperCase()}\n`;
+    content += '\x1B\x21\x00'; // Normal
+
+    // Personalizações
+    if (item.options && Object.keys(item.options).length > 0) {
+      content += `\nPERSONALIZAÇÕES:\n${formatOptions(item.options)}`;
     }
 
-    content += `PGTO: ${sanitizeText(customerInfo.paymentMethod) || 'Nao especificado'}\n`;
-    content += `OBS: ${sanitizeText(customerInfo.notes) || 'Nenhuma'}\n`;
-    content += `-------------------------------\n\n`;
-
-    // Itens
-    content += '\x1B\x21\x10'; // Negrito
-    content += `ITENS DO PEDIDO:\n\n`;
-    content += '\x1B\x21\x00'; // Normal
-
-    items.forEach((item, idx) => {
-      content += `${item.quantity}x ${sanitizeText(item.name).toUpperCase()}\n`;
-
-      if (item.options && Object.keys(item.options).length > 0) {
-        content += `   PERSONALIZACOES:\n`;
-        for (const [optKey, optVal] of Object.entries(item.options)) {
-          if (!optVal || (Array.isArray(optVal) && optVal.length === 0)) continue;
-
-          const optionName = optionTranslations[optKey] || optKey;
-          const optionValue = stringifyOptionValue(optVal);
-
-          const optionValueSanitized = sanitizeText(optionValue).replace(/, /g, '\n      > ');
-
-          content += `   ${optionName}:\n      > ${optionValueSanitized}\n`;
-        }
-      }
-
-      if (item.notes || item.kitchenNotes) {
-        content += `   OBS: ${sanitizeText(item.notes || item.kitchenNotes)}\n`;
-      }
-
-      if (idx < items.length - 1) content += '\n';
-    });
+    // Observações
+    if (item.notes || item.kitchenNotes) {
+      content += `\nOBS: ${sanitizeText(item.notes || item.kitchenNotes)}\n`;
+    }
 
     // Rodapé
-    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    content += `-------------------------------\n`;
-    content += `${centerText("TOTAL: " + total.toFixed(2))}\n`;
-    content += `${centerText("OBRIGADO PELA PREFERENCIA")}\n`;
-    content += `${centerText("-------------------------------")}\n`;
+    content += `\n${centerText(''.padEnd(32, '-'))}\n`;
+    content += `${centerText("PRONTO PARA PREPARO")}\n`;
+    content += '\n\n\n\n\x1D\x56\x00'; // Corta papel
 
-    // Corte do papel
-    content += '\n\n\n\n\n';
-    content += '\x1D\x56\x00';
-
+    // Envia para impressora
     const printSuccess = await sendToPrinter(content);
-
+    
     if (!printSuccess) {
-      const fallbackText = content
-        .replace(/[\x1B\x1D][^\n]*?/g, '')
-        .replace(/[^\x20-\x7E\n]/g, '');
-
-      alert(`FALHA NA IMPRESSAO! Copie manualmente:\n\n${fallbackText}`);
+      // Fallback visual em caso de erro
+      const printableContent = content
+        .replace(/[\x1B\x1D][@-~][\x20-\x7F]*/g, '') // Remove códigos ESC
+        .replace(/\n/g, '<br>');
+      
+      alert(`FALHA NA IMPRESSÃO! Copie manualmente:<br><br>${printableContent}`);
       return false;
     }
 
     return true;
 
   } catch (error) {
-    console.error('Erro na impressao:', error);
-    showNotification('Falha ao imprimir comanda', 'error');
+    console.error('Erro na impressão:', error);
+    alert('Erro grave ao imprimir. Verifique o console.');
     return false;
   }
 };
 
-const formatPostalCode = (postalCode) => {
-  if (!postalCode) return '';
-  const cleaned = postalCode.replace(/\D/g, '');
-  return cleaned.replace(/(\d{5})(\d{3})/, '$1-$2');
-};
-
-// Função para centralizar texto
-const centerText = (text, width = 32) => {
-  const padding = Math.max(0, Math.floor((width - text.length) / 2));
-  return ' '.repeat(padding) + text;
-};
-
-// Função para formatar telefone
-const formatPhone = (phone) => {
-  if (!phone) return '';
-  const cleaned = phone.replace(/\D/g, '');
-  return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-};
 
 // Função para sanitizar texto
 const sanitizeText = (str) => {
@@ -365,91 +324,104 @@ const sanitizeText = (str) => {
     }
   };
 
-  const sendToPrinter = async (content) => {
-    try {
-      console.log('Tentando imprimir via Bluetooth...');
-      
-      if (!navigator.bluetooth) {
-        throw new Error('Bluetooth não suportado neste navegador');
-      }
-
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ name: "BlueTooth Printer" }],
-        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-      });
-
-      console.log('Conectando à impressora:', device.name);
-      
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-      const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-
-      console.log('Enviando dados para impressão...');
-      
-      const chunkSize = 100;
-      const encoder = new TextEncoder();
-      
-      for (let i = 0; i < content.length; i += chunkSize) {
-        const chunk = content.slice(i, i + chunkSize);
-        await characteristic.writeValue(encoder.encode(chunk));
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-      // Comando para cortar o papel
-      const cutCommand = new Uint8Array([0x1D, 0x56, 0x41, 0x05]);
-      await characteristic.writeValue(cutCommand);
-
-      console.log('Impressão concluída com sucesso!');
-      return true;
-      
-    } catch (error) {
-      console.error('Erro na impressão:', error);
-      
-      const printableContent = content
-        .replace(/\x1B\[[0-9;]*[mGKH]/g, '')
-        .replace(/\x1B\x40/g, '')
-        .replace(/\x1B\x74\x10/g, '')
-        .replace(/\x1B\x21\x01/g, '');
-      
-      alert(`ERRO DE IMPRESSÃO\n\nCopie e cole manualmente na impressora:\n\n${printableContent}`);
-      
-      return false;
+ const sendToPrinter = async (content) => {
+  try {
+    console.log('Tentando imprimir via Bluetooth...');
+    
+    if (!navigator.bluetooth) {
+      throw new Error('Bluetooth não suportado neste navegador');
     }
-  };
 
-  const handleSendToKitchen = async (orderId) => {
-    try {
-      const order = orders.find(o => o.id === orderId);
-      if (!order) return;
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: "BlueTooth Printer" }],
+      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+    });
 
-      // Prepara os dados do cliente incluindo o postalCode
-      const customerInfo = {
-        customerName: order.customerName,
-        customerPhone: order.customerPhone,
-        deliveryAddress: order.deliveryAddress,
-        postalCode: order.postalCode,
-        paymentMethod: order.paymentMethod,
-        notes: order.notes
-      };
+    console.log('Conectando à impressora:', device.name);
+    
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+    const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
 
-      // Chama a função de impressão com todos os dados
-      const printSuccess = await printKitchenOrder(
-        Object.values(order.items || {}),
-        order.id,
-        customerInfo
-      );
-
-      if (printSuccess) {
-        await updateOrderStatus(orderId, 'preparing');
-        if (order.customerPhone) {
-          sendWhatsAppNotification(order, 'preparing');
-        }
-      }
-    } catch (error) {
-      console.error('Falha ao enviar para cozinha:', error);
-      showNotification('Erro ao enviar para cozinha', 'error');
+    console.log('Enviando dados para impressão...');
+    
+    const chunkSize = 100;
+    const encoder = new TextEncoder();
+    
+    for (let i = 0; i < content.length; i += chunkSize) {
+      const chunk = content.slice(i, i + chunkSize);
+      await characteristic.writeValue(encoder.encode(chunk));
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
-  };
+
+    // Comando para cortar o papel
+    const cutCommand = new Uint8Array([0x1D, 0x56, 0x41, 0x05]);
+    await characteristic.writeValue(cutCommand);
+
+    console.log('Impressão concluída com sucesso!');
+    return true;
+    
+  } catch (error) {
+    console.error('Erro na impressão:', error);
+    
+    const printableContent = content
+      .replace(/\x1B\[[0-9;]*[mGKH]/g, '')
+      .replace(/\x1B\x40/g, '')
+      .replace(/\x1B\x74\x10/g, '')
+      .replace(/\x1B\x21\x01/g, '');
+    
+    alert(`ERRO DE IMPRESSÃO\n\nCopie e cole manualmente na impressora:\n\n${printableContent}`);
+    
+    return false;
+  }
+  
+};
+
+
+// Exemplo de chamada
+const handleSendToKitchen = async (orderId) => {
+  try {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) {
+      console.error('Pedido não encontrado:', orderId);
+      return;
+    }
+
+    const customerInfo = {
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      deliveryAddress: order.deliveryAddress,
+      postalCode: order.postalCode,
+      paymentMethod: order.paymentMethod,
+      notes: order.notes
+    };
+
+    const deliveryFee = order.deliveryFee || 0;
+
+    // Garante que existe ao menos um item
+    const itemsArray = Array.isArray(order.items)
+      ? order.items
+      : Object.values(order.items || {});
+
+    for (const item of itemsArray) {
+      await printKitchenOrder(item, order.id, customerInfo, deliveryFee);
+      await new Promise(resolve => setTimeout(resolve, 300)); // Delay entre impressões
+    }
+
+    await updateOrderStatus(orderId, 'preparing');
+
+    if (order.customerPhone) {
+      sendWhatsAppNotification(order, 'preparing');
+    }
+
+    showNotification('Pedido enviado para a cozinha com sucesso!', 'success');
+
+  } catch (error) {
+    console.error('Erro ao enviar pedido para a cozinha:', error);
+    showNotification('Erro ao processar pedido', 'error');
+  }
+};
+
 
   const updateOrderStatus = useCallback(async (orderId, status) => {
     try {
