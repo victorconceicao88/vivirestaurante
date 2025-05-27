@@ -4,8 +4,9 @@ import i18n from 'i18next';
 import ProductCard from '../components/Client/ProductCard';
 import { database, ref, push, set, onValue } from '../firebase';
 import { motion } from 'framer-motion';
-
-
+import { GiMeal,GiSteak,GiHamburger,GiChickenOven,GiCakeSlice} from 'react-icons/gi';
+import { MdLocalBar } from 'react-icons/md';
+import { FaBox } from 'react-icons/fa';
 
 // Configuração de internacionalização
 i18n
@@ -433,12 +434,9 @@ const ClientPage = () => {
     {
       id: 'churrasco',
       name: t('categories.churrasco'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.89 7.111c1.1 1.1 1.1 2.9 0 4l-7.1 7.1c-1.1 1.1-2.9 1.1-4 0l-4-4c-1.1-1.1-1.1-2.9 0-4l7.1-7.1c1.1-1.1 2.9-1.1 4 0l4 4zm-5.66 2.83l-5.66 5.66 2.83 2.83 5.66-5.66-2.83-2.83z"/>
-        </svg>
-      ),
-      products: [
+       icon: <GiSteak className="h-5 w-5 text-red-600" />,
+      
+       products: [
         { 
           id: 101, 
           name: i18n.language === 'pt' ? "Churrasco Misto" : 
@@ -740,11 +738,7 @@ const ClientPage = () => {
     {
       id: 'burguers',
       name: t('categories.burguers'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 2v14h14V5H5zm2 2h10a1 1 0 0 1 0 2H7a1 1 0 0 1 0-2zm0 4h10a1 1 0 0 1 0 2H7a1 1 0 0 1 0-2zm0 4h10a1 1 0 0 1 0 2H7a1 1 0 0 1 0-2z"/>
-        </svg>
-      ),
+       icon: <GiHamburger className="h-5 w-5 text-yellow-600" />,
       products: [
          
           { 
@@ -943,11 +937,7 @@ const ClientPage = () => {
     {
       id: 'combos',
       name: t('categories.combos'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M13 2v2h6v2h-1.99l1.99 4v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10l2-2H5V4h6V2h2zm-1 4h-2v2H8v2h2v2h2v-2h2V8h-2V6z"/>
-        </svg>
-      ),
+       icon: <FaBox className="h-5 w-5 text-purple-600" />,
       products: [
         { 
           id: 301, 
@@ -1008,13 +998,10 @@ const ClientPage = () => {
       ]
     },
     {
-      id: 'porcoes',
-      name: t('categories.porcoes'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2m0 2a8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8 8 8 0 0 0-8-8m-1 3h2v6h-2V7m0 8h2v2h-2v-2z"/>
-        </svg>
-      ),
+     id: 'porcoes',
+        name: t('categories.porcoes'),
+        icon: <GiChickenOven className="h-5 w-5 text-yellow-600" />,
+
       products: [
         { 
           id: 401, 
@@ -1096,11 +1083,7 @@ const ClientPage = () => {
     {
       id: 'bebidas',
       name: t('categories.bebidas'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7 2v2h1v14a4 4 0 0 0 4 4 4 4 0 0 0 4-4V4h1V2H7zm4 14c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm0-4c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm0-4c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1z"/>
-        </svg>
-      ),
+        icon: <MdLocalBar className="h-5 w-5 text-blue-600" />,
       products: [
         { 
           id: 501, 
@@ -1154,11 +1137,7 @@ const ClientPage = () => {
     {
       id: 'sobremesas',
       name: t('categories.sobremesas'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2m0 2a8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8 8 8 0 0 0-8-8m-1 3h2v6h-2V7m0 8h2v2h-2v-2z"/>
-        </svg>
-      ),
+      icon: <GiCakeSlice className="h-5 w-5 text-pink-600" />,
       products: [
         { 
           id: 601, 
@@ -1243,11 +1222,9 @@ const ClientPage = () => {
 {
   id: 'Patros da Semana',
   name: t('Pratos da Semana'),
-  icon: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2m0 2a8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8 8 8 0 0 0-8-8m-1 3h2v6h-2V7m0 8h2v2h-2v-2z"/>
-    </svg>
-  ),
+
+     icon: <GiMeal className="h-5 w-5 text-gray-700" />,
+
   products: [
     { 
       id: 701, 
@@ -2354,45 +2331,52 @@ const changeLanguage = (lng) => {
         </div>
       </div>
 {activeCategory === 'burguers' && isDaytime && (
-  <div className="col-span-full mb-6 animate-pulse">
-    <div className="bg-gradient-to-r from-[#FF6B00] to-[#FFA800] rounded-xl shadow-lg overflow-hidden">
-      <div className="p-4 md:p-5 flex items-start">
-        <div className="flex-shrink-0 bg-white bg-opacity-20 p-2 rounded-full">
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div className="ml-3 flex-1">
-          <h3 className="text-lg font-bold text-white">
-            {i18n.language === 'pt' ? 'Hambúrgueres Disponíveis no Jantar' : 
-             i18n.language === 'en' ? 'Burgers Available at Dinner' : 
-             'Hamburguesas Disponibles en la Cena'}
-          </h3>
-          <div className="mt-1 text-white text-opacity-90">
-            <p>
-              {i18n.language === 'pt' ? 'Nossos deliciosos hambúrgueres são servidos apenas no período noturno, das 18h às 22h.' : 
-               i18n.language === 'en' ? 'Our delicious burgers are only served in the evening, from 6pm to 10pm.' : 
-               'Nuestras deliciosas hamburguesas solo se sirven por la noche, de 18h a 22h.'}
-            </p>
-            <p className="mt-2 font-medium">
-              {i18n.language === 'pt' ? 'Explore nossas outras opções disponíveis agora!' : 
-               i18n.language === 'en' ? 'Check out our other available options now!' : 
-               '¡Explore nuestras otras opciones disponibles ahora!'}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="bg-black bg-opacity-10 px-4 py-2 text-white text-sm font-medium flex items-center">
-        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <div className="col-span-full mb-6 rounded-lg bg-gradient-to-r from-[#FF6B00] to-[#FFA800] shadow-md p-5">
+    <div className="flex items-center space-x-4">
+      <div className="p-3 bg-white bg-opacity-30 rounded-full flex-shrink-0">
+        <svg
+          className="w-6 h-6 text-white"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
-        {i18n.language === 'pt' ? 'Horário atual: ' + currentHour + 'h' : 
-         i18n.language === 'en' ? 'Current time: ' + currentHour + 'h' : 
-         'Hora actual: ' + currentHour + 'h'}
+      </div>
+      <div>
+        <h3 className="text-white text-2xl font-semibold leading-tight">
+          {i18n.language === 'pt'
+            ? 'Hambúrgueres disponíveis somente à noite'
+            : i18n.language === 'en'
+            ? 'Burgers available only at night'
+            : 'Hamburguesas disponibles solo por la noche'}
+        </h3>
+        <p className="mt-1 text-white text-opacity-90 max-w-xl">
+          {i18n.language === 'pt'
+            ? 'Servidos das 18h às 22h.'
+            : i18n.language === 'en'
+            ? 'Served from 6pm to 10pm.'
+            : 'Servidos de 18h a 22h.'}
+        </p>
+        <p className="mt-3 text-white font-medium cursor-default">
+          {i18n.language === 'pt'
+            ? 'Confira outras opções disponíveis durante o dia!'
+            : i18n.language === 'en'
+            ? 'Check out other options available during the day!'
+            : '¡Explora otras opciones disponibles durante el día!'}
+        </p>
       </div>
     </div>
   </div>
 )}
+
+
 
       <main className="container mx-auto p-4 bg-[#FFF1E4] flex-1">
         <div className="mb-4">
@@ -2473,7 +2457,7 @@ const changeLanguage = (lng) => {
               {optionName === 'sideDishes' && 'Acompanhamentos: '}
               {optionName === 'meats' && 'Carnes: '}
               {optionName === 'drinks' && 'Bebida: '}
-              {/* Pode adicionar outros nomes aqui conforme necessário */}
+             
             </span>
             {optionData.display}
           </div>

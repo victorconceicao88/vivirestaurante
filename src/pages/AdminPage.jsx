@@ -1707,16 +1707,30 @@ const total = getOrderTotal(order);
                           </div>
                           
                           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                            {order.status === 'pending' && (
-                              <button 
-                                onClick={() => handleSendToKitchen(order.id)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-                              >
-                                <BsPrinter className="mr-2" />
-                                Enviar para Cozinha
-                              </button>
-                            )}
-                            {order.status === 'preparing' && (
+                               {order.status === 'pending' && (
+                                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                                  <button 
+                                    onClick={() => handleSendToKitchen(order.id)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                                  >
+                                    <BsPrinter className="mr-2" />
+                                    Enviar para Cozinha
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      if (window.confirm('Tem certeza que deseja cancelar este pedido?')) {
+                                        updateOrderStatus(order.id, 'delivered');
+                                        showNotification('Pedido cancelado com sucesso');
+                                      }
+                                    }}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center"
+                                  >
+                                    <FiX className="mr-2" />
+                                    Cancelar
+                                  </button>
+                                </div>
+                              )}
+                              {order.status === 'preparing' && (
                               <button 
                                 onClick={() => updateOrderStatus(order.id, 'ready')}
                                 className="px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center justify-center flex-1 sm:flex-none text-sm sm:text-base"
