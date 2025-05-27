@@ -1714,7 +1714,7 @@ const total = getOrderTotal(order);
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
                                   >
                                     <BsPrinter className="mr-2" />
-                                    Enviar para Cozinha
+                                    Enviar Cozinha
                                   </button>
                                   <button 
                                     onClick={() => {
