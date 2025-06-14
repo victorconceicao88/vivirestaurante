@@ -91,7 +91,7 @@ const printKitchenOrder = async (order) => {
       },
       values: {
         // Feijao e acompanhamentos
-        broth: "COM CALDO",
+        broth: "FEIJAO DE CALDO",
         tropeiro: "TROPEIRO",
         banana: "BANANA FRITA",
         potato: "BATATA FRITA",
