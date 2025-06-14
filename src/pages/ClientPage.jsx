@@ -1768,7 +1768,7 @@ const ClientPage = () => {
     setShowOptionsModal(true);
   };
 
-// Adicione esta função dentro do componente ClientPage, antes da função confirmAddToCart
+
 const formatOptionForDisplay = (optionName, value, allOptions) => {
   const optionTranslations = {
     beans: t('options.beans'),
@@ -1841,14 +1841,14 @@ const formatOptionForDisplay = (optionName, value, allOptions) => {
 };
 
 
-
 const confirmAddToCart = (selectedOptions, additionalPrice) => {
   try {
     if (!selectedProduct) {
       throw new Error("Nenhum produto selecionado");
     }
 
-    if (selectedProduct.options?.meats) {
+    // Modificação: Verificar se o produto tem opções de carne antes de validar
+    if (selectedProduct.options?.meats && selectedOptions.meats) {
       const selectedMeats = selectedOptions.meats || [];
       const hasOnlyTopSirloin = selectedMeats.includes('onlyTopSirloin');
 
@@ -1913,7 +1913,6 @@ const confirmAddToCart = (selectedOptions, additionalPrice) => {
 };
 
 
-  
   const removeFromCart = (id) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === id);
