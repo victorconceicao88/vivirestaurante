@@ -169,9 +169,9 @@ const printKitchenOrder = async (order) => {
       return ' '.repeat(Math.floor(padding/2)) + text + ' '.repeat(Math.ceil(padding/2));
     };
 
-    const formatCurrency = (value) => {
-      return 'Euro' + parseFloat(value || 0).toFixed(2).replace('.', ',');
-    };
+  const formatCurrency = (value) => {
+  return parseFloat(value || 0).toFixed(2).replace('.', ',');
+};
 
     const safeString = (value) => {
       if (value == null) return '';
