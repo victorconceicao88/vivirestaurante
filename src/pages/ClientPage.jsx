@@ -1,10 +1,10 @@
-import React, { useState, useEffect,useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation, initReactI18next } from 'react-i18next';
 import i18n from 'i18next';
 import ProductCard from '../components/Client/ProductCard';
 import { database, ref, push, set, onValue } from '../firebase';
 import { motion } from 'framer-motion';
-import { GiMeal,GiSteak,GiHamburger,GiChickenOven,GiCakeSlice} from 'react-icons/gi';
+import { GiMeal, GiSteak, GiHamburger, GiChickenOven, GiCakeSlice } from 'react-icons/gi';
 import { MdLocalBar } from 'react-icons/md';
 import { FaBox } from 'react-icons/fa';
 import { getAuth, signInAnonymously } from "firebase/auth";
@@ -72,12 +72,11 @@ i18n
             },
             "sideDishes": "Acompanhamentos",
             "sideDishesOptions": {
-            "banana": "Banana frita",
-            "potato": "Batata frita",
-            "cassavaFried": "Mandioca frita",
-            "cassavaCooked": "Mandioca cozida"
-          },
-
+              "banana": "Banana frita",
+              "potato": "Batata frita",
+              "cassavaFried": "Mandioca frita",
+              "cassavaCooked": "Mandioca cozida"
+            },
             "meats": "Escolha de Carnes",
             "meatsOptions": {
               "heart": "Coração de frango",
@@ -146,9 +145,13 @@ i18n
             "chooseSoda": "Escolha seu refrigerante",
             "chooseWater": "Escolha sua água",
             "chooseAçai": "Escolha seus acompanhamentos"
-          }
+          },
+          "pickup_warning_title": "Confirmação de Retirada",
+      "pickup_warning_message": "Selecionou levantamento no restaurante. Confirme apenas se vai levantar pessoalmente. Caso contrário, cancele e escolha entrega ao domicílio."
         }
-      },
+        },
+
+
       en: {
         translation: {
           "title": "Vivi's Kitchen",
@@ -280,7 +283,9 @@ i18n
             "chooseSoda": "Choose your soda",
             "chooseWater": "Choose your water",
             "chooseAçai": "Choose your toppings"
-          }
+          },
+          "pickup_warning_title": "Pickup Confirmation",
+          "pickup_warning_message": "You have selected pickup. Please confirm that you will collect your order at the restaurant."
         }
       },
       es: {
@@ -339,7 +344,7 @@ i18n
               "broth": "Frijoles al caldo",
               "tropeiro": "Frijoles tropeiro"
             },
-            "sideDishes": "Acompañamientos",
+            "sideDishes": "Acompanhamentos",
             "sideDishesOptions": {
               "banana": "Plátano frito",
               "potato": "Patatas fritas",
@@ -414,7 +419,9 @@ i18n
             "chooseSoda": "Elige tu refresco",
             "chooseWater": "Elige tu agua",
             "chooseAçai": "Elige tus acompañamientos"
-          }
+          },
+          "pickup_warning_title": "Confirmación de Recogida",
+          "pickup_warning_message": "Has seleccionado recogida en local. Por favor, confirma que recogerás tu pedido en el restaurante."
         }
       }
     },
@@ -425,20 +432,16 @@ i18n
     }
   });
 
-
-
 const ClientPage = () => {
   const { t, i18n } = useTranslation();
-  
 
   // Dados dos produtos organizados por categoria
   const categories = [
     {
       id: 'churrasco',
       name: t('categories.churrasco'),
-       icon: <GiSteak className="h-5 w-5 text-red-600" />,
-      
-       products: [
+      icon: <GiSteak className="h-5 w-5 text-red-600" />,
+      products: [
         { 
           id: 101, 
           name: i18n.language === 'pt' ? "Churrasco Misto" : 
@@ -1262,32 +1265,37 @@ const ClientPage = () => {
 }
   ];
 
+  // Estado do carrinho com persistência no localStorage
   const [cart, setCart] = useState(() => {
     if (typeof window !== 'undefined') {
-      const savedCart = localStorage.getItem('cart');
+      const savedCart = localStorage.getItem('cozinhaDaViviCart');
       return savedCart ? JSON.parse(savedCart) : [];
     }
     return [];
   });
-   useEffect(() => {
+
+  // Atualiza o localStorage sempre que o carrinho mudar
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cart', JSON.stringify(cart));
+      localStorage.setItem('cozinhaDaViviCart', JSON.stringify(cart));
     }
   }, [cart]);
+
+
   const [activeCategory, setActiveCategory] = useState('all');
   const [showCart, setShowCart] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState('cart');
   const [deliveryOption, setDeliveryOption] = useState('pickup');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-const [deliveryDetails, setDeliveryDetails] = useState({
-  firstName: '',
-  lastName: '',
-  address: '',
-  postalCode: '',
-  phone: '',
-  notes: '',
-  isOver5km: false
-});
+  const [deliveryDetails, setDeliveryDetails] = useState({
+    firstName: '',
+    lastName: '',
+    address: '',
+    postalCode: '',
+    phone: '',
+    notes: '',
+    isOver5km: false
+  });
   const [paymentMethod, setPaymentMethod] = useState('');
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -1305,16 +1313,54 @@ const [deliveryDetails, setDeliveryDetails] = useState({
   const [showOrderSuccessModal, setShowOrderSuccessModal] = useState(false);
   const [currentHour] = useState(new Date().getHours());
   const isDaytime = currentHour >= 8 && currentHour < 18;
+  const [showPickupWarning, setShowPickupWarning] = useState(false);
 
+  const allProducts = categories.flatMap(category => category.products);
 
-   const allProducts = categories.flatMap(category => category.products);
-
- const filteredProducts = useMemo(() => {
-  const products = activeCategory === 'all' 
-    ? allProducts 
-    : categories.find(cat => cat.id === activeCategory)?.products || [];
-  return products.filter(product => !unavailableItems.includes(product.id.toString()));
-}, [activeCategory, allProducts, categories, unavailableItems]);
+  const filteredProducts = useMemo(() => {
+    const products = activeCategory === 'all' 
+      ? allProducts 
+      : categories.find(cat => cat.id === activeCategory)?.products || [];
+    return products.filter(product => !unavailableItems.includes(product.id.toString()));
+  }, [activeCategory, allProducts, categories, unavailableItems]);
+  const PickupConfirmationModal = ({ onConfirm, onCancel }) => {
+    return (
+      <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black bg-opacity-80">
+        <div className="bg-white rounded-xl max-w-md w-full p-6">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+              <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="mt-3 text-lg font-medium text-gray-900">
+              {t('pickup_warning_title')}
+            </h3>
+            <div className="mt-2 text-sm text-gray-500">
+              <p>{t('pickup_warning_message')}</p>
+            </div>
+          </div>
+          <div className="mt-5 sm:mt-6 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300"
+              onClick={onCancel}
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              className="w-full bg-[#3D1106] text-white py-2 px-4 rounded-md hover:bg-[#280B04]"
+              onClick={onConfirm}
+            >
+              {t('continue')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
 
   const PremiumCartIcon = ({ count }) => (
     <motion.div
@@ -1367,8 +1413,6 @@ const [deliveryDetails, setDeliveryDetails] = useState({
     const [additionalPrice, setAdditionalPrice] = useState(0);
     const [meatSelectionError, setMeatSelectionError] = useState('');
     const [activeTab, setActiveTab] = useState('');
-
-    
   
     useEffect(() => {
       if (product?.options) {
@@ -1726,94 +1770,74 @@ const [deliveryDetails, setDeliveryDetails] = useState({
 
 // Adicione esta função dentro do componente ClientPage, antes da função confirmAddToCart
 const formatOptionForDisplay = (optionName, value, allOptions) => {
-  const translations = {
-    options: {
-      point: { pt: "Ponto da Carne" },
-      size: { pt: "Tamanho" },
-      sideDishes: { pt: "Acompanhamentos" },
-      salad: { pt: "Salada" },
-      beans: { pt: "Feijao" },
-      meats: { pt: "Carnes" },
-      toppings: { pt: "Coberturas" },
-      drinks: { pt: "Bebida" },
-      dessert: { pt: "Sobremesa" },
-      accompaniments: { pt: "Acompanhamentos" },
-      cooking: { pt: "Ponto da Carne" },
-      beverage: { pt: "Bebida" },
-      meatsSelection: { pt: "Seleção de Carnes" },
-      toppingsSelection: { pt: "Seleção de Coberturas" },
-      customToppings: { pt: "Coberturas Personalizadas" }
-    },
-    values: {
-      rare: { pt: "Mal passada" },
-      medium: { pt: "Ao ponto" },
-      wellDone: { pt: "Bem passada" },
-      small: { pt: "Pequeno" },
-      mediumSize: { pt: "Médio" },
-      large: { pt: "Grande" },
-      none: { pt: "Sem" },
-      extra: { pt: "Extra" },
-      complete: { pt: "Completo" },
-      pure: { pt: "Puro" },
-      custom: { pt: "Personalizado" },
-      broth: { pt: "Com caldo" },
-      mixed: { pt: "Mista" },
-      cassavaCooked: { pt: "Mandioca cozida" },
-      cassavaFried: { pt: "Mandioca frita" },
-      farofa: { pt: "Farofa" },
-      vinagrete: { pt: "Vinagrete" },
-      rice: { pt: "Arroz" },
-      fries: { pt: "Batata frita" },
-      water: { pt: "Água" },
-      soda: { pt: "Refrigerante" },
-      juice: { pt: "Suco" },
-      onlyTopSirloin: { pt: "Apenas Alcatra (+€1,00)" },
-
-      // Carnes
-      heart: { pt: "Coração de frango" },
-      ribs: { pt: "Costelinha de porco" },
-      fillet: { pt: "Filé de frango" },
-      sausage: { pt: "Linguiça" },
-      maminha: { pt: "Maminha" },
-      cracklings: { pt: "Torresmo" },
-      topSirloin: { pt: "Maminha" }, 
-
-      // Açaí
-      granola: { pt: "Granola" },
-      condensedMilk: { pt: "Leite condensado" },
-      banana: { pt: "Banana" },
-      strawberry: { pt: "Morango" },
-      powderedMilk: { pt: "Leite Ninho" }
-    }
+  const optionTranslations = {
+    beans: t('options.beans'),
+    sideDishes: t('options.sideDishes'),
+    meats: t('options.meats'),
+    salad: t('options.salad'),
+    drinks: t('options.drinks'),
+    toppings: t('options.chooseAçai')
   };
 
-  // Força sempre o idioma pt
-  const translate = (key, type = 'values') => {
-    return translations[type][key]?.pt || key;
+  const valueTranslations = {
+    // Beans
+    broth: t('options.beansOptions.broth'),
+    tropeiro: t('options.beansOptions.tropeiro'),
+    
+    // Side Dishes
+    banana: t('options.sideDishesOptions.banana'),
+    potato: t('options.sideDishesOptions.potato'),
+    cassavaFried: t('options.sideDishesOptions.cassavaFried'),
+    cassavaCooked: t('options.sideDishesOptions.cassavaCooked'),
+    
+    // Meats
+    heart: t('options.meatsOptions.heart'),
+    ribs: t('options.meatsOptions.ribs'),
+    fillet: t('options.meatsOptions.fillet'),
+    sausage: t('options.meatsOptions.sausage'),
+    topSirloin: t('options.meatsOptions.topSirloin'),
+    cracklings: t('options.meatsOptions.cracklings'),
+    onlyTopSirloin: t('options.meatsOptions.onlyTopSirloin'),
+    
+    // Salad
+    mixed: t('options.saladOptions.mixed'),
+    vinaigrette: t('options.saladOptions.vinaigrette'),
+    none: t('options.saladOptions.none'),
+    
+    // Drinks
+    none: t('options.drinksOptions.none'),
+    waterStill: t('options.drinksOptions.waterStill'),
+    waterSparklingCastelo: t('options.drinksOptions.waterSparklingCastelo'),
+    waterSparklingPedras: t('options.drinksOptions.waterSparklingPedras'),
+    coke: t('options.drinksOptions.coke'),
+    cokeZero: t('options.drinksOptions.cokeZero'),
+    fanta: t('options.drinksOptions.fanta'),
+    guarana: t('options.drinksOptions.guarana'),
+    iceTea: t('options.drinksOptions.iceTea'),
+    
+    // Açai toppings
+    granola: t('options.açaiOptions.granola'),
+    condensedMilk: t('options.açaiOptions.condensedMilk'),
+    banana: t('options.açaiOptions.banana'),
+    strawberry: t('options.açaiOptions.strawberry'),
+    ninho: t('options.açaiOptions.ninho'),
+    complete: t('options.açaiOptions.complete'),
+    custom: t('options.açaiOptions.custom'),
+    pure: t('options.açaiOptions.pure')
   };
 
   if (Array.isArray(value)) {
-    return value.map(v => translate(v, 'values')).join(", ");
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    if (value.items) {
-      return value.items
-        .filter(item => item.selected)
-        .map(item => translate(item.value, 'values') || item.label)
-        .join(", ");
-    }
-    return JSON.stringify(value);
+    return value.map(v => valueTranslations[v] || v).join(", ");
   }
 
   if (optionName === 'toppings' && value === 'custom' && allOptions?.toppingsCustom) {
-    const customToppings = allOptions.toppingsCustom.map(item =>
-      translate(item.value, 'values') || item.label
+    const customToppings = allOptions.toppingsCustom.map(item => 
+      valueTranslations[item] || item
     ).join(", ");
-    return `${translate('custom', 'values')} (${customToppings})`;
+    return `${valueTranslations['custom']} (${customToppings})`;
   }
 
-  return translate(value, 'values');
+  return valueTranslations[value] || value;
 };
 
 
@@ -1829,12 +1853,12 @@ const confirmAddToCart = (selectedOptions, additionalPrice) => {
       const hasOnlyTopSirloin = selectedMeats.includes('onlyTopSirloin');
 
       if (selectedMeats.length === 0) {
-        setMeatSelectionError("Selecione ao menos uma carne");
+        setMeatSelectionError(t('options.meatSelection'));
         return false;
       }
 
       if (hasOnlyTopSirloin && selectedMeats.length > 1) {
-        setMeatSelectionError("Você só pode escolher apenas Alcatra ou outras carnes, não ambos.");
+        setMeatSelectionError(t('options.meatSelection'));
         return false;
       }
     }
@@ -1874,12 +1898,11 @@ const confirmAddToCart = (selectedOptions, additionalPrice) => {
     });
 
     setNotification({
-      message: `${selectedProduct.name} adicionado ao carrinho`,
+      message: `${selectedProduct.name} ${t('options.addToCart').toLowerCase()}`,
       type: 'success'
     });
 
     return true;
-
   } catch (error) {
     setNotification({
       message: error.message,
@@ -1940,12 +1963,23 @@ const calculateTotal = () => {
     }));
   };
 
-  const proceedToDelivery = () => {
-    setCheckoutStep('delivery');
-  };
+const proceedToDelivery = () => {
+  if (cart.length === 0) {
+    setNotification({
+      message: t('emptyCart'),
+      type: 'error'
+    });
+    return;
+  }
+  
+  // Avança direto para a seleção de entrega/retirada
+  setCheckoutStep('delivery');
+  window.scrollTo(0, 0);
+};
 
-// Modificar a função proceedToPayment
+
 const proceedToPayment = () => {
+  // Validações básicas (nome e telefone)
   if (!deliveryDetails.firstName || !deliveryDetails.phone) {
     setNotification({
       message: i18n.language === 'pt' ? 'Por favor, preencha todos os campos obrigatórios' :
@@ -1955,7 +1989,14 @@ const proceedToPayment = () => {
     });
     return;
   }
-  
+
+  // Se for retirada, mostra o modal de confirmação
+  if (deliveryOption === 'pickup') {
+    setShowPickupWarning(true);
+    return; // Não avança ainda, aguarda confirmação no modal
+  }
+
+  // Se for entrega, valida endereço e CEP
   if (deliveryOption === 'delivery') {
     if (!deliveryDetails.address) {
       setNotification({
@@ -1967,7 +2008,6 @@ const proceedToPayment = () => {
       return;
     }
     
-    // Validação do CEP/Código Postal
     if (!deliveryDetails.postalCode || !/^\d{4}-\d{3}$/.test(deliveryDetails.postalCode)) {
       setNotification({
         message: i18n.language === 'pt' ? 'Por favor, informe um Código Postal válido (ex: 8500-000)' :
@@ -1978,27 +2018,18 @@ const proceedToPayment = () => {
       return;
     }
   }
-  
+
+  // Se passou por todas as validações, avança para pagamento
   setCheckoutStep('payment');
+  window.scrollTo(0, 0);
 };
 
 
+// Atualize a função sendOrder para formatar corretamente para ambos
 const sendOrder = async () => {
   if (!paymentMethod) {
     setNotification({
-      message: i18n.language === 'pt' ? 'Selecione um método de pagamento' : 
-                i18n.language === 'en' ? 'Select a payment method' : 
-                'Seleccione un método de pago',
-      type: 'error'
-    });
-    return;
-  }
-
-  if (deliveryOption === 'delivery' && (!deliveryDetails.address || !deliveryDetails.postalCode)) {
-    setNotification({
-      message: i18n.language === 'pt' ? 'Por favor, preencha o endereço e CEP para entrega' :
-                i18n.language === 'en' ? 'Please fill in address and postal code for delivery' :
-                'Por favor, complete la dirección y código postal para entrega',
+      message: t('Select a payment method'),
       type: 'error'
     });
     return;
@@ -2007,29 +2038,79 @@ const sendOrder = async () => {
   const auth = getAuth();
   
   try {
-    // Verifica se já está autenticado ou faz autenticação anônima
     let user = auth.currentUser;
     if (!user) {
       const userCredential = await signInAnonymously(auth);
       user = userCredential.user;
     }
 
-    // Formata os itens do carrinho para o Firebase
-    const formattedItems = cart.map(item => ({
-      id: item.id,
-      name: item.name,
-      quantity: item.quantity,
-      price: item.finalPrice || item.price,
-      options: item.selectedOptions ? Object.keys(item.selectedOptions).reduce((acc, key) => {
-        acc[key] = item.selectedOptions[key].display;
-        return acc;
-      }, {}) : null
-    }));
+    // Formata os itens para WhatsApp e Firebase
+    const formattedItems = cart.map(item => {
+      // Formata as opções para exibição no WhatsApp
+      const whatsappOptions = item.selectedOptions 
+        ? Object.entries(item.selectedOptions)
+            .map(([key, value]) => {
+              const optionName = {
+                beans: t('options.beans'),
+                sideDishes: t('options.sideDishes'),
+                meats: t('options.meats'),
+                salad: t('options.salad'),
+                drinks: t('options.drinks'),
+                toppings: t('options.chooseAçai'),
+                extras: t('options.extras')
+              }[key] || key;
+              
+              return `  *${optionName}:* ${value.display}`;
+            })
+            .join('\n')
+        : '';
 
-    // Calcula totais
+      // Formata as opções para o Firebase (admin) - MODIFICAÇÃO AQUI
+      const firebaseOptions = item.selectedOptions 
+        ? Object.entries(item.selectedOptions).reduce((acc, [key, value]) => {
+            acc[key] = {
+              selected: value.value,
+              display: value.display,
+              optionName: {
+                beans: t('options.beans'),
+                sideDishes: t('options.sideDishes'),
+                meats: t('options.meats'),
+                salad: t('options.salad'),
+                drinks: t('options.drinks'),
+                toppings: t('options.chooseAçai'),
+                extras: t('options.extras')
+              }[key] || key
+            };
+            
+            // Adiciona os valores originais para impressão na cozinha
+            acc[key].originalValues = Array.isArray(value.value) 
+              ? value.value 
+              : [value.value];
+              
+            return acc;
+          }, {})
+        : {};
+
+      return {
+        ...item,
+        whatsappOptions,
+        firebaseOptions
+      };
+    });
+
     const totals = calculateTotal();
+    
+    // Dados para o Firebase (admin)
     const orderData = {
-      items: formattedItems,
+      items: formattedItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.finalPrice || item.price,
+        options: item.firebaseOptions, // Agora inclui todas as informações necessárias
+        selectedOptions: item.firebaseOptions, // Mantém compatibilidade
+        image: item.image
+      })),
       customerName: deliveryDetails.firstName + (deliveryDetails.lastName ? ' ' + deliveryDetails.lastName : ''),
       customerPhone: deliveryDetails.phone,
       paymentMethod,
@@ -2048,7 +2129,7 @@ const sendOrder = async () => {
       ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
     };
 
-    // Construir mensagem para WhatsApp
+    // Mensagem para WhatsApp
     let whatsappMessage = `*Novo Pedido - Cozinha da Vivi* 🍴\n\n`;
     whatsappMessage += `*Cliente:* ${orderData.customerName}\n`;
     whatsappMessage += `*Telefone:* ${orderData.customerPhone}\n`;
@@ -2064,12 +2145,10 @@ const sendOrder = async () => {
     }
     
     whatsappMessage += `\n*Itens do Pedido:*\n`;
-    orderData.items.forEach(item => {
-      whatsappMessage += `- ${item.name} (${item.quantity}x) - €${(item.price * item.quantity).toFixed(2)}\n`;
-      if (item.options) {
-        Object.entries(item.options).forEach(([optionName, value]) => {
-          whatsappMessage += `  *${optionName}:* ${value}\n`;
-        });
+    formattedItems.forEach(item => {
+      whatsappMessage += `- ${item.name} (${item.quantity}x) - €${(item.finalPrice * item.quantity).toFixed(2)}\n`;
+      if (item.whatsappOptions) {
+        whatsappMessage += `${item.whatsappOptions}\n`;
       }
     });
     
@@ -2084,16 +2163,16 @@ const sendOrder = async () => {
       whatsappMessage += `\n*Observações:* ${orderData.notes}\n`;
     }
 
-    // Codificar a mensagem para URL
+    // Codifica a mensagem para URL do WhatsApp
     const encodedMessage = encodeURIComponent(whatsappMessage);
     const whatsappNumber = '351928145225';
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-    // Salvar no Firebase
+    // Salva no Firebase
     const orderRef = push(ref(database, 'orders'));
     await set(orderRef, orderData);
 
-    // Configurar o redirecionamento para WhatsApp
+    // Prepara para redirecionar ao WhatsApp
     setWhatsappUrl(whatsappUrl);
     setCountdown(40);
     setShowSuccessModal(true);
@@ -2102,9 +2181,7 @@ const sendOrder = async () => {
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
     setNotification({
-      message: i18n.language === 'pt' ? 'Erro ao enviar pedido. Tente novamente.' :
-                i18n.language === 'en' ? 'Error sending order. Please try again.' :
-                'Error al enviar pedido. Intente nuevamente.',
+      message: t('Error sending order'),
       type: 'error'
     });
   }
@@ -2283,6 +2360,8 @@ const changeLanguage = (lng) => {
     </motion.div>
   </div>
 )}
+
+
 
       <header className="bg-[#FFF1E4] text-[#3D1106] p-4 shadow-sm sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
@@ -2481,109 +2560,104 @@ const changeLanguage = (lng) => {
                   </svg>
                 </button>
               </div>
-
-              {checkoutStep === 'cart' && (
-                <>
-                  {cart.length === 0 ? (
-                    <div className="text-center py-12">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-
-                      <p className="mt-4 text-gray-500">{t('emptyCart')}</p>
-                      <button
-                        onClick={() => setShowCart(false)}
-                        className="mt-6 px-6 py-2 bg-[#3D1106] text-white rounded-lg hover:bg-[#280B04] transition-colors"
-                      >
-                        {i18n.language === 'pt' ? 'Ver Menu' : 
-                         i18n.language === 'en' ? 'View Menu' : 
-                         'Ver Menú'}
-                      </button>
+{checkoutStep === 'cart' && (
+  <>
+    {cart.length === 0 ? (
+      <div className="text-center py-12">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+        <p className="mt-4 text-gray-500">{t('emptyCart')}</p>
+        <button
+          onClick={() => setShowCart(false)}
+          className="mt-6 px-6 py-2 bg-[#3D1106] text-white rounded-lg hover:bg-[#280B04] transition-colors"
+        >
+          {i18n.language === 'pt' ? 'Ver Menu' : 'View Menu'}
+        </button>
+      </div>
+    ) : (
+      <>
+        <div className="space-y-4 mb-6">
+          {cart.map(item => (
+            <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-4">
+                <img src={item.image} alt={item.name} className="w-16 h-16 rounded-md object-cover border border-[#3D1106]" />
+                <div>
+                  <h3 className="font-medium text-[#3D1106]">{item.name}</h3>
+                  {item.selectedOptions && Object.entries(item.selectedOptions).map(([optionName, optionData]) => (
+                    <div key={optionName} className="text-xs text-gray-500 mt-1">
+                      <span className="font-semibold">
+                        {optionName === 'beans' && t('options.beans') + ': '}
+                        {optionName === 'salad' && t('options.salad') + ': '}
+                        {optionName === 'sideDishes' && t('options.sideDishes') + ': '}
+                        {optionName === 'meats' && t('options.meats') + ': '}
+                        {optionName === 'drinks' && t('options.drinks') + ': '}
+                      </span>
+                      {optionData.display}
                     </div>
-                  ) : (
-                    <>
-                      <div className="space-y-4 mb-6">
-                      {cart.map(item => (
-  <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-    <div className="flex items-center space-x-4">
-      <img src={item.image} alt={item.name} className="w-16 h-16 rounded-md object-cover border border-[#3D1106]" />
-      <div>
-        <h3 className="font-medium text-[#3D1106]">{item.name}</h3>
-        {item.selectedOptions && Object.entries(item.selectedOptions).map(([optionName, optionData]) => (
-          <div key={optionName} className="text-xs text-gray-500 mt-1">
-            <span className="font-semibold">
-              {optionName === 'beans' && 'Feijao: '}
-              {optionName === 'salad' && 'Salada: '}
-              {optionName === 'sideDishes' && 'Acompanhamentos: '}
-              {optionName === 'meats' && 'Carnes: '}
-              {optionName === 'drinks' && 'Bebida: '}
-             
-            </span>
-            {optionData.display}
+                  ))}
+                  <p className="text-sm text-gray-500">€{(item.finalPrice || item.price).toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center border border-[#3D1106] rounded-lg overflow-hidden">
+                  <button 
+                    onClick={() => removeFromCart(item.id)}
+                    className="px-3 py-1 text-[#3D1106] hover:bg-[#3D1106] hover:text-white transition-colors"
+                  >
+                    -
+                  </button>
+                  <span className="px-2 text-sm font-medium">{item.quantity}</span>
+                  <button 
+                    onClick={() => {
+                      if (item.selectedOptions) {
+                        setSelectedProduct(item);
+                        setSelectedOptions(item.selectedOptions);
+                        setAdditionalPrice(item.additionalPrice || 0);
+                        setShowOptionsModal(true);
+                      } else {
+                        addToCart(item);
+                      }
+                    }}
+                    className="px-3 py-1 text-[#3D1106] hover:bg-[#3D1106] hover:text-white transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                <button 
+                  onClick={() => setCart(cart.filter(i => i.id !== item.id))}
+                  className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+          <div className="flex justify-between text-sm text-gray-600 mb-1">
+            <span>{t('subtotal')}</span>
+            <span>€{cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
           </div>
-        ))}
-        <p className="text-sm text-gray-500">€{(item.finalPrice || item.price).toFixed(2)}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                              <div className="flex items-center border border-[#3D1106] rounded-lg overflow-hidden">
-                                <button 
-                                  onClick={() => removeFromCart(item.id)}
-                                  className="px-3 py-1 text-[#3D1106] hover:bg-[#3D1106] hover:text-white transition-colors"
-                                >
-                                  -
-                                </button>
-                                <span className="px-2 text-sm font-medium">{item.quantity}</span>
-                                <button 
-                                  onClick={() => {
-                                    if (item.selectedOptions) {
-                                      setSelectedProduct(item);
-                                      setSelectedOptions(item.selectedOptions);
-                                      setAdditionalPrice(item.additionalPrice || 0);
-                                      setShowOptionsModal(true);
-                                    } else {
-                                      addToCart(item);
-                                    }
-                                  }}
-                                  className="px-3 py-1 text-[#3D1106] hover:bg-[#3D1106] hover:text-white transition-colors"
-                                >
-                                  +
-                                </button>
-                              </div>
-                              <button 
-                                onClick={() => setCart(cart.filter(i => i.id !== item.id))}
-                                className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                        <div className="flex justify-between text-sm text-gray-600 mb-1">
-                          <span>{t('subtotal')}</span>
-                          <span>€{cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-lg text-[#3D1106] pt-2 border-t border-gray-200">
-                          <span>{t('total')}</span>
-                          <span>€{cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
-                        </div>
-                      </div>
-                      
-                      <button
-                        onClick={proceedToDelivery}
-                        className="w-full bg-[#3D1106] text-white py-3 px-4 rounded-lg hover:bg-[#280B04] transition-all font-bold"
-                      >
-                        {t('continue')}
-                      </button>
-                    </>
-                  )}
-                </>
-              )}
+          <div className="flex justify-between font-bold text-lg text-[#3D1106] pt-2 border-t border-gray-200">
+            <span>{t('total')}</span>
+            <span>€{cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
+          </div>
+        </div>
+        
+        <button
+          onClick={proceedToDelivery}
+          className="w-full bg-[#3D1106] text-white py-3 px-4 rounded-lg hover:bg-[#280B04] transition-all font-bold"
+        >
+          {t('continue')}
+        </button>
+      </>
+    )}
+  </>
+)}
 
               {checkoutStep === 'delivery' && (
                 <div className="space-y-6">
@@ -3220,6 +3294,45 @@ const changeLanguage = (lng) => {
   </div>
 </footer>
 
+     {showPickupWarning && (
+  <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black bg-opacity-80">
+    <div className="bg-white rounded-xl max-w-md w-full p-6">
+      <div className="text-center">
+        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+          <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 className="mt-3 text-lg font-medium text-gray-900">
+          {t('pickup_warning_title')}
+        </h3>
+        <div className="mt-2 text-sm text-gray-500">
+          <p>{t('pickup_warning_message')}</p>
+        </div>
+      </div>
+      <div className="mt-5 sm:mt-6 grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300"
+          onClick={() => setShowPickupWarning(false)}
+        >
+          {t('cancel')}
+        </button>
+        <button
+          type="button"
+          className="w-full bg-[#3D1106] text-white py-2 px-4 rounded-md hover:bg-[#280B04]"
+          onClick={() => {
+            setShowPickupWarning(false);
+            setCheckoutStep('payment'); // Esta linha faz avançar para pagamento
+            window.scrollTo(0, 0);
+          }}
+        >
+          {t('continue')}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
