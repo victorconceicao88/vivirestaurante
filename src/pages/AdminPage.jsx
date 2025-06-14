@@ -56,41 +56,41 @@ const AdminPage = () => {
     window.open(whatsappUrl, '_blank');
   };
 const printKitchenOrder = async (order) => {
-  // Configuração inicial para impressoras térmicas
+  // Configuracao inicial para impressoras termicas
   let content = '\x1B\x40\x1B\x21\x10'; // Inicializa + negrito
   
   try {
     // =============================================
-    // DICIONÁRIO COMPLETO DE TRADUÇÕES (ATUALIZADO)
+    // DICIONARIO COMPLETO DE TRADUCOES (ATUALIZADO)
     // =============================================
     const translations = {
       options: {
         // Categorias principais
-        beans: "FEIJÃO",
+        beans: "FEIJAO",
         sideDishes: "ACOMPANHAMENTOS",
         meats: "CARNES",
         salad: "SALADA",
         drinks: "BEBIDAS",
         toppings: "COBERTURAS",
         extras: "EXTRAS",
-        // Tipos específicos
-        beansType: "TIPO DE FEIJÃO",
-        meatSelection: "SELECÃO DE CARNES",
+        // Tipos especificos
+        beansType: "TIPO DE FEIJAO",
+        meatSelection: "SELECAO DE CARNES",
         saladType: "TIPO DE SALADA",
         drinkSelection: "BEBIDA SELECIONADA",
         additionalToppings: "ADICIONAIS",
-        // Açaí e complementos
-        acaiSize: "TAMANHO DO AÇAÍ",
+        // Acai e complementos
+        acaiSize: "TAMANHO DO ACAI",
         acaiBase: "BASE",
         granolaType: "TIPO DE GRANOLA",
-        toppingsAcai: "COBERTURAS (AÇAÍ)",
+        toppingsAcai: "COBERTURAS (ACAI)",
         specialRequests: "PEDIDOS ESPECIAIS",
         // Queijos
         cheeseType: "TIPO DE QUEIJO",
         cheesePreparation: "PREPARO DO QUEIJO"
       },
       values: {
-        // Feijão e acompanhamentos
+        // Feijao e acompanhamentos
         broth: "COM CALDO",
         tropeiro: "TROPEIRO",
         banana: "BANANA FRITA",
@@ -101,32 +101,32 @@ const printKitchenOrder = async (order) => {
         vinaigrette: "VINAGRETE",
         none: "SEM",
         // Carnes
-        heart: "CORAÇÃO DE FRANGO",
-        ribs: "COSTELINHA SUÍNA",
-        fillet: "FILÉ DE FRANGO",
-        sausage: "LINGUIÇA",
+        heart: "CORACAO DE FRANGO",
+        ribs: "COSTELINHA SUINA",
+        fillet: "FILE DE FRANGO",
+        sausage: "LINGUICA",
         topSirloin: "MAMINHA",
         cracklings: "TORRESMO",
-        onlyTopSirloin: "SÓ MAMINHA (+R$5,00)",
+        onlyTopSirloin: "SO MAMINHA (+1.00 Euro)",
         // Bebidas
         pure: "PURO",
-        waterStill: "ÁGUA SEM GÁS",
-        waterSparkling: "ÁGUA COM GÁS",
+        waterStill: "AGUA SEM GAS",
+        waterSparkling: "AGUA COM GAS",
         coke: "COCA-COLA",
         cokeZero: "COCA ZERO",
         fanta: "FANTA",
-        guarana: "GUARANÁ",
+        guarana: "GUARANA",
         iceTea: "ICE TEA",
         // Extras
         bacon: "BACON",
         extraCheese: "QUEIJO EXTRA",
         egg: "OVO",
-        // Açaí
+        // Acai
         small: "PEQUENO (300ml)",
-        medium: "MÉDIO (500ml)",
+        medium: "MEDIO (500ml)",
         large: "GRANDE (700ml)",
-        pureAcai: "AÇAÍ PURO",
-        mixedAcai: "AÇAÍ MISTO",
+        pureAcai: "ACAI PURO",
+        mixedAcai: "ACAI MISTO",
         bananaGranola: "GRANOLA COM BANANA",
         traditionalGranola: "GRANOLA TRADICIONAL",
         // Coberturas
@@ -150,8 +150,8 @@ const printKitchenOrder = async (order) => {
         phone: "TELEFONE",
         delivery: "ENTREGA",
         pickup: "RETIRADA",
-        address: "ENDEREÇO",
-        notes: "OBSERVAÇÕES",
+        address: "ENDERECO",
+        notes: "OBSERVACOES",
         subtotal: "SUBTOTAL",
         deliveryFee: "TAXA DE ENTREGA",
         total: "TOTAL",
@@ -161,7 +161,7 @@ const printKitchenOrder = async (order) => {
     };
 
     // =============================================
-    // FUNÇÕES DE FORMATAÇÃO PROFISSIONAL
+    // FUNCOES DE FORMATACAO PROFISSIONAL
     // =============================================
     const centerText = (text, width = 32) => {
       text = text || '';
@@ -170,7 +170,7 @@ const printKitchenOrder = async (order) => {
     };
 
     const formatCurrency = (value) => {
-      return 'R$ ' + parseFloat(value || 0).toFixed(2).replace('.', ',');
+      return 'Euro' + parseFloat(value || 0).toFixed(2).replace('.', ',');
     };
 
     const safeString = (value) => {
@@ -183,7 +183,7 @@ const printKitchenOrder = async (order) => {
     };
 
     // =============================================
-    // CABEÇALHO PROFISSIONAL
+    // CABECALHO PROFISSIONAL
     // =============================================
     content += centerText('COZINHA DA VIVI ') + '\n';
     content += centerText(''.padEnd(32, '=')) + '\n';
@@ -192,16 +192,16 @@ const printKitchenOrder = async (order) => {
     content += centerText(''.padEnd(32, '-')) + '\n';
 
     // =============================================
-    // INFORMAÇÕES DO CLIENTE
+    // INFORMACOES DO CLIENTE
     // =============================================
-    content += `${translations.labels.customer}: ${order.customerName || 'NÃO INFORMADO'}\n`;
-    content += `${translations.labels.phone}: ${order.customerPhone || 'NÃO INFORMADO'}\n`;
+    content += `${translations.labels.customer}: ${order.customerName || 'NAO INFORMADO'}\n`;
+    content += `${translations.labels.phone}: ${order.customerPhone || 'NAO INFORMADO'}\n`;
     content += `TIPO: ${order.deliveryAddress ? translations.labels.delivery : translations.labels.pickup}\n`;
     
     if (order.deliveryAddress) {
       content += `${translations.labels.address}: ${order.deliveryAddress}\n`;
       if (order.postalCode) {
-        content += `CEP: ${order.postalCode.replace(/(\d{5})(\d{3})/, '$1-$2')}\n`;
+        content += `CODIGO POSTAL: ${order.postalCode.replace(/(\d{5})(\d{3})/, '$1-$2')}\n`;
       }
     }
 
@@ -226,7 +226,7 @@ const printKitchenOrder = async (order) => {
       content += '\x1B\x21\x00'; // Normal
       content += `VALOR: ${formatCurrency(total)}\n`;
 
-      // Opções do item
+      // Opcoes do item
       if (item.options) {
         Object.entries(item.options).forEach(([key, value]) => {
           if (value && value !== 'none') {
@@ -237,7 +237,7 @@ const printKitchenOrder = async (order) => {
         });
       }
 
-      // Observações
+      // Observacoes
       if (item.notes) {
         content += `OBS: ${item.notes}\n`;
       }
@@ -262,22 +262,22 @@ const printKitchenOrder = async (order) => {
     content += centerText(''.padEnd(32, '=')) + '\n';
     
     // Pagamento
-    content += `${translations.labels.paymentMethod}: ${order.paymentMethod?.toUpperCase() || 'NÃO ESPECIFICADO'}\n`;
+    content += `${translations.labels.paymentMethod}: ${order.paymentMethod?.toUpperCase() || 'NAO ESPECIFICADO'}\n`;
     
     if (order.changeFor) {
       content += `${translations.labels.changeFor}: ${formatCurrency(order.changeFor)}\n`;
     }
 
-    // Observações gerais
+    // Observacoes gerais
     if (order.notes) {
       content += '\n' + `${translations.labels.notes}: ${order.notes}\n`;
     }
 
     // =============================================
-    // RODAPÉ PROFISSIONAL
+    // RODAPE PROFISSIONAL
     // =============================================
     content += '\n' + centerText(''.padEnd(32, '=')) + '\n';
-    content += centerText('OBRIGADO PELA PREFERÊNCIA!') + '\n';
+    content += centerText('OBRIGADO PELA PREFERENCIA!') + '\n';
     content += centerText('VOLTE SEMPRE') + '\n';
     content += '\n\n\n\x1D\x56\x00'; // Corta o papel
 
@@ -288,7 +288,7 @@ const printKitchenOrder = async (order) => {
     return printSuccess;
 
   } catch (error) {
-    console.error('ERRO NA IMPRESSÃO:', error);
+    console.error('ERRO NA IMPRESSAO:', error);
     return false;
   }
 };
