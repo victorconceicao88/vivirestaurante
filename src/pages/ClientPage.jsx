@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { GiMeal,GiSteak,GiHamburger,GiChickenOven,GiCakeSlice} from 'react-icons/gi';
 import { MdLocalBar } from 'react-icons/md';
 import { FaBox } from 'react-icons/fa';
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 // Configuração de internacionalização
 i18n
@@ -428,6 +429,7 @@ i18n
 
 const ClientPage = () => {
   const { t, i18n } = useTranslation();
+  
 
   // Dados dos produtos organizados por categoria
   const categories = [
@@ -1260,7 +1262,18 @@ const ClientPage = () => {
 }
   ];
 
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('cart');
+      return savedCart ? JSON.parse(savedCart) : [];
+    }
+    return [];
+  });
+   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cart', JSON.stringify(cart));
+    }
+  }, [cart]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [showCart, setShowCart] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState('cart');
@@ -1354,6 +1367,8 @@ const [deliveryDetails, setDeliveryDetails] = useState({
     const [additionalPrice, setAdditionalPrice] = useState(0);
     const [meatSelectionError, setMeatSelectionError] = useState('');
     const [activeTab, setActiveTab] = useState('');
+
+    
   
     useEffect(() => {
       if (product?.options) {
@@ -1967,7 +1982,7 @@ const proceedToPayment = () => {
   setCheckoutStep('payment');
 };
 
-// Substituir a função sendOrder completa no ClientPage
+
 const sendOrder = async () => {
   if (!paymentMethod) {
     setNotification({
@@ -1979,59 +1994,104 @@ const sendOrder = async () => {
     return;
   }
 
-  // Construir mensagem para WhatsApp
-  let whatsappMessage = `*Novo Pedido - Cozinha da Vivi*\n\n`;
-  whatsappMessage += `*Cliente:* ${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}\n`;
-  whatsappMessage += `*Telefone:* ${deliveryDetails.phone}\n`;
-  whatsappMessage += `*Tipo de Entrega:* ${deliveryOption === 'delivery' ? 'Entrega' : 'Retirada'}\n`;
-  
-  if (deliveryOption === 'delivery') {
-    whatsappMessage += `*Endereço:* ${deliveryDetails.address}\n`;
-    whatsappMessage += `*Código Postal:* ${deliveryDetails.postalCode}\n`;
-    whatsappMessage += `*Taxa de entrega:* €${deliveryDetails.isOver5km ? '3.50' : '2.00'}\n`;
-  }
-  
-  whatsappMessage += `\n*Itens do Pedido:*\n`;
-  cart.forEach(item => {
-    whatsappMessage += `- ${item.name} (${item.quantity}x) - €${(item.finalPrice * item.quantity).toFixed(2)}\n`;
-    if (item.customizations) {
-      whatsappMessage += `  *Opcões:* ${item.customizations}\n`;
-    }
-  });
-  
-whatsappMessage += `*Total:* €${calculateTotal().total.toFixed(2)}\n`;
-  whatsappMessage += `*Método de Pagamento:* ${paymentMethod}\n`;
-  
-  if (deliveryDetails.notes) {
-    whatsappMessage += `\n*Observações:* ${deliveryDetails.notes}\n`;
+  if (deliveryOption === 'delivery' && (!deliveryDetails.address || !deliveryDetails.postalCode)) {
+    setNotification({
+      message: i18n.language === 'pt' ? 'Por favor, preencha o endereço e CEP para entrega' :
+                i18n.language === 'en' ? 'Please fill in address and postal code for delivery' :
+                'Por favor, complete la dirección y código postal para entrega',
+      type: 'error'
+    });
+    return;
   }
 
-  // Codificar a mensagem para URL
-  const encodedMessage = encodeURIComponent(whatsappMessage);
-  const whatsappNumber = '351928145225';
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
+  const auth = getAuth();
+  
   try {
-    // Salvar no Firebase
-    const orderRef = push(ref(database, 'orders'));
-    await set(orderRef, {
-      items: cart,
+    // Verifica se já está autenticado ou faz autenticação anônima
+    let user = auth.currentUser;
+    if (!user) {
+      const userCredential = await signInAnonymously(auth);
+      user = userCredential.user;
+    }
+
+    // Formata os itens do carrinho para o Firebase
+    const formattedItems = cart.map(item => ({
+      id: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      price: item.finalPrice || item.price,
+      options: item.selectedOptions ? Object.keys(item.selectedOptions).reduce((acc, key) => {
+        acc[key] = item.selectedOptions[key].display;
+        return acc;
+      }, {}) : null
+    }));
+
+    // Calcula totais
+    const totals = calculateTotal();
+    const orderData = {
+      items: formattedItems,
       customerName: deliveryDetails.firstName + (deliveryDetails.lastName ? ' ' + deliveryDetails.lastName : ''),
       customerPhone: deliveryDetails.phone,
       paymentMethod,
       status: 'pending',
       orderType: deliveryOption,
       createdAt: new Date().toISOString(),
-      subtotal: cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0),
+      subtotal: totals.subtotal,
       deliveryFee: deliveryOption === 'delivery' ? (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0,
+      total: totals.total,
+      userId: user.uid,
       isOver5km: deliveryDetails.isOver5km || false,
-      total: calculateTotal(),
       ...(deliveryOption === 'delivery' && { 
         deliveryAddress: deliveryDetails.address,
         postalCode: deliveryDetails.postalCode
       }),
       ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
+    };
+
+    // Construir mensagem para WhatsApp
+    let whatsappMessage = `*Novo Pedido - Cozinha da Vivi* 🍴\n\n`;
+    whatsappMessage += `*Cliente:* ${orderData.customerName}\n`;
+    whatsappMessage += `*Telefone:* ${orderData.customerPhone}\n`;
+    whatsappMessage += `*Tipo de Entrega:* ${orderData.orderType === 'delivery' ? 'Entrega' : 'Retirada'}\n`;
+    
+    if (orderData.orderType === 'delivery') {
+      whatsappMessage += `*Endereço:* ${orderData.deliveryAddress}\n`;
+      whatsappMessage += `*CEP:* ${orderData.postalCode}\n`;
+      whatsappMessage += `*Taxa de entrega:* €${orderData.deliveryFee.toFixed(2)}\n`;
+      if (orderData.isOver5km) {
+        whatsappMessage += `⚠️ *Distância:* Mais de 5km\n`;
+      }
+    }
+    
+    whatsappMessage += `\n*Itens do Pedido:*\n`;
+    orderData.items.forEach(item => {
+      whatsappMessage += `- ${item.name} (${item.quantity}x) - €${(item.price * item.quantity).toFixed(2)}\n`;
+      if (item.options) {
+        Object.entries(item.options).forEach(([optionName, value]) => {
+          whatsappMessage += `  *${optionName}:* ${value}\n`;
+        });
+      }
     });
+    
+    whatsappMessage += `\n*Subtotal:* €${orderData.subtotal.toFixed(2)}\n`;
+    if (orderData.deliveryFee > 0) {
+      whatsappMessage += `*Taxa de Entrega:* €${orderData.deliveryFee.toFixed(2)}\n`;
+    }
+    whatsappMessage += `*Total:* €${orderData.total.toFixed(2)}\n`;
+    whatsappMessage += `*Método de Pagamento:* ${orderData.paymentMethod}\n`;
+    
+    if (orderData.notes) {
+      whatsappMessage += `\n*Observações:* ${orderData.notes}\n`;
+    }
+
+    // Codificar a mensagem para URL
+    const encodedMessage = encodeURIComponent(whatsappMessage);
+    const whatsappNumber = '351928145225';
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+    // Salvar no Firebase
+    const orderRef = push(ref(database, 'orders'));
+    await set(orderRef, orderData);
 
     // Configurar o redirecionamento para WhatsApp
     setWhatsappUrl(whatsappUrl);
