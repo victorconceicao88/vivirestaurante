@@ -3203,7 +3203,7 @@ const changeLanguage = (lng) => {
             <div className="font-medium">
               <p className="font-bold">Cozinha da Vivi</p>
               <p className="text-sm md:text-base">Estrada de Alvor, São Sebastião</p>
-              <p className="text-sm md:text-base">8500-769 Portimão</p>
+              <p className="text-sm md:text-base">8500-769 Portimão.</p>
             </div>
           </div>
         </address>
