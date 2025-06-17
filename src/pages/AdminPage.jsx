@@ -169,9 +169,9 @@ const printKitchenOrder = async (order) => {
       return ' '.repeat(Math.floor(padding/2)) + text + ' '.repeat(Math.ceil(padding/2));
     };
 
-  const formatCurrency = (value) => {
-  return parseFloat(value || 0).toFixed(2).replace('.', ',');
-};
+    const formatCurrency = (value) => {
+      return parseFloat(value || 0).toFixed(2).replace('.', ',');
+    };
 
     const safeString = (value) => {
       if (value == null) return '';
@@ -181,6 +181,42 @@ const printKitchenOrder = async (order) => {
       }
       return translations.values[value] || String(value).toUpperCase();
     };
+
+    // Função para processar opções específicas como acompanhamentos
+// Função para processar opções específicas como acompanhamentos
+const processOptions = (options) => {
+  let result = [];
+  
+  Object.entries(options).forEach(([key, value]) => {
+    if (!value || value === 'none') return;
+    
+    // Tratamento especial para acompanhamentos (sideDishes)
+    if (key === 'sideDishes' && Array.isArray(value)) {
+      value.forEach(dish => {
+        if (dish && dish !== 'none') {
+          result.push(`- ${translations.options.sideDishes}: ${safeString(dish)}`);
+        }
+      });
+    } 
+    // Tratamento especial para seleção de carnes (meats)
+    else if (key === 'meats') {
+      if (Array.isArray(value)) {
+        const meats = value.map(meat => safeString(meat)).join(', ');
+        if (meats) result.push(`- ${translations.options.meats}: ${meats}`);
+      } else if (value.selected) {
+        // Caso seja um objeto com propriedade selected (para compatibilidade)
+        result.push(`- ${translations.options.meats}: ${safeString(value.selected)}`);
+      }
+    }
+    else {
+      const optionName = translations.options[key] || key.toUpperCase();
+      const optionValue = safeString(value);
+      if (optionValue) result.push(`- ${optionName}: ${optionValue}`);
+    }
+  });
+  
+  return result;
+};
 
     // =============================================
     // CABECALHO PROFISSIONAL
@@ -228,12 +264,9 @@ const printKitchenOrder = async (order) => {
 
       // Opcoes do item
       if (item.options) {
-        Object.entries(item.options).forEach(([key, value]) => {
-          if (value && value !== 'none') {
-            const optionName = translations.options[key] || key.toUpperCase();
-            const optionValue = safeString(value);
-            if (optionValue) content += `- ${optionName}: ${optionValue}\n`;
-          }
+        const processedOptions = processOptions(item.options);
+        processedOptions.forEach(option => {
+          content += `${option}\n`;
         });
       }
 
