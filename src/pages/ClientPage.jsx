@@ -3090,16 +3090,16 @@ const changeLanguage = (lng) => {
                     </div>
                   </div>
                         <button
-              onClick={sendOrder}
-              disabled={!paymentMethod}
-              className={`w-full py-3 px-4 rounded-lg font-bold transition-all duration-300 ${
-                paymentMethod 
-                  ? 'bg-[#3D1106] text-white hover:bg-[#280B04] shadow-md' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {t('completeOrder')}
-            </button>
+      onClick={sendOrder}
+      disabled={!paymentMethod}
+      className={`w-full py-3 px-4 rounded-lg font-bold transition-all duration-300 ${
+        paymentMethod 
+          ? 'bg-[#3D1106] text-white hover:bg-[#280B04] shadow-md' 
+          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+      }`}
+    >
+      {t('completeOrder')}
+    </button>
               </div>
               )}
             </div>
