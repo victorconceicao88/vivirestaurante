@@ -70,7 +70,7 @@ i18n
               "broth": "Feijao de caldo",
               "tropeiro": "Feijao tropeiro"
             },
-            "sideDishes": "Acompanhamento",
+            "sideDishes": "Acompanhamentos",
             "sideDishesOptions": {
               "banana": "Banana frita",
               "potato": "Batata frita",
