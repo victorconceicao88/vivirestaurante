@@ -147,7 +147,9 @@ i18n
             "chooseAçai": "Escolha seus acompanhamentos"
           },
           "pickup_warning_title": "Confirmação de Retirada",
-      "pickup_warning_message": "Selecionou levantamento no restaurante. Confirme apenas se vai levantar pessoalmente. Caso contrário, cancele e escolha entrega ao domicílio."
+          "pickup_warning_message": "Você selecionou retirada no restaurante. Confirme abaixo se vai levantar pessoalmente:",
+
+
         }
         },
 
@@ -1315,6 +1317,7 @@ const ClientPage = () => {
   const isDaytime = currentHour >= 8 && currentHour < 18;
   const [showPickupWarning, setShowPickupWarning] = useState(false);
 
+
   const allProducts = categories.flatMap(category => category.products);
 
   const filteredProducts = useMemo(() => {
@@ -1323,44 +1326,90 @@ const ClientPage = () => {
       : categories.find(cat => cat.id === activeCategory)?.products || [];
     return products.filter(product => !unavailableItems.includes(product.id.toString()));
   }, [activeCategory, allProducts, categories, unavailableItems]);
-  const PickupConfirmationModal = ({ onConfirm, onCancel }) => {
-    return (
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black bg-opacity-80">
-        <div className="bg-white rounded-xl max-w-md w-full p-6">
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
-              <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <h3 className="mt-3 text-lg font-medium text-gray-900">
-              {t('pickup_warning_title')}
-            </h3>
-            <div className="mt-2 text-sm text-gray-500">
-              <p>{t('pickup_warning_message')}</p>
-            </div>
+  
+ const PickupConfirmationModal = ({ onConfirm, onCancel }) => {
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black bg-opacity-90">
+      <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
+        <div className="text-center">
+          {/* Ícone de atenção */}
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
+            <svg 
+              className="h-8 w-8 text-yellow-600" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="2" 
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
+              />
+            </svg>
           </div>
-          <div className="mt-5 sm:mt-6 grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300"
-              onClick={onCancel}
-            >
-              {t('cancel')}
-            </button>
-            <button
-              type="button"
-              className="w-full bg-[#3D1106] text-white py-2 px-4 rounded-md hover:bg-[#280B04]"
-              onClick={onConfirm}
-            >
-              {t('continue')}
-            </button>
+          
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            {t('pickup_warning_title')}
+          </h3>
+          
+          <div className="mt-4 text-gray-600">
+            <p className="mb-4">{t('pickup_warning_message')}</p>
+            
+            {/* Ícones de ação */}
+            <div className="flex justify-center space-x-8 mt-6">
+              {/* Botão Não */}
+              <button
+                onClick={onCancel}
+                className="flex flex-col items-center group"
+              >
+                <div className="bg-red-100 p-3 rounded-full group-hover:bg-red-200 transition-colors mb-2">
+                  <svg 
+                    className="h-8 w-8 text-red-600" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth="2" 
+                      d="M6 18L18 6M6 6l12 12" 
+                    />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium text-gray-700">Não</span>
+              </button>
+              
+              {/* Botão Sim */}
+              <button
+                onClick={onConfirm}
+                className="flex flex-col items-center group"
+              >
+                <div className="bg-green-100 p-3 rounded-full group-hover:bg-green-200 transition-colors mb-2">
+                  <svg 
+                    className="h-8 w-8 text-green-600" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth="2" 
+                      d="M5 13l4 4L19 7" 
+                    />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium text-gray-700">Sim</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    );
-  };
-  
+    </div>
+  );
+};
 
   const PremiumCartIcon = ({ count }) => (
     <motion.div
@@ -1976,7 +2025,6 @@ const proceedToDelivery = () => {
   window.scrollTo(0, 0);
 };
 
-
 const proceedToPayment = () => {
   // Validações básicas (nome e telefone)
   if (!deliveryDetails.firstName || !deliveryDetails.phone) {
@@ -1992,7 +2040,7 @@ const proceedToPayment = () => {
   // Se for retirada, mostra o modal de confirmação
   if (deliveryOption === 'pickup') {
     setShowPickupWarning(true);
-    return; // Não avança ainda, aguarda confirmação no modal
+    return;
   }
 
   // Se for entrega, valida endereço e CEP
@@ -3293,44 +3341,18 @@ const changeLanguage = (lng) => {
   </div>
 </footer>
 
-     {showPickupWarning && (
-  <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black bg-opacity-80">
-    <div className="bg-white rounded-xl max-w-md w-full p-6">
-      <div className="text-center">
-        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
-          <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <h3 className="mt-3 text-lg font-medium text-gray-900">
-          {t('pickup_warning_title')}
-        </h3>
-        <div className="mt-2 text-sm text-gray-500">
-          <p>{t('pickup_warning_message')}</p>
-        </div>
-      </div>
-      <div className="mt-5 sm:mt-6 grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300"
-          onClick={() => setShowPickupWarning(false)}
-        >
-          {t('cancel')}
-        </button>
-        <button
-          type="button"
-          className="w-full bg-[#3D1106] text-white py-2 px-4 rounded-md hover:bg-[#280B04]"
-          onClick={() => {
-            setShowPickupWarning(false);
-            setCheckoutStep('payment'); // Esta linha faz avançar para pagamento
-            window.scrollTo(0, 0);
-          }}
-        >
-          {t('continue')}
-        </button>
-      </div>
-    </div>
-  </div>
+{showPickupWarning && (
+  <PickupConfirmationModal 
+    onConfirm={() => {
+      setShowPickupWarning(false);
+      setCheckoutStep('payment'); // Avança para pagamento apenas se confirmar
+      window.scrollTo(0, 0);
+    }}
+    onCancel={() => {
+      setShowPickupWarning(false); // Fecha o modal
+      setDeliveryOption('delivery'); // Muda automaticamente para entrega
+    }}
+  />
 )}
     </div>
   );
