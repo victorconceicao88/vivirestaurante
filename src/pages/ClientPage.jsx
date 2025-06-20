@@ -17,6 +17,7 @@ import { database, ref, push, set, onValue, auth, getAuth } from '../firebase';
 import { signInAnonymously } from 'firebase/auth';
 
 
+
 // Configuração de internacionalização
 i18n
   .use(initReactI18next)
@@ -1317,13 +1318,13 @@ const ClientPage = () => {
   const [activeTab, setActiveTab] = useState('');
   const [menuItems, setMenuItems] = useState([]);
   const [unavailableItems, setUnavailableItems] = useState([]);
-  const [showWhatsappRedirect, setShowWhatsappRedirect] = useState(false);
   const [countdown, setCountdown] = useState(40);
   const [whatsappUrl, setWhatsappUrl] = useState('');
   const [showOrderSuccessModal, setShowOrderSuccessModal] = useState(false);
   const [currentHour] = useState(new Date().getHours());
   const isDaytime = currentHour >= 8 && currentHour < 18;
   const [showPickupWarning, setShowPickupWarning] = useState(false);
+  const [countdownActive, setCountdownActive] = useState(false);
 
 
   const allProducts = categories.flatMap(category => category.products);
@@ -2082,7 +2083,7 @@ const proceedToPayment = () => {
 
 // Atualize a função sendOrder para formatar corretamente para ambos
 const sendOrder = async () => {
-  console.log("Botão clicado - função chamada");
+  console.log("Finalizando pedido...");
   
   if (!paymentMethod) {
     setNotification({
@@ -2093,7 +2094,7 @@ const sendOrder = async () => {
   }
 
   try {
-    // 1. Authentication
+    // 1. Autenticação
     const auth = getAuth();
     let user = auth.currentUser;
     if (!user) {
@@ -2101,9 +2102,9 @@ const sendOrder = async () => {
       user = userCredential.user;
     }
 
-    // 2. Prepare order data
+    // 2. Preparar itens do carrinho
     const formattedItems = cart.map(item => {
-      const whatsappOptions = item.selectedOptions 
+      const optionsText = item.selectedOptions 
         ? Object.entries(item.selectedOptions)
             .map(([key, value]) => {
               const optionName = {
@@ -2119,32 +2120,19 @@ const sendOrder = async () => {
             }).join('\n')
         : '';
 
-      const firebaseOptions = item.selectedOptions 
-        ? Object.entries(item.selectedOptions).reduce((acc, [key, value]) => {
-            acc[key] = {
-              selected: value.value,
-              display: value.display,
-              optionName: {
-                beans: t('options.beans'),
-                sideDishes: t('options.sideDishes'),
-                meats: t('options.meats'),
-                salad: t('options.salad'),
-                drinks: t('options.drinks'),
-                toppings: t('options.chooseAçai'),
-                extras: t('options.extras')
-              }[key] || key,
-              originalValues: Array.isArray(value.value) ? value.value : [value.value]
-            };
-            return acc;
-          }, {})
-        : {};
-
-      return {...item, whatsappOptions, firebaseOptions};
+      return {
+        ...item,
+        optionsText,
+        firebaseOptions: item.selectedOptions || {}
+      };
     });
 
-    const totals = calculateTotal();
-    
-    // 3. Create order object
+    // 3. Calcular totais
+    const subtotal = cart.reduce((sum, item) => sum + (item.finalPrice || item.price) * item.quantity, 0);
+    const deliveryFee = deliveryOption === 'delivery' ? (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0;
+    const total = subtotal + deliveryFee;
+
+    // 4. Criar objeto do pedido para Firebase
     const orderData = {
       items: formattedItems.map(item => ({
         id: item.id,
@@ -2152,18 +2140,17 @@ const sendOrder = async () => {
         quantity: item.quantity,
         price: item.finalPrice || item.price,
         options: item.firebaseOptions,
-        selectedOptions: item.firebaseOptions,
         image: item.image
       })),
-      customerName: deliveryDetails.firstName + (deliveryDetails.lastName ? ' ' + deliveryDetails.lastName : ''),
+      customerName: `${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}`.trim(),
       customerPhone: deliveryDetails.phone,
       paymentMethod,
       status: 'pending',
       orderType: deliveryOption,
       createdAt: new Date().toISOString(),
-      subtotal: totals.subtotal,
-      deliveryFee: deliveryOption === 'delivery' ? (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0,
-      total: totals.total,
+      subtotal,
+      deliveryFee,
+      total,
       userId: user.uid,
       isOver5km: deliveryDetails.isOver5km || false,
       ...(deliveryOption === 'delivery' && { 
@@ -2173,38 +2160,41 @@ const sendOrder = async () => {
       ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
     };
 
-    // 4. Send to Firebase
+    // 5. Enviar para o Firebase
     const orderRef = push(ref(database, 'orders'));
     await set(orderRef, orderData);
     console.log("Pedido salvo no Firebase:", orderRef.key);
 
-    // 5. Prepare WhatsApp message
-    const whatsappMessage = `*Novo Pedido - Cozinha da Vivi* 🍴\n\n` +
-      `*Cliente:* ${orderData.customerName}\n` +
-      `*Telefone:* ${orderData.customerPhone}\n` +
-      `*Tipo:* ${orderData.orderType === 'delivery' ? 'Entrega' : 'Retirada'}\n` +
-      (orderData.orderType === 'delivery' ? 
-        `*Endereço:* ${orderData.deliveryAddress}\n` +
-        `*CEP:* ${orderData.postalCode}\n` +
-        `*Taxa:* €${orderData.deliveryFee.toFixed(2)}\n` +
-        (orderData.isOver5km ? `⚠️ *Distância:* +5km\n` : '') : '') +
-      `\n*Itens:*\n${formattedItems.map(item => 
-        `- ${item.name} (${item.quantity}x) - €${(item.finalPrice * item.quantity).toFixed(2)}` +
-        (item.whatsappOptions ? `\n${item.whatsappOptions}` : ''))
-      }).join('\n')}\n` +
-      `\n*Subtotal:* €${orderData.subtotal.toFixed(2)}\n` +
-      (orderData.deliveryFee > 0 ? `*Taxa:* €${orderData.deliveryFee.toFixed(2)}\n` : '') +
-      `*Total:* €${orderData.total.toFixed(2)}\n` +
-      `*Pagamento:* ${orderData.paymentMethod}\n` +
-      (orderData.notes ? `\n*Obs:* ${orderData.notes}\n` : '');
+    // 6. Preparar mensagem para WhatsApp
+    const whatsappMessage = [
+      `*Novo Pedido - Cozinha da Vivi* 🍴`,
+      `*Cliente:* ${orderData.customerName}`,
+      `*Telefone:* ${orderData.customerPhone}`,
+      `*Tipo:* ${orderData.orderType === 'delivery' ? 'Entrega' : 'Retirada'}`,
+      ...(orderData.orderType === 'delivery' ? [
+        `*Endereço:* ${orderData.deliveryAddress}`,
+        `*CEP:* ${orderData.postalCode}`,
+        `*Taxa de Entrega:* €${orderData.deliveryFee.toFixed(2)}`,
+        ...(orderData.isOver5km ? ['⚠️ *Distância:* +5km'] : [])
+      ] : []),
+      `\n*Itens do Pedido:*`,
+      ...formattedItems.map(item => [
+        `- ${item.name} (${item.quantity}x) - €${((item.finalPrice || item.price) * item.quantity).toFixed(2)}`,
+        ...(item.optionsText ? [item.optionsText] : [])
+      ]).flat(),
+      `\n*Subtotal:* €${orderData.subtotal.toFixed(2)}`,
+      ...(orderData.deliveryFee > 0 ? [`*Taxa de Entrega:* €${orderData.deliveryFee.toFixed(2)}`] : []),
+      `*Total:* €${orderData.total.toFixed(2)}`,
+      `*Pagamento:* ${orderData.paymentMethod}`,
+      ...(orderData.notes ? [`\n*Observações:* ${orderData.notes}`] : [])
+    ].join('\n');
 
-    // Set WhatsApp URL and activate countdown
+    // 7. Configurar para exibir o modal
     setWhatsappUrl(`https://wa.me/351928145225?text=${encodeURIComponent(whatsappMessage)}`);
     setShowSuccessModal(true);
-    setShowWhatsappRedirect(true);
-    setCountdown(40); // Reset countdown to 40 seconds
+    setCountdown(40);
 
-    // 6. Clear cart and close
+    // 8. Limpar carrinho e resetar formulário
     setCart([]);
     setDeliveryDetails({
       firstName: '',
@@ -2212,57 +2202,36 @@ const sendOrder = async () => {
       address: '',
       postalCode: '',
       phone: '',
-      notes: ''
+      notes: '',
+      isOver5km: false
     });
     setPaymentMethod('');
     setShowCart(false);
 
   } catch (error) {
-    console.error("Erro ao enviar pedido:", error);
+    console.error("Erro ao finalizar pedido:", error);
     setNotification({
-      message: 'Erro ao enviar pedido. Tente novamente.',
+      message: i18n.language === 'pt' 
+        ? 'Erro ao processar pedido. Por favor, tente novamente.' 
+        : 'Error processing order. Please try again.',
       type: 'error'
     });
   }
 };
-
-// Countdown useEffect (keep this exactly as is)
+// Countdown useEffect CORRIGIDO
 useEffect(() => {
-  if (showWhatsappRedirect) {
-    const timer = setTimeout(() => {
-      window.open(whatsappUrl, '_blank');
-      setShowWhatsappRedirect(false);
-      setShowSuccessModal(false);
-      
-      // Clear cart and data
-      setCart([]);
-      setDeliveryDetails({
-        firstName: '',
-        lastName: '',
-        address: '',
-        postalCode: '', 
-        phone: '',
-        notes: ''
-      });
-      setPaymentMethod('');
-    }, 40000); // 40 seconds countdown
-
-    const interval = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
+  let interval;
+  
+  if (showSuccessModal && countdown > 0) {
+    interval = setInterval(() => {
+      setCountdown(prev => prev - 1);
     }, 1000);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-    };
   }
-}, [showWhatsappRedirect, whatsappUrl]);
+
+  return () => {
+    if (interval) clearInterval(interval);
+  };
+}, [showSuccessModal, countdown]);
 
  const resetToHome = () => {
   setActiveCategory('all');
@@ -2282,126 +2251,71 @@ const changeLanguage = (lng) => {
 
 {showSuccessModal && (
   <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-90 p-4">
-    <motion.div 
-      className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
-      initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    >
-      {/* Cabeçalho premium */}
-      <div className="bg-gradient-to-r from-[#3D1106] to-[#5A1B0D] p-6 text-white relative">
-        <div className="flex items-center justify-center space-x-3">
-          <svg className="w-10 h-10 text-[#FFB501]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-          </svg>
-          <h3 className="text-2xl font-bold">
-            {i18n.language === 'pt' ? 'Pedido Confirmado!' : 
-             i18n.language === 'en' ? 'Order Confirmed!' : 
-             '¡Pedido Confirmado!'}
-          </h3>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#FFB501] opacity-50"></div>
+    <div className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-xl">
+      {/* Cabeçalho */}
+      <div className="bg-[#3D1106] p-5 text-white text-center">
+        <h3 className="text-xl font-bold">
+          {i18n.language === 'pt' ? 'Pedido Confirmado!' : 'Order Confirmed!'}
+        </h3>
       </div>
-
-      {/* Corpo do modal */}
-      <div className="p-6 text-center">
-        <div className="mb-6">
-          <p className="text-lg font-medium text-gray-800 mb-4">
-            {i18n.language === 'pt' ? 'Falta apenas um passo!' : 
-             i18n.language === 'en' ? 'Just one more step!' : 
-             '¡Solo un paso más!'}
+      
+      {/* Corpo */}
+      <div className="p-6">
+        <div className="text-center mb-6">
+          <p className="mb-4">
+            {i18n.language === 'pt'
+              ? 'Por favor, envie seu pedido pelo WhatsApp para concluir'
+              : 'Please send your order via WhatsApp to complete'}
           </p>
           
-          <p className="text-gray-600 mb-6">
-            {i18n.language === 'pt' ? 'Clique no botão abaixo para enviar seu pedido pelo WhatsApp e concluir o processo.' : 
-             i18n.language === 'en' ? 'Click the button below to send your order via WhatsApp and complete the process.' : 
-             'Haz clic en el botón de abajo para enviar tu pedido por WhatsApp y completar el proceso.'}
-          </p>
-          
-          <div className="bg-[#FFF5EB] p-4 rounded-lg border border-[#FFB501] mb-6">
-            <div className="flex items-center justify-center space-x-2">
-              <svg className="w-5 h-5 text-[#3D1106]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-center gap-2">
+              <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="font-medium text-[#3D1106]">
-                {i18n.language === 'pt' ? 'Tempo estimado de preparo: 30-40 minutos' : 
-                 i18n.language === 'en' ? 'Estimated preparation time: 30-40 minutes' : 
-                 'Tiempo estimado de preparación: 30-40 minutos'}
+              <span className="font-medium">
+                {i18n.language === 'pt'
+                  ? `Tempo restante: ${countdown}s`
+                  : `Time remaining: ${countdown}s`}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Temporizador visual aumentado para 10 segundos */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-500">
-              {i18n.language === 'pt' ? 'Redirecionando em:' : 
-               i18n.language === 'en' ? 'Redirecting in:' : 
-               'Redirigiendo en:'}
-            </span>
-            <span className="text-lg font-bold text-[#3D1106]">{countdown}s</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <motion.div 
-                className="bg-gradient-to-r from-[#FFB501] to-[#E67E22] h-2.5 rounded-full"
-                initial={{ width: '100%' }}
-                animate={{ width: '0%' }}
-                transition={{ duration: 40, ease: "linear" }} 
-              />
-            </div>
+        {/* Barra de progresso */}
+        <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+          <div 
+            className="bg-[#3D1106] h-2 rounded-full transition-all duration-1000 ease-linear" 
+            style={{ width: `${(countdown/40)*100}%` }}
+          />
         </div>
 
-        {/* Botão de ação */}
-        <div className="grid grid-cols-1 gap-3">
+        {/* Botões */}
+        <div className="flex flex-col gap-3">
           <button
             onClick={() => {
               window.open(whatsappUrl, '_blank');
               setShowSuccessModal(false);
-              setShowWhatsappRedirect(false);
-              // Limpar carrinho e dados
-              setCart([]);
-              setDeliveryDetails({
-                firstName: '',
-                lastName: '',
-                address: '',
-                postalCode: '',
-                phone: '',
-                notes: ''
-              });
-              setPaymentMethod('');
             }}
-            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 px-6 rounded-lg font-bold shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
+            className="bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
             </svg>
-            <span>
-              {i18n.language === 'pt' ? 'Enviar no WhatsApp' : 
-               i18n.language === 'en' ? 'Send via WhatsApp' : 
-               'Enviar por WhatsApp'}
-            </span>
+            {i18n.language === 'pt' ? 'Enviar pelo WhatsApp' : 'Send via WhatsApp'}
           </button>
 
           <button
-            onClick={() => {
-              setShowSuccessModal(false);
-              setShowWhatsappRedirect(false);
-              // Apenas fecha o modal, sem redirecionamento
-            }}
-            className="w-full border border-[#3D1106] text-[#3D1106] hover:bg-[#3D1106] hover:text-white py-3 px-6 rounded-lg font-medium transition-colors duration-300"
+            onClick={() => setShowSuccessModal(false)}
+            className="border border-gray-300 hover:bg-gray-100 py-3 px-4 rounded-lg transition-colors"
           >
-            {i18n.language === 'pt' ? 'Cancelar' : 
-             i18n.language === 'en' ? 'Cancel' : 
-             'Cancelar'}
+            {i18n.language === 'pt' ? 'Cancelar' : 'Cancel'}
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   </div>
 )}
-
-
 
       <header className="bg-[#FFF1E4] text-[#3D1106] p-4 shadow-sm sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
