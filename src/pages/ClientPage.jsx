@@ -1,13 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation, initReactI18next } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
-import ProductCard from '../components/Client/ProductCard';
-import { database, ref, push, set, onValue } from '../firebase';
+import { initReactI18next } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { GiMeal, GiSteak, GiHamburger, GiChickenOven, GiCakeSlice } from 'react-icons/gi';
+import { 
+  GiMeal, 
+  GiSteak, 
+  GiHamburger, 
+  GiChickenOven, 
+  GiCakeSlice 
+} from 'react-icons/gi';
 import { MdLocalBar } from 'react-icons/md';
 import { FaBox } from 'react-icons/fa';
-import { getAuth, signInAnonymously } from "firebase/auth";
+import ProductCard from '../components/Client/ProductCard';
+import { database, ref, push, set, onValue, auth, getAuth } from '../firebase';
+import { signInAnonymously } from 'firebase/auth';
+
 
 // Configuração de internacionalização
 i18n
@@ -2074,6 +2082,8 @@ const proceedToPayment = () => {
 
 // Atualize a função sendOrder para formatar corretamente para ambos
 const sendOrder = async () => {
+  console.log("Botão clicado - função chamada");
+  
   if (!paymentMethod) {
     setNotification({
       message: t('Select a payment method'),
@@ -2082,18 +2092,17 @@ const sendOrder = async () => {
     return;
   }
 
-  const auth = getAuth();
-  
   try {
+    // 1. Authentication
+    const auth = getAuth();
     let user = auth.currentUser;
     if (!user) {
       const userCredential = await signInAnonymously(auth);
       user = userCredential.user;
     }
 
-    // Formata os itens para WhatsApp e Firebase
+    // 2. Prepare order data
     const formattedItems = cart.map(item => {
-      // Formata as opções para exibição no WhatsApp
       const whatsappOptions = item.selectedOptions 
         ? Object.entries(item.selectedOptions)
             .map(([key, value]) => {
@@ -2106,13 +2115,10 @@ const sendOrder = async () => {
                 toppings: t('options.chooseAçai'),
                 extras: t('options.extras')
               }[key] || key;
-              
               return `  *${optionName}:* ${value.display}`;
-            })
-            .join('\n')
+            }).join('\n')
         : '';
 
-      // Formata as opções para o Firebase (admin) - MODIFICAÇÃO AQUI
       const firebaseOptions = item.selectedOptions 
         ? Object.entries(item.selectedOptions).reduce((acc, [key, value]) => {
             acc[key] = {
@@ -2126,36 +2132,27 @@ const sendOrder = async () => {
                 drinks: t('options.drinks'),
                 toppings: t('options.chooseAçai'),
                 extras: t('options.extras')
-              }[key] || key
+              }[key] || key,
+              originalValues: Array.isArray(value.value) ? value.value : [value.value]
             };
-            
-            // Adiciona os valores originais para impressão na cozinha
-            acc[key].originalValues = Array.isArray(value.value) 
-              ? value.value 
-              : [value.value];
-              
             return acc;
           }, {})
         : {};
 
-      return {
-        ...item,
-        whatsappOptions,
-        firebaseOptions
-      };
+      return {...item, whatsappOptions, firebaseOptions};
     });
 
     const totals = calculateTotal();
     
-    // Dados para o Firebase (admin)
+    // 3. Create order object
     const orderData = {
       items: formattedItems.map(item => ({
         id: item.id,
         name: item.name,
         quantity: item.quantity,
         price: item.finalPrice || item.price,
-        options: item.firebaseOptions, // Agora inclui todas as informações necessárias
-        selectedOptions: item.firebaseOptions, // Mantém compatibilidade
+        options: item.firebaseOptions,
+        selectedOptions: item.firebaseOptions,
         image: item.image
       })),
       customerName: deliveryDetails.firstName + (deliveryDetails.lastName ? ' ' + deliveryDetails.lastName : ''),
@@ -2176,64 +2173,60 @@ const sendOrder = async () => {
       ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
     };
 
-    // Mensagem para WhatsApp
-    let whatsappMessage = `*Novo Pedido - Cozinha da Vivi* 🍴\n\n`;
-    whatsappMessage += `*Cliente:* ${orderData.customerName}\n`;
-    whatsappMessage += `*Telefone:* ${orderData.customerPhone}\n`;
-    whatsappMessage += `*Tipo de Entrega:* ${orderData.orderType === 'delivery' ? 'Entrega' : 'Retirada'}\n`;
-    
-    if (orderData.orderType === 'delivery') {
-      whatsappMessage += `*Endereço:* ${orderData.deliveryAddress}\n`;
-      whatsappMessage += `*CEP:* ${orderData.postalCode}\n`;
-      whatsappMessage += `*Taxa de entrega:* €${orderData.deliveryFee.toFixed(2)}\n`;
-      if (orderData.isOver5km) {
-        whatsappMessage += `⚠️ *Distância:* Mais de 5km\n`;
-      }
-    }
-    
-    whatsappMessage += `\n*Itens do Pedido:*\n`;
-    formattedItems.forEach(item => {
-      whatsappMessage += `- ${item.name} (${item.quantity}x) - €${(item.finalPrice * item.quantity).toFixed(2)}\n`;
-      if (item.whatsappOptions) {
-        whatsappMessage += `${item.whatsappOptions}\n`;
-      }
-    });
-    
-    whatsappMessage += `\n*Subtotal:* €${orderData.subtotal.toFixed(2)}\n`;
-    if (orderData.deliveryFee > 0) {
-      whatsappMessage += `*Taxa de Entrega:* €${orderData.deliveryFee.toFixed(2)}\n`;
-    }
-    whatsappMessage += `*Total:* €${orderData.total.toFixed(2)}\n`;
-    whatsappMessage += `*Método de Pagamento:* ${orderData.paymentMethod}\n`;
-    
-    if (orderData.notes) {
-      whatsappMessage += `\n*Observações:* ${orderData.notes}\n`;
-    }
-
-    // Codifica a mensagem para URL do WhatsApp
-    const encodedMessage = encodeURIComponent(whatsappMessage);
-    const whatsappNumber = '351928145225';
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
-    // Salva no Firebase
+    // 4. Send to Firebase
     const orderRef = push(ref(database, 'orders'));
     await set(orderRef, orderData);
+    console.log("Pedido salvo no Firebase:", orderRef.key);
 
-    // Prepara para redirecionar ao WhatsApp
-    setWhatsappUrl(whatsappUrl);
-    setCountdown(40);
+    // 5. Prepare WhatsApp message
+    const whatsappMessage = `*Novo Pedido - Cozinha da Vivi* 🍴\n\n` +
+      `*Cliente:* ${orderData.customerName}\n` +
+      `*Telefone:* ${orderData.customerPhone}\n` +
+      `*Tipo:* ${orderData.orderType === 'delivery' ? 'Entrega' : 'Retirada'}\n` +
+      (orderData.orderType === 'delivery' ? 
+        `*Endereço:* ${orderData.deliveryAddress}\n` +
+        `*CEP:* ${orderData.postalCode}\n` +
+        `*Taxa:* €${orderData.deliveryFee.toFixed(2)}\n` +
+        (orderData.isOver5km ? `⚠️ *Distância:* +5km\n` : '') : '') +
+      `\n*Itens:*\n${formattedItems.map(item => 
+        `- ${item.name} (${item.quantity}x) - €${(item.finalPrice * item.quantity).toFixed(2)}` +
+        (item.whatsappOptions ? `\n${item.whatsappOptions}` : ''))
+      }).join('\n')}\n` +
+      `\n*Subtotal:* €${orderData.subtotal.toFixed(2)}\n` +
+      (orderData.deliveryFee > 0 ? `*Taxa:* €${orderData.deliveryFee.toFixed(2)}\n` : '') +
+      `*Total:* €${orderData.total.toFixed(2)}\n` +
+      `*Pagamento:* ${orderData.paymentMethod}\n` +
+      (orderData.notes ? `\n*Obs:* ${orderData.notes}\n` : '');
+
+    // Set WhatsApp URL and activate countdown
+    setWhatsappUrl(`https://wa.me/351928145225?text=${encodeURIComponent(whatsappMessage)}`);
     setShowSuccessModal(true);
     setShowWhatsappRedirect(true);
+    setCountdown(40); // Reset countdown to 40 seconds
+
+    // 6. Clear cart and close
+    setCart([]);
+    setDeliveryDetails({
+      firstName: '',
+      lastName: '',
+      address: '',
+      postalCode: '',
+      phone: '',
+      notes: ''
+    });
+    setPaymentMethod('');
+    setShowCart(false);
 
   } catch (error) {
-    console.error("Erro ao salvar pedido:", error);
+    console.error("Erro ao enviar pedido:", error);
     setNotification({
-      message: t('Error sending order'),
+      message: 'Erro ao enviar pedido. Tente novamente.',
       type: 'error'
     });
   }
 };
-// E o useEffect para gerenciar o contador:
+
+// Countdown useEffect (keep this exactly as is)
 useEffect(() => {
   if (showWhatsappRedirect) {
     const timer = setTimeout(() => {
@@ -2241,7 +2234,7 @@ useEffect(() => {
       setShowWhatsappRedirect(false);
       setShowSuccessModal(false);
       
-      // Limpar carrinho e dados
+      // Clear cart and data
       setCart([]);
       setDeliveryDetails({
         firstName: '',
@@ -2252,7 +2245,7 @@ useEffect(() => {
         notes: ''
       });
       setPaymentMethod('');
-    }, 40000); // Alterado de 10000 para 15000
+    }, 40000); // 40 seconds countdown
 
     const interval = setInterval(() => {
       setCountdown(prev => {

@@ -1,20 +1,29 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, push, set, onValue, off } from "firebase/database";
-import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-
+import { getDatabase, ref, push, set, onValue } from 'firebase/database';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCV809Fi4JTLZclARfU4MtNSAVkJIrGcfk",
-  authDomain: "cozinha-da-vivi-83d09.firebaseapp.com",
-  databaseURL: "https://cozinha-da-vivi-83d09-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "cozinha-da-vivi-83d09",
-  storageBucket: "cozinha-da-vivi-83d09.firebasestorage.app",
-  messagingSenderId: "740046409209",
-  appId: "1:740046409209:web:f8cff12dc530e22fba4128"
+  apiKey: "AIzaSyAj-TUJAkll5q1Wg7DwAJAwTliIxpbeJUA",
+  authDomain: "cozinha-da-vivi-18c22.firebaseapp.com",
+  databaseURL: "https://cozinha-da-vivi-18c22-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "cozinha-da-vivi-18c22",
+  storageBucket: "cozinha-da-vivi-18c22.firebasestorage.app",
+  messagingSenderId: "441913117573",
+  appId: "1:441913117573:web:a493f3b3df9eb198f552ec"
 };
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
-export { database, auth, ref, push, set, onValue, off };
+// Exporte TUDO que será usado nos componentes
+export { 
+  database, 
+  auth, 
+  ref, 
+  push, 
+  set, 
+  onValue,
+  getAuth,
+  signInAnonymously 
+};
