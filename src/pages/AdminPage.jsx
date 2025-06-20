@@ -55,6 +55,57 @@ const AdminPage = () => {
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
+
+const processOptions = (options) => {
+  if (!options) return [];
+
+  // Mapeamento completo de traduções
+  const translations = {
+    // Categorias
+    beans: "Feijão",
+    sideDishes: "Acompanhamentos",
+    meats: "Carnes", 
+    salad: "Salada",
+    drinks: "Bebidas",
+    
+    // Valores
+    broth: "Feijão de caldo",
+    tropeiro: "Feijão tropeiro",
+    banana: "Banana frita",
+    potato: "Batata frita",
+    cassavaFried: "Mandioca frita",
+    cassavaCooked: "Mandioca cozida",
+    mixed: "Salada mista",
+    vinaigrette: "Vinagrete",
+    none: "Sem",
+    heart: "Coração de frango",
+    ribs: "Costelinha suína",
+    fillet: "Filé de frango",
+    sausage: "Linguiça",
+    topSirloin: "Maminha",
+    cracklings: "Torresmo",
+    onlyTopSirloin: "Só Maminha"
+  };
+
+  return Object.entries(options).map(([key, value]) => {
+    // Caso seja um objeto com propriedade display
+    if (value && typeof value === 'object' && value.display) {
+      return `- ${translations[key] || key}: ${value.display}`;
+    }
+    // Caso seja um objeto com propriedade value
+    else if (value && typeof value === 'object' && value.value) {
+      const displayValue = Array.isArray(value.value) 
+        ? value.value.map(v => translations[v] || v).join(', ')
+        : translations[value.value] || value.value;
+      return `- ${translations[key] || key}: ${displayValue}`;
+    }
+    // Caso seja um valor direto
+    else {
+      return `- ${translations[key] || key}: ${translations[value] || value}`;
+    }
+  });
+};
+
 const printKitchenOrder = async (order) => {
   // Configuracao inicial para impressoras termicas
   let content = '\x1B\x40\x1B\x21\x10'; // Inicializa + negrito
@@ -181,42 +232,6 @@ const printKitchenOrder = async (order) => {
       }
       return translations.values[value] || String(value).toUpperCase();
     };
-
-    // Função para processar opções específicas como acompanhamentos
-// Função para processar opções específicas como acompanhamentos
-const processOptions = (options) => {
-  let result = [];
-  
-  Object.entries(options).forEach(([key, value]) => {
-    if (!value || value === 'none') return;
-    
-    // Tratamento especial para acompanhamentos (sideDishes)
-    if (key === 'sideDishes' && Array.isArray(value)) {
-      value.forEach(dish => {
-        if (dish && dish !== 'none') {
-          result.push(`- ${translations.options.sideDishes}: ${safeString(dish)}`);
-        }
-      });
-    } 
-    // Tratamento especial para seleção de carnes (meats)
-    else if (key === 'meats') {
-      if (Array.isArray(value)) {
-        const meats = value.map(meat => safeString(meat)).join(', ');
-        if (meats) result.push(`- ${translations.options.meats}: ${meats}`);
-      } else if (value.selected) {
-        // Caso seja um objeto com propriedade selected (para compatibilidade)
-        result.push(`- ${translations.options.meats}: ${safeString(value.selected)}`);
-      }
-    }
-    else {
-      const optionName = translations.options[key] || key.toUpperCase();
-      const optionValue = safeString(value);
-      if (optionValue) result.push(`- ${optionName}: ${optionValue}`);
-    }
-  });
-  
-  return result;
-};
 
     // =============================================
     // CABECALHO PROFISSIONAL
@@ -1030,7 +1045,7 @@ const total = getOrderTotal(order);
                           <h4 className="font-medium text-gray-700 mb-2 text-sm sm:text-base">Itens:</h4>
                           <ul className="space-y-1 sm:space-y-2">
                                             
-                        {order.items && Object.entries(order.items).map(([key, item]) => (
+                       {order.items && Object.entries(order.items).map(([key, item]) => (
                           <div key={key} className="mb-2">
                             <div className="flex justify-between">
                               <span className="font-medium">
@@ -1041,17 +1056,9 @@ const total = getOrderTotal(order);
                             
                             {item.options && (
                               <div className="text-sm text-gray-600 ml-2 mt-1">
-                                {Object.entries(item.options).map(([optKey, opt]) => (
-                                  <div key={optKey}>
-                                    <strong>{opt.optionName || optKey}:</strong> {opt.display || opt.selected}
-                                  </div>
+                                {processOptions(item.options).map((option, idx) => (
+                                  <div key={idx}>{option}</div>
                                 ))}
-                              </div>
-                            )}
-                            
-                            {item.notes && (
-                              <div className="text-sm text-red-600 ml-2 mt-1">
-                                <strong>Obs:</strong> {item.notes}
                               </div>
                             )}
                           </div>

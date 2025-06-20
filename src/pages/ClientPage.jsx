@@ -1828,60 +1828,67 @@ const ClientPage = () => {
 
 
 const formatOptionForDisplay = (optionName, value, allOptions) => {
+  // Mapeamento completo para português
   const optionTranslations = {
-    beans: t('options.beans'),
-    sideDishes: t('options.sideDishes'),
-    meats: t('options.meats'),
-    salad: t('options.salad'),
-    drinks: t('options.drinks'),
-    toppings: t('options.chooseAçai')
+    beans: 'Feijão',
+    sideDishes: 'Acompanhamentos',
+    meats: 'Carnes',
+    salad: 'Salada',
+    drinks: 'Bebida',
+    toppings: 'Acompanhamentos do Açaí',
+    extras: 'Extras'
   };
 
   const valueTranslations = {
-    // Beans
-    broth: t('options.beansOptions.broth'),
-    tropeiro: t('options.beansOptions.tropeiro'),
+    // Feijão
+    broth: 'Feijão de caldo',
+    tropeiro: 'Feijão tropeiro',
     
-    // Side Dishes
-    banana: t('options.sideDishesOptions.banana'),
-    potato: t('options.sideDishesOptions.potato'),
-    cassavaFried: t('options.sideDishesOptions.cassavaFried'),
-    cassavaCooked: t('options.sideDishesOptions.cassavaCooked'),
+    // Acompanhamentos
+    banana: 'Banana frita',
+    potato: 'Batata frita',
+    cassavaFried: 'Mandioca frita',
+    cassavaCooked: 'Mandioca cozida',
     
-    // Meats
-    heart: t('options.meatsOptions.heart'),
-    ribs: t('options.meatsOptions.ribs'),
-    fillet: t('options.meatsOptions.fillet'),
-    sausage: t('options.meatsOptions.sausage'),
-    topSirloin: t('options.meatsOptions.topSirloin'),
-    cracklings: t('options.meatsOptions.cracklings'),
-    onlyTopSirloin: t('options.meatsOptions.onlyTopSirloin'),
+    // Carnes
+    heart: 'Coração de frango',
+    ribs: 'Costelinha de porco',
+    fillet: 'Filé de frango',
+    sausage: 'Linguiça',
+    topSirloin: 'Maminha',
+    cracklings: 'Torresmo',
+    onlyTopSirloin: 'Só Maminha',
     
-    // Salad
-    mixed: t('options.saladOptions.mixed'),
-    vinaigrette: t('options.saladOptions.vinaigrette'),
-    none: t('options.saladOptions.none'),
+    // Salada
+    mixed: 'Salada mista',
+    vinaigrette: 'Vinagrete',
+    none: 'Sem salada',
     
-    // Drinks
-    none: t('options.drinksOptions.none'),
-    waterStill: t('options.drinksOptions.waterStill'),
-    waterSparklingCastelo: t('options.drinksOptions.waterSparklingCastelo'),
-    waterSparklingPedras: t('options.drinksOptions.waterSparklingPedras'),
-    coke: t('options.drinksOptions.coke'),
-    cokeZero: t('options.drinksOptions.cokeZero'),
-    fanta: t('options.drinksOptions.fanta'),
-    guarana: t('options.drinksOptions.guarana'),
-    iceTea: t('options.drinksOptions.iceTea'),
+    // Bebida
+    none: 'Sem bebida',
+    waterStill: 'Água sem gás',
+    waterSparklingCastelo: 'Água com gás Castelo',
+    waterSparklingPedras: 'Água com gás Pedras',
+    coke: 'Coca-Cola',
+    cokeZero: 'Coca-Cola Zero',
+    fanta: 'Fanta Laranja',
+    guarana: 'Guaraná Antarctica',
+    iceTea: 'Ice Tea de Manga',
+    
+    // Extras
+    bacon: 'Bacon',
+    extraCheese: 'Queijo extra',
+    egg: 'Ovo',
     
     // Açai toppings
-    granola: t('options.açaiOptions.granola'),
-    condensedMilk: t('options.açaiOptions.condensedMilk'),
-    banana: t('options.açaiOptions.banana'),
-    strawberry: t('options.açaiOptions.strawberry'),
-    ninho: t('options.açaiOptions.ninho'),
-    complete: t('options.açaiOptions.complete'),
-    custom: t('options.açaiOptions.custom'),
-    pure: t('options.açaiOptions.pure')
+    granola: 'Granola',
+    condensedMilk: 'Leite condensado',
+    banana: 'Banana',
+    strawberry: 'Morango',
+    ninho: 'Leite Ninho',
+    complete: 'Completo',
+    custom: 'Personalizado',
+    pure: 'Açaí Puro'
   };
 
   if (Array.isArray(value)) {
@@ -1895,6 +1902,7 @@ const formatOptionForDisplay = (optionName, value, allOptions) => {
     return `${valueTranslations['custom']} (${customToppings})`;
   }
 
+  // Retorna apenas a tradução do valor, sem repetir o nome da opção
   return valueTranslations[value] || value;
 };
 
@@ -1905,24 +1913,24 @@ const confirmAddToCart = (selectedOptions, additionalPrice) => {
       throw new Error("Nenhum produto selecionado");
     }
 
-    // Modificação: Verificar se o produto tem opções de carne antes de validar
     if (selectedProduct.options?.meats && selectedOptions.meats) {
       const selectedMeats = selectedOptions.meats || [];
       const hasOnlyTopSirloin = selectedMeats.includes('onlyTopSirloin');
 
       if (selectedMeats.length === 0) {
-        setMeatSelectionError(t('options.meatSelection'));
+        setMeatSelectionError('Por favor, selecione pelo menos uma carne');
         return false;
       }
 
       if (hasOnlyTopSirloin && selectedMeats.length > 1) {
-        setMeatSelectionError(t('options.meatSelection'));
+        setMeatSelectionError('Você pode escolher apenas "Só Maminha" ou até 2 outras carnes');
         return false;
       }
     }
 
     const formattedOptions = {};
     Object.entries(selectedOptions).forEach(([optionName, value]) => {
+      // Aqui formatamos apenas o valor, sem incluir o nome da opção
       formattedOptions[optionName] = {
         value,
         display: formatOptionForDisplay(optionName, value, selectedOptions)
@@ -1956,7 +1964,7 @@ const confirmAddToCart = (selectedOptions, additionalPrice) => {
     });
 
     setNotification({
-      message: `${selectedProduct.name} ${t('options.addToCart').toLowerCase()}`,
+      message: `${selectedProduct.name} adicionado ao carrinho`,
       type: 'success'
     });
 
@@ -1969,7 +1977,6 @@ const confirmAddToCart = (selectedOptions, additionalPrice) => {
     return false;
   }
 };
-
 
   const removeFromCart = (id) => {
     setCart(prevCart => {
@@ -2087,7 +2094,7 @@ const sendOrder = async () => {
   
   if (!paymentMethod) {
     setNotification({
-      message: t('Select a payment method'),
+      message: 'Por favor, selecione um método de pagamento',
       type: 'error'
     });
     return;
@@ -2102,21 +2109,91 @@ const sendOrder = async () => {
       user = userCredential.user;
     }
 
-    // 2. Preparar itens do carrinho
+    // 2. Mapeamento completo para português
+    const translateOption = (key, value) => {
+      const translations = {
+        // Tipos de opções
+        beans: 'Feijão',
+        sideDishes: 'Acompanhamentos',
+        meats: 'Carnes',
+        salad: 'Salada',
+        drinks: 'Bebida',
+        toppings: 'Acompanhamentos do Açaí',
+        extras: 'Extras',
+
+        // Valores específicos
+        // Feijão
+        broth: 'Feijão de caldo',
+        tropeiro: 'Feijão tropeiro',
+        
+        // Acompanhamentos
+        banana: 'Banana frita',
+        potato: 'Batata frita',
+        cassavaFried: 'Mandioca frita',
+        cassavaCooked: 'Mandioca cozida',
+        
+        // Carnes
+        heart: 'Coração de frango',
+        ribs: 'Costelinha de porco',
+        fillet: 'Filé de frango',
+        sausage: 'Linguiça',
+        topSirloin: 'Maminha',
+        cracklings: 'Torresmo',
+        onlyTopSirloin: 'Só Maminha',
+        
+        // Salada
+        mixed: 'Salada mista',
+        vinaigrette: 'Vinagrete',
+        none: 'Sem salada',
+        
+        // Bebida
+        none: 'Sem bebida',
+        waterStill: 'Água sem gás',
+        waterSparklingCastelo: 'Água com gás Castelo',
+        waterSparklingPedras: 'Água com gás Pedras',
+        coke: 'Coca-Cola',
+        cokeZero: 'Coca-Cola Zero',
+        fanta: 'Fanta Laranja',
+        guarana: 'Guaraná Antarctica',
+        iceTea: 'Ice Tea de Manga',
+        
+        // Extras
+        bacon: 'Bacon',
+        extraCheese: 'Queijo extra',
+        egg: 'Ovo',
+        
+        // Açai toppings
+        granola: 'Granola',
+        condensedMilk: 'Leite condensado',
+        banana: 'Banana',
+        strawberry: 'Morango',
+        ninho: 'Leite Ninho',
+        complete: 'Completo',
+        custom: 'Personalizado',
+        pure: 'Açaí Puro'
+      };
+
+      return translations[value] || value;
+    };
+
+    // 3. Preparar itens do carrinho em português
     const formattedItems = cart.map(item => {
       const optionsText = item.selectedOptions 
         ? Object.entries(item.selectedOptions)
-            .map(([key, value]) => {
-              const optionName = {
-                beans: t('options.beans'),
-                sideDishes: t('options.sideDishes'),
-                meats: t('options.meats'),
-                salad: t('options.salad'),
-                drinks: t('options.drinks'),
-                toppings: t('options.chooseAçai'),
-                extras: t('options.extras')
-              }[key] || key;
-              return `  *${optionName}:* ${value.display}`;
+            .map(([optionName, optionValue]) => {
+              const translatedName = translateOption(optionName, optionName);
+              let translatedValue;
+              
+              if (Array.isArray(optionValue.value)) {
+                translatedValue = optionValue.value.map(v => translateOption(optionName, v)).join(", ");
+              } else if (optionName === 'toppings' && optionValue.value === 'custom' && optionValue.toppingsCustom) {
+                const customItems = optionValue.toppingsCustom.map(v => translateOption(optionName, v)).join(", ");
+                translatedValue = `Personalizado (${customItems})`;
+              } else {
+                translatedValue = translateOption(optionName, optionValue.value);
+              }
+              
+              return `  • ${translatedName}: ${translatedValue}`;
             }).join('\n')
         : '';
 
@@ -2127,12 +2204,12 @@ const sendOrder = async () => {
       };
     });
 
-    // 3. Calcular totais
+    // 4. Calcular totais
     const subtotal = cart.reduce((sum, item) => sum + (item.finalPrice || item.price) * item.quantity, 0);
     const deliveryFee = deliveryOption === 'delivery' ? (deliveryDetails.isOver5km ? 3.5 : 2.0) : 0;
     const total = subtotal + deliveryFee;
 
-    // 4. Criar objeto do pedido para Firebase
+    // 5. Criar objeto do pedido para Firebase
     const orderData = {
       items: formattedItems.map(item => ({
         id: item.id,
@@ -2144,9 +2221,9 @@ const sendOrder = async () => {
       })),
       customerName: `${deliveryDetails.firstName} ${deliveryDetails.lastName || ''}`.trim(),
       customerPhone: deliveryDetails.phone,
-      paymentMethod,
+      paymentMethod: translateOption('payment', paymentMethod),
       status: 'pending',
-      orderType: deliveryOption,
+      orderType: deliveryOption === 'delivery' ? 'Entrega' : 'Retirada',
       createdAt: new Date().toISOString(),
       subtotal,
       deliveryFee,
@@ -2160,41 +2237,48 @@ const sendOrder = async () => {
       ...(deliveryDetails.notes && { notes: deliveryDetails.notes })
     };
 
-    // 5. Enviar para o Firebase
+    // 6. Enviar para o Firebase
     const orderRef = push(ref(database, 'orders'));
     await set(orderRef, orderData);
-    console.log("Pedido salvo no Firebase:", orderRef.key);
 
-    // 6. Preparar mensagem para WhatsApp
+    // 7. Preparar mensagem para WhatsApp em português
+    const paymentMethodTranslation = {
+      'MBWay': 'MBWay',
+      'Cartão Visa': 'Cartão Visa',
+      'Cartão Mastercard': 'Cartão Mastercard',
+      'Multibanco': 'Multibanco',
+      'Dinheiro': 'Dinheiro'
+    };
+
     const whatsappMessage = [
-      `*Novo Pedido - Cozinha da Vivi* 🍴`,
+      `*NOVO PEDIDO - COZINHA DA VIVI* 🍴`,
       `*Cliente:* ${orderData.customerName}`,
       `*Telefone:* ${orderData.customerPhone}`,
-      `*Tipo:* ${orderData.orderType === 'delivery' ? 'Entrega' : 'Retirada'}`,
-      ...(orderData.orderType === 'delivery' ? [
+      `*Tipo de Entrega:* ${orderData.orderType}`,
+      ...(orderData.orderType === 'Entrega' ? [
         `*Endereço:* ${orderData.deliveryAddress}`,
-        `*CEP:* ${orderData.postalCode}`,
+        `*CODIGO POSTAL:* ${orderData.postalCode}`,
         `*Taxa de Entrega:* €${orderData.deliveryFee.toFixed(2)}`,
         ...(orderData.isOver5km ? ['⚠️ *Distância:* +5km'] : [])
       ] : []),
-      `\n*Itens do Pedido:*`,
+      `\n*ITENS DO PEDIDO:*`,
       ...formattedItems.map(item => [
         `- ${item.name} (${item.quantity}x) - €${((item.finalPrice || item.price) * item.quantity).toFixed(2)}`,
         ...(item.optionsText ? [item.optionsText] : [])
       ]).flat(),
       `\n*Subtotal:* €${orderData.subtotal.toFixed(2)}`,
       ...(orderData.deliveryFee > 0 ? [`*Taxa de Entrega:* €${orderData.deliveryFee.toFixed(2)}`] : []),
-      `*Total:* €${orderData.total.toFixed(2)}`,
-      `*Pagamento:* ${orderData.paymentMethod}`,
+      `*TOTAL:* €${orderData.total.toFixed(2)}`,
+      `*Método de Pagamento:* ${paymentMethodTranslation[paymentMethod] || paymentMethod}`,
       ...(orderData.notes ? [`\n*Observações:* ${orderData.notes}`] : [])
     ].join('\n');
 
-    // 7. Configurar para exibir o modal
+    // 8. Configurar para exibir o modal
     setWhatsappUrl(`https://wa.me/351928145225?text=${encodeURIComponent(whatsappMessage)}`);
     setShowSuccessModal(true);
     setCountdown(40);
 
-    // 8. Limpar carrinho e resetar formulário
+    // 9. Limpar carrinho e resetar formulário
     setCart([]);
     setDeliveryDetails({
       firstName: '',
@@ -2211,9 +2295,7 @@ const sendOrder = async () => {
   } catch (error) {
     console.error("Erro ao finalizar pedido:", error);
     setNotification({
-      message: i18n.language === 'pt' 
-        ? 'Erro ao processar pedido. Por favor, tente novamente.' 
-        : 'Error processing order. Please try again.',
+      message: 'Erro ao processar pedido. Por favor, tente novamente.',
       type: 'error'
     });
   }
