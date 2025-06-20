@@ -88,21 +88,24 @@ const processOptions = (options) => {
   };
 
   return Object.entries(options).map(([key, value]) => {
-    // Caso seja um objeto com propriedade display
-    if (value && typeof value === 'object' && value.display) {
-      return `- ${translations[key] || key}: ${value.display}`;
+    // Caso especial para objetos com propriedades value/selected
+    if (value && typeof value === 'object') {
+      if (value.value !== undefined) {
+        const displayValue = Array.isArray(value.value) 
+          ? value.value.map(v => translations[v] || v).join(', ')
+          : translations[value.value] || value.value;
+        return `- ${translations[key] || key}: ${displayValue}`;
+      }
+      if (value.selected !== undefined) {
+        return `- ${translations[key] || key}: ${translations[value.selected] || value.selected}`;
+      }
+      if (value.display !== undefined) {
+        return `- ${translations[key] || key}: ${value.display}`;
+      }
     }
-    // Caso seja um objeto com propriedade value
-    else if (value && typeof value === 'object' && value.value) {
-      const displayValue = Array.isArray(value.value) 
-        ? value.value.map(v => translations[v] || v).join(', ')
-        : translations[value.value] || value.value;
-      return `- ${translations[key] || key}: ${displayValue}`;
-    }
+    
     // Caso seja um valor direto
-    else {
-      return `- ${translations[key] || key}: ${translations[value] || value}`;
-    }
+    return `- ${translations[key] || key}: ${translations[value] || value}`;
   });
 };
 
