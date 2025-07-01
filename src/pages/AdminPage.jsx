@@ -67,6 +67,12 @@ const processOptions = (options) => {
     meats: "Carnes", 
     salad: "Salada",
     drinks: "Bebidas",
+      coke: "Coca-Cola",
+      cokeZero: "Coca-Cola Zero",
+      sevenUp: "7Up",
+      fantaOrange: "Fanta Laranja",
+      guarana: "Guaraná Antarctica",
+      mangoIceTea: "Ice Tea de Manga",
     
     // Valores
     broth: "Feijão de caldo",
