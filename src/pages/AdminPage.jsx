@@ -135,16 +135,48 @@ const processOptions = (options) => {
   const result = [];
   
   for (const [key, value] of Object.entries(options)) {
-    // Caso especial para bebidas (sodas e waters)
-    if (key === 'sodas' || key === 'waters') {
+    // Caso especial para refrigerantes (sodas)
+    if (key === 'sodas') {
       if (Array.isArray(value)) {
-        value.forEach(v => result.push(`- ${processOptionValue(v)}`));
+        value.forEach(v => {
+          const drinkName = translations[v] || v;
+          result.push(`- Refrigerante: ${drinkName}`);
+        });
       } else if (value && typeof value === 'object') {
         if (value.selected) {
-          result.push(`- ${processOptionValue(value.selected)}`);
+          const drinkName = translations[value.selected] || value.selected;
+          result.push(`- Refrigerante: ${drinkName}`);
+        }
+        if (value.value) {
+          const drinkName = translations[value.value] || value.value;
+          result.push(`- Refrigerante: ${drinkName}`);
         }
       } else if (value) {
-        result.push(`- ${processOptionValue(value)}`);
+        const drinkName = translations[value] || value;
+        result.push(`- Refrigerante: ${drinkName}`);
+      }
+      continue;
+    }
+
+    // Caso especial para águas (waters)
+    if (key === 'waters') {
+      if (Array.isArray(value)) {
+        value.forEach(v => {
+          const drinkName = translations[v] || v;
+          result.push(`- Água: ${drinkName}`);
+        });
+      } else if (value && typeof value === 'object') {
+        if (value.selected) {
+          const drinkName = translations[value.selected] || value.selected;
+          result.push(`- Água: ${drinkName}`);
+        }
+        if (value.value) {
+          const drinkName = translations[value.value] || value.value;
+          result.push(`- Água: ${drinkName}`);
+        }
+      } else if (value) {
+        const drinkName = translations[value] || value;
+        result.push(`- Água: ${drinkName}`);
       }
       continue;
     }
