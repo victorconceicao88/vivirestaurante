@@ -59,62 +59,121 @@ const AdminPage = () => {
 const processOptions = (options) => {
   if (!options) return [];
 
-  // Mapeamento completo de traduções
+  // Dicionário completo de traduções
   const translations = {
     // Categorias
     beans: "Feijão",
     sideDishes: "Acompanhamentos",
-    meats: "Carnes", 
+    meats: "Carnes",
     salad: "Salada",
-    drinks: "Bebidas",
-      coke: "Coca-Cola",
-      cokeZero: "Coca-Cola Zero",
-      sevenUp: "7Up",
-      fantaOrange: "Fanta Laranja",
-      guarana: "Guaraná Antarctica",
-      mangoIceTea: "Ice Tea de Manga",
-    
-    // Valores
+    drinks: "Bebida",
+    toppings: "Acompanhamentos do Açaí",
+    extras: "Adicionais",
+    sodas: "Refrigerante",
+    waters: "Água",
+
+    // Valores específicos
+    // Feijão
     broth: "Feijão de caldo",
     tropeiro: "Feijão tropeiro",
+    
+    // Acompanhamentos
     banana: "Banana frita",
     potato: "Batata frita",
     cassavaFried: "Mandioca frita",
     cassavaCooked: "Mandioca cozida",
+    
+    // Salada
     mixed: "Salada mista",
     vinaigrette: "Vinagrete",
-    none: "Sem",
+    none: "Sem salada",
+    
+    // Carnes
     heart: "Coração de frango",
-    ribs: "Costelinha suína",
+    ribs: "Costelinha de porco",
     fillet: "Filé de frango",
     sausage: "Linguiça",
     topSirloin: "Maminha",
     cracklings: "Torresmo",
-    onlyTopSirloin: "Só Maminha"
+    onlyTopSirloin: "Só Maminha",
+    
+    // Bebidas
+    none: "Sem bebida",
+    waterStill: "Água sem gás 500ml",
+    waterSparklingCastelo: "Água com gás Castelo",
+    waterSparklingPedras: "Água com gás Pedras 500ml",
+    coke: "Coca-Cola",
+    cokeZero: "Coca-Cola Zero",
+    fanta: "Fanta Laranja",
+    guarana: "Guaraná Antarctica",
+    iceTea: "Ice Tea de Manga",
+    
+    // Açaí
+    granola: "Granola",
+    condensedMilk: "Leite condensado",
+    banana: "Banana",
+    strawberry: "Morango",
+    ninho: "Leite Ninho",
+    complete: "Completo",
+    custom: "Personalizado",
+    pure: "Açaí Puro",
+    toppingsCustom: "Itens personalizados",
+    
+    // Extras
+    bacon: "Bacon",
+    extraCheese: "Queijo extra",
+    egg: "Ovo"
   };
 
-  return Object.entries(options).map(([key, value]) => {
-    // Caso especial para objetos com propriedades value/selected
+  const processOptionValue = (value) => {
+    if (Array.isArray(value)) {
+      return value.map(v => translations[v] || v).join(', ');
+    }
+    return translations[value] || value;
+  };
+
+  const result = [];
+  
+  for (const [key, value] of Object.entries(options)) {
+    // Caso especial para bebidas (sodas e waters)
+    if (key === 'sodas' || key === 'waters') {
+      if (Array.isArray(value)) {
+        value.forEach(v => result.push(`- ${processOptionValue(v)}`));
+      } else if (value && typeof value === 'object') {
+        if (value.selected) {
+          result.push(`- ${processOptionValue(value.selected)}`);
+        }
+      } else if (value) {
+        result.push(`- ${processOptionValue(value)}`);
+      }
+      continue;
+    }
+
+    // Caso especial para toppings customizados do açaí
+    if (key === 'toppingsCustom' && Array.isArray(value)) {
+      const customItems = value.map(v => translations[v] || v).join(', ');
+      result.push(`- ${translations[key] || key}: ${customItems}`);
+      continue;
+    }
+
+    // Caso padrão para objetos com propriedades value/selected/display
     if (value && typeof value === 'object') {
       if (value.value !== undefined) {
-        const displayValue = Array.isArray(value.value) 
-          ? value.value.map(v => translations[v] || v).join(', ')
-          : translations[value.value] || value.value;
-        return `- ${translations[key] || key}: ${displayValue}`;
+        result.push(`- ${translations[key] || key}: ${processOptionValue(value.value)}`);
+      } else if (value.selected !== undefined) {
+        result.push(`- ${translations[key] || key}: ${processOptionValue(value.selected)}`);
+      } else if (value.display !== undefined) {
+        result.push(`- ${translations[key] || key}: ${processOptionValue(value.display)}`);
       }
-      if (value.selected !== undefined) {
-        return `- ${translations[key] || key}: ${translations[value.selected] || value.selected}`;
-      }
-      if (value.display !== undefined) {
-        return `- ${translations[key] || key}: ${value.display}`;
-      }
+      continue;
     }
     
-    // Caso seja um valor direto
-    return `- ${translations[key] || key}: ${translations[value] || value}`;
-  });
-};
+    // Caso simples (valor direto)
+    result.push(`- ${translations[key] || key}: ${processOptionValue(value)}`);
+  }
 
+  return result;
+};
 const printKitchenOrder = async (order) => {
   // Configuracao inicial para impressoras termicas
   let content = '\x1B\x40\x1B\x21\x10'; // Inicializa + negrito
