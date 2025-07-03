@@ -135,6 +135,7 @@ const processOptions = (options) => {
   const result = [];
   
   for (const [key, value] of Object.entries(options)) {
+    
     // Caso especial para refrigerantes (sodas)
     if (key === 'sodas') {
       if (Array.isArray(value)) {
@@ -206,6 +207,16 @@ const processOptions = (options) => {
 
   return result;
 };
+
+const sanitizeForPrint = (str) => {
+  if (!str) return '';
+  
+  return str
+    .normalize('NFD') // Decompõe os caracteres acentuados
+    .replace(/[\u0300-\u036f]/g, '') // Remove os acentos
+    .replace(/[^a-zA-Z0-9 ,.-]/g, ''); // Mantém apenas letras, números e alguns caracteres básicos
+};
+
 const printKitchenOrder = async (order) => {
   // Configuracao inicial para impressoras termicas
   let content = '\x1B\x40\x1B\x21\x10'; // Inicializa + negrito
@@ -350,7 +361,7 @@ const printKitchenOrder = async (order) => {
     content += `TIPO: ${order.deliveryAddress ? translations.labels.delivery : translations.labels.pickup}\n`;
     
     if (order.deliveryAddress) {
-      content += `${translations.labels.address}: ${order.deliveryAddress}\n`;
+      content += `${translations.labels.address}: ${sanitizeForPrint(order.deliveryAddress)}\n`;
       if (order.postalCode) {
         content += `CODIGO POSTAL: ${order.postalCode.replace(/(\d{5})(\d{3})/, '$1-$2')}\n`;
       }
