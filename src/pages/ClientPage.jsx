@@ -2149,173 +2149,123 @@ const changeLanguage = (lng) => {
 
       {/* Modal MB Way - Versão melhorada */}
       {isMbWayModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            className="bg-white rounded-2xl max-w-md w-full mx-4 overflow-hidden shadow-2xl border-2 border-[#3D1106]/20"
-          >
-            {/* Cabeçalho com gradiente */}
-            <div className="bg-gradient-to-r from-[#3D1106] to-[#5a1a0c] p-5 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <motion.div
-                  animate={{ 
-                    rotate: [0, 15, -15, 0],
-                    scale: [1, 1.1, 1]
-                  }}
-                  transition={{ repeat: 1, duration: 0.6 }}
-                  className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-10 w-10 text-[#FFB501]" 
-                    viewBox="0 0 24 24" 
-                    fill="currentColor"
-                  >
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                  </svg>
-                </motion.div>
-                <div>
-                  <h3 className="text-2xl font-bold text-white">MB Way</h3>
-                  <p className="text-[#FFB501] text-sm font-medium">
-                    {i18n.language === 'pt' ? 'Pagamento Seguro' : 'Secure Payment'}
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setIsMbWayModalOpen(false)}
-                className="text-white/80 hover:text-white transition-colors p-1"
-              >
-              </button>
-            </div>
-
-            {/* Corpo do modal */}
-            <div className="p-6">
-              {/* Ilustração animada */}
-              <motion.div 
-                animate={{
-                  y: [0, -5, 0],
-                }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 2,
-                  ease: "easeInOut"
-                }}
-                className="flex justify-center mb-6"
-              >
-                <div className="relative">
-                  <div className="absolute -inset-4 bg-[#FFB501]/20 rounded-full blur-md"></div>
-                  <div className="relative bg-white p-5 rounded-xl border-2 border-[#3D1106]/10 shadow-lg">
-                    <svg className="w-16 h-16 mx-auto text-[#3D1106]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Passos do processo */}
-              <div className="space-y-5">
-                <motion.div 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="flex items-start gap-4 p-4 bg-[#FFF1E4] rounded-xl border border-[#3D1106]/10"
-                >
-                  <div className="flex-shrink-0 mt-0.5">
-                    <div className="bg-[#3D1106] text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                      <span className="font-bold">1</span>
-                    </div>
-                  </div>
-                  <p className="text-gray-800 font-medium">
-                    {i18n.language === 'pt' 
-                      ? 'Finalize o pedido normalmente para prosseguir com o pagamento por MB Way' 
-                      : 'Complete the order normally to proceed with MB Way payment'}
-                  </p>
-                </motion.div>
-
-                <motion.div 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="flex items-start gap-4 p-4 bg-[#FFF1E4] rounded-xl border border-[#3D1106]/10"
-                >
-                  <div className="flex-shrink-0 mt-0.5">
-                    <div className="bg-[#3D1106] text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                      <span className="font-bold">2</span>
-                    </div>
-                  </div>
-                  <p className="text-gray-800 font-medium">
-                    {i18n.language === 'pt' 
-                      ? 'Após o envio, aguarde o contacto do restaurante com os dados de pagamento' 
-                      : 'After submission, wait for the restaurant to send you the payment details'}
-                  </p>
-                </motion.div>
-
-                <motion.div 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="flex items-start gap-4 p-4 bg-[#FFF1E4] rounded-xl border border-[#3D1106]/10"
-                >
-                  <div className="flex-shrink-0 mt-0.5">
-                    <div className="bg-[#3D1106] text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                      <span className="font-bold">3</span>
-                    </div>
-                  </div>
-                  <p className="text-gray-800 font-medium">
-                    {i18n.language === 'pt' 
-                      ? 'O número MB Way será enviado via SMS ou WhatsApp para o seu telefone registado' 
-                      : 'The MB Way number will be sent to your registered phone via SMS or WhatsApp'}
-                  </p>
-                </motion.div>
-              </div>
-
-              {/* Nota importante */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="mt-6 p-4 bg-[#3D1106]/5 border border-[#3D1106]/10 rounded-lg flex items-start gap-3"
-              >
-                <svg className="flex-shrink-0 w-5 h-5 text-[#3D1106] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <p className="text-sm text-[#3D1106]">
-                  {i18n.language === 'pt' 
-                    ? 'Por favor, mantenha o seu telemóvel por perto para receber a notificação' 
-                    : 'Please keep your phone nearby to receive the notification'}
-                </p>
-              </motion.div>
-
-              {/* Botão de ação */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="mt-8"
-              >
-                <button
-                  onClick={() => {
-                    setIsMbWayModalOpen(false);
-                    setOrderConfirmed(true);
-                  }}
-                  className="w-full bg-gradient-to-r from-[#3D1106] to-[#5a1a0c] text-white py-4 px-6 rounded-xl font-bold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden group"
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    {i18n.language === 'pt' ? 'Entendi, continuar' : 'Got it, continue'}
-                  </span>
-                  <span className="absolute inset-0 bg-gradient-to-r from-[#5a1a0c] to-[#3D1106] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                </button>
-              </motion.div>
-            </div>
-          </motion.div>
+  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+      className="bg-white rounded-2xl w-full max-w-[95vw] max-h-[90vh] overflow-y-auto mx-2 shadow-2xl border-2 border-[#3D1106]/20"
+    >
+      {/* Cabeçalho compacto */}
+      <div className="bg-gradient-to-r from-[#3D1106] to-[#5a1a0c] p-4 flex justify-between items-center sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <div className="bg-white/10 p-2 rounded-lg">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-6 w-6 text-[#FFB501]" 
+              viewBox="0 0 24 24" 
+              fill="currentColor"
+            >
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-white">MB Way</h3>
+            <p className="text-[#FFB501] text-xs font-medium">
+              {i18n.language === 'pt' ? 'Pagamento Seguro' : 'Secure Payment'}
+            </p>
+          </div>
         </div>
-      )}
+        <button 
+          onClick={() => setIsMbWayModalOpen(false)}
+          className="text-white/80 hover:text-white transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Corpo do modal otimizado para mobile */}
+      <div className="p-4">
+        {/* Ilustração simplificada */}
+        <div className="flex justify-center mb-4">
+          <div className="relative">
+            <div className="bg-white p-3 rounded-lg border border-[#3D1106]/10">
+              <svg className="w-12 h-12 mx-auto text-[#3D1106]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Passos do processo compactos */}
+        <div className="space-y-3">
+          <div className="flex items-start gap-3 p-3 bg-[#FFF1E4] rounded-lg border border-[#3D1106]/10">
+            <div className="bg-[#3D1106] text-white p-1 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mt-0.5">
+              1
+            </div>
+            <p className="text-sm text-gray-800 flex-1">
+              {i18n.language === 'pt' 
+                ? 'Finalize o pedido normalmente' 
+                : 'Complete the order normally'}
+            </p>
+          </div>
+
+          <div className="flex items-start gap-3 p-3 bg-[#FFF1E4] rounded-lg border border-[#3D1106]/10">
+            <div className="bg-[#3D1106] text-white p-1 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mt-0.5">
+              2
+            </div>
+            <p className="text-sm text-gray-800 flex-1">
+              {i18n.language === 'pt' 
+                ? 'Aguarde o nosso contacto com os dados de pagamento' 
+                : 'Wait for payment details contact'}
+            </p>
+          </div>
+
+          <div className="flex items-start gap-3 p-3 bg-[#FFF1E4] rounded-lg border border-[#3D1106]/10">
+            <div className="bg-[#3D1106] text-white p-1 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mt-0.5">
+              3
+            </div>
+            <p className="text-sm text-gray-800 flex-1">
+              {i18n.language === 'pt' 
+                ? 'Número será enviado por SMS/WhatsApp' 
+                : 'Number will be sent via SMS/WhatsApp'}
+            </p>
+          </div>
+        </div>
+
+     
+{/* Nota importante - Versão simplificada */}
+<div className="mt-4 p-3 bg-[#FFF1E4] border-l-4 border-[#FFB501] rounded-r-lg flex items-start gap-3">
+  <div className="flex-shrink-0 p-1.5 bg-[#3D1106]/10 rounded-full">
+    <svg className="w-4 h-4 text-[#3D1106]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+  </div>
+ <p className="text-sm text-[#3D1106]">
+  {i18n.language === 'pt' 
+    ? 'Após enviar o pedido, o restaurante entrará em contacto consigo por mensagem  com o número do MB Way para concluir o pagamento.'
+    : 'After placing your order, the restaurant will contact you via SMS or WhatsApp with the MB Way number to complete the payment.'}
+</p>
+
+</div>
+
+        {/* Botão de ação otimizado */}
+        <button
+          onClick={() => {
+            setIsMbWayModalOpen(false);
+            setOrderConfirmed(true);
+          }}
+          className="w-full bg-gradient-to-r from-[#3D1106] to-[#5a1a0c] text-white py-3 px-4 rounded-lg font-bold mt-4 text-sm active:scale-95 transition-transform"
+        >
+          {i18n.language === 'pt' ? 'Entendi, continuar' : 'Got it, continue'}
+        </button>
+      </div>
+    </motion.div>
+  </div>
+)}
       
       {/* Outros métodos de pagamento... */}
       <div 
