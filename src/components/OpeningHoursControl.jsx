@@ -166,7 +166,7 @@ const OpeningHoursControl = ({ children }) => {
   };
 
   // Componente de relógio analógico animado
-  const AnalogClock = ({ size = 80 }) => {
+  const AnalogClock = ({ size = 60 }) => {
     const time = new Date();
     const seconds = time.getSeconds();
     const minutes = time.getMinutes();
@@ -244,28 +244,30 @@ const OpeningHoursControl = ({ children }) => {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.6, type: 'spring' }}
-          className="max-w-2xl w-full bg-gradient-to-br from-[#3D1106] to-[#5A1B0D] p-6 sm:p-8 md:p-10 rounded-3xl shadow-2xl text-center text-white relative overflow-hidden border border-[#FFB501]/20"
+          className="w-full max-w-md mx-auto bg-gradient-to-br from-[#3D1106] to-[#5A1B0D] p-5 sm:p-6 rounded-2xl shadow-2xl text-center text-white relative overflow-hidden border border-[#FFB501]/20"
           style={{
+            maxHeight: '90vh',
+            overflowY: 'auto',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
             backgroundImage: 'radial-gradient(at top right, #5A1B0D, transparent 60%), linear-gradient(to bottom, #3D1106, #5A1B0D)'
           }}
         >
           {/* Efeitos de partículas */}
           <div className="absolute inset-0 overflow-hidden">
-            {Array.from({ length: 20 }).map((_, i) => (
+            {Array.from({ length: 12 }).map((_, i) => (
               <motion.div
                 key={i}
                 className="absolute rounded-full bg-[#FFB501]/10"
                 initial={{
                   x: Math.random() * 100,
                   y: Math.random() * 100,
-                  width: Math.random() * 10 + 5,
-                  height: Math.random() * 10 + 5,
+                  width: Math.random() * 8 + 3,
+                  height: Math.random() * 8 + 3,
                   opacity: Math.random() * 0.3 + 0.1
                 }}
                 animate={{
-                  y: [null, (Math.random() - 0.5) * 50],
-                  x: [null, (Math.random() - 0.5) * 50],
+                  y: [null, (Math.random() - 0.5) * 30],
+                  x: [null, (Math.random() - 0.5) * 30],
                   transition: {
                     duration: Math.random() * 10 + 10,
                     repeat: Infinity,
@@ -277,12 +279,12 @@ const OpeningHoursControl = ({ children }) => {
           </div>
           
           {/* Elementos decorativos */}
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#FF6B00] via-[#FFB501] to-[#FF6B00]"></div>
-          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-[#FFB501]/10 filter blur-xl"></div>
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-[#FFB501]/5 filter blur-xl"></div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF6B00] via-[#FFB501] to-[#FF6B00]"></div>
+          <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-[#FFB501]/10 filter blur-xl"></div>
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-[#FFB501]/5 filter blur-xl"></div>
           
           <div className="relative z-10">
-            <div className="mb-6 sm:mb-8 md:mb-10 flex flex-col items-center">
+            <div className="mb-4 sm:mb-6 flex flex-col items-center">
               <motion.div 
                 animate={{ 
                   rotate: 360,
@@ -298,19 +300,19 @@ const OpeningHoursControl = ({ children }) => {
                     repeatType: 'reverse'
                   }
                 }}
-                className="bg-gradient-to-br from-[#FFB501] to-[#FF6B00] p-2 sm:p-3 rounded-full mb-4 sm:mb-5 shadow-lg"
+                className="bg-gradient-to-br from-[#FFB501] to-[#FF6B00] p-1.5 sm:p-2 rounded-full mb-3 sm:mb-4 shadow-lg"
                 style={{
-                  boxShadow: '0 0 20px rgba(255, 181, 1, 0.5)'
+                  boxShadow: '0 0 15px rgba(255, 181, 1, 0.5)'
                 }}
               >
-                <AnalogClock size={60} />
+                <AnalogClock size={50} />
               </motion.div>
               
               <motion.h2 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-3 bg-clip-text text-transparent bg-gradient-to-r from-[#FFB501] to-[#FF6B00]"
+                className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2 bg-clip-text text-transparent bg-gradient-to-r from-[#FFB501] to-[#FF6B00]"
               >
                 {t('closedTitle')}
               </motion.h2>
@@ -318,7 +320,7 @@ const OpeningHoursControl = ({ children }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-base sm:text-lg text-gray-300 mb-4 sm:mb-6"
+                className="text-sm sm:text-base text-gray-300 mb-3 sm:mb-4"
               >
                 Fora do horário de funcionamento
               </motion.p>
@@ -328,26 +330,26 @@ const OpeningHoursControl = ({ children }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-white/5 backdrop-blur-md p-4 sm:p-6 rounded-2xl border border-[#FFB501]/20 mb-6 sm:mb-8 relative overflow-hidden"
+              className="bg-white/5 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-[#FFB501]/20 mb-4 sm:mb-6 relative overflow-hidden"
               style={{
                 boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.1)'
               }}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFB501]/5 to-transparent opacity-20"></div>
               <div className="relative z-10">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
-                  <div className="text-center md:text-left mb-4 md:mb-0">
-                    <p className="text-[#FFB501] text-sm sm:text-base md:text-lg font-semibold mb-1 sm:mb-2">
+                <div className="flex flex-col items-center gap-2 sm:gap-3">
+                  <div className="text-center">
+                    <p className="text-[#FFB501] text-xs sm:text-sm font-semibold mb-1">
                       Próxima abertura:
                     </p>
-                    <p className="text-white text-base sm:text-lg md:text-xl font-medium">
+                    <p className="text-white text-sm sm:text-base font-medium">
                       {status.nextOpening?.message}
                     </p>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-[#FFB501]/10 to-[#FF6B00]/10 p-3 sm:p-4 rounded-xl border border-[#FFB501]/30 backdrop-blur-sm min-w-[150px] sm:min-w-[180px]">
-                    <p className="text-[#FFB501] text-xs sm:text-sm mb-1 sm:mb-2">Tempo restante:</p>
-                    <div className="text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-white tracking-tighter">
+                  <div className="bg-gradient-to-br from-[#FFB501]/10 to-[#FF6B00]/10 p-2 sm:p-3 rounded-lg border border-[#FFB501]/30 backdrop-blur-sm w-full max-w-[180px]">
+                    <p className="text-[#FFB501] text-xs mb-1">Tempo restante:</p>
+                    <div className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tighter">
                       {formatTime(status.nextChangeIn)}
                     </div>
                   </div>
@@ -359,34 +361,34 @@ const OpeningHoursControl = ({ children }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 text-left"
+              className="grid grid-cols-1 gap-3 sm:gap-4 text-left"
             >
-              <div className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-4 sm:p-5 rounded-2xl border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group">
-                <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full bg-[#FFB501]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
-                <h3 className="text-[#FFB501] font-bold text-lg sm:text-xl md:text-2xl mb-2 sm:mb-3 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-3 sm:p-4 rounded-xl border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group">
+                <div className="absolute -right-3 -top-3 w-12 h-12 rounded-full bg-[#FFB501]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
+                <h3 className="text-[#FFB501] font-bold text-base sm:text-lg mb-1 sm:mb-2 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Horário de Almoço
                 </h3>
-                <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-300">
+                <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-300">
                   <li className="flex justify-between items-center">
                     <span className="flex items-center">
-                      <span className="w-2 h-2 rounded-full bg-[#FFB501] mr-2"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
                       Abertura:
                     </span>
                     <span className="font-medium text-white">11:30</span>
                   </li>
                   <li className="flex justify-between items-center">
                     <span className="flex items-center">
-                      <span className="w-2 h-2 rounded-full bg-[#FFB501] mr-2"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
                       Entregas a partir:
                     </span>
                     <span className="font-medium text-white">12:00</span>
                   </li>
                   <li className="flex justify-between items-center">
                     <span className="flex items-center">
-                      <span className="w-2 h-2 rounded-full bg-[#FFB501] mr-2"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
                       Fechamento:
                     </span>
                     <span className="font-medium text-white">15:00</span>
@@ -394,32 +396,32 @@ const OpeningHoursControl = ({ children }) => {
                 </ul>
               </div>
               
-              <div className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-4 sm:p-5 rounded-2xl border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group">
-                <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full bg-[#FF6B00]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
-                <h3 className="text-[#FFB501] font-bold text-lg sm:text-xl md:text-2xl mb-2 sm:mb-3 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-3 sm:p-4 rounded-xl border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group">
+                <div className="absolute -right-3 -top-3 w-12 h-12 rounded-full bg-[#FF6B00]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
+                <h3 className="text-[#FFB501] font-bold text-base sm:text-lg mb-1 sm:mb-2 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Horário de Jantar
                 </h3>
-                <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-300">
+                <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-300">
                   <li className="flex justify-between items-center">
                     <span className="flex items-center">
-                      <span className="w-2 h-2 rounded-full bg-[#FF6B00] mr-2"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] mr-1.5"></span>
                       Abertura:
                     </span>
                     <span className="font-medium text-white">18:00</span>
                   </li>
                   <li className="flex justify-between items-center">
                     <span className="flex items-center">
-                      <span className="w-2 h-2 rounded-full bg-[#FF6B00] mr-2"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] mr-1.5"></span>
                       Entregas a partir:
                     </span>
                     <span className="font-medium text-white">18:00</span>
                   </li>
                   <li className="flex justify-between items-center">
                     <span className="flex items-center">
-                      <span className="w-2 h-2 rounded-full bg-[#FF6B00] mr-2"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] mr-1.5"></span>
                       Fechamento:
                     </span>
                     <span className="font-medium text-white">22:00</span>
@@ -445,11 +447,11 @@ const OpeningHoursControl = ({ children }) => {
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
             className="fixed top-0 left-0 right-0 z-[999] bg-gradient-to-r from-[#FF6B00] to-[#FFA800] shadow-lg backdrop-blur-sm"
             style={{
-              boxShadow: '0 4px 30px rgba(255, 107, 0, 0.3)'
+              boxShadow: '0 4px 20px rgba(255, 107, 0, 0.3)'
             }}
           >
-            <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
+            <div className="container mx-auto px-3 py-2">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-2">
                 <div className="flex items-center">
                   <motion.div 
                     animate={{ 
@@ -461,13 +463,13 @@ const OpeningHoursControl = ({ children }) => {
                       duration: 3,
                       ease: "easeInOut"
                     }}
-                    className="bg-white/20 p-1 sm:p-2 rounded-full mr-2 sm:mr-3 backdrop-blur-sm"
+                    className="bg-white/20 p-1 rounded-full mr-2 backdrop-blur-sm"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </motion.div>
-                  <p className="text-white font-bold text-xs sm:text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] sm:max-w-none">
+                  <p className="text-white font-bold text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px] sm:max-w-none">
                     {status.message}
                   </p>
                 </div>
@@ -475,11 +477,11 @@ const OpeningHoursControl = ({ children }) => {
                 <motion.div 
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex items-center bg-black/10 px-3 sm:px-4 py-1 sm:py-2 rounded-full backdrop-blur-sm border border-white/10"
+                  className="flex items-center bg-black/10 px-2 sm:px-3 py-1 rounded-full backdrop-blur-sm border border-white/10"
                 >
-                  <span className="text-white text-xs sm:text-sm font-medium">
+                  <span className="text-white text-xs font-medium">
                     Fechamento às <span className="font-bold">15:00</span> • 
-                    <span className="ml-1 sm:ml-2 font-mono tracking-tighter">{formatTime(status.nextChangeIn)}</span>
+                    <span className="ml-1 font-mono tracking-tighter">{formatTime(status.nextChangeIn)}</span>
                   </span>
                 </motion.div>
               </div>
