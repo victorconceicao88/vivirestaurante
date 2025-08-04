@@ -1,15 +1,22 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { 
+  GiMeal, 
+  GiSteak, 
+  GiHamburger, 
+  GiChickenOven, 
+  GiCakeSlice 
+} from 'react-icons/gi';
+import { MdLocalBar } from 'react-icons/md';
+import { FaBox } from 'react-icons/fa';
 import ProductCard from '../components/Client/ProductCard';
 import { database, ref, push, set, onValue, auth, getAuth } from '../firebase';
 import { signInAnonymously } from 'firebase/auth';
-import { getCategoryIcon } from '../components/categories'; 
-import { categories } from '../components/categories';
-import OpeningHoursControl from '../components/OpeningHoursControl';
+
+
 
 // Configuração de internacionalização
 i18n
@@ -66,9 +73,6 @@ i18n
             "sundaySpecial": "Feijoada Brasileira Completa",
             "close": "Fechar"
           },
-          "closedTitle": "Estamos fechados no momento",
-          "closedMessage": "A Cozinha da Vivi está preparando tudo para te atender em breve!",
-          "preOpeningMessage": "🎉 Plataforma aberta! As entregas começam ao meio-dia",
           "options": {
             "beans": "Tipo de Feijao",
             "beansOptions": {
@@ -442,6 +446,835 @@ i18n
 const ClientPage = () => {
   const { t, i18n } = useTranslation();
 
+  // Dados dos produtos organizados por categoria
+  const categories = [
+    {
+      id: 'churrasco',
+      name: t('categories.churrasco'),
+      icon: <GiSteak className="h-5 w-5 text-red-600" />,
+      products: [
+        { 
+          id: 101, 
+          name: i18n.language === 'pt' ? "Churrasco Misto" : 
+                i18n.language === 'en' ? "Mixed Grill" : "Parrillada Mixta", 
+          description: "", 
+          price: 12.00, 
+          image: "/images/mistadecarne.jpeg",
+          options: {
+            beans: {
+              title: t('options.beans'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'broth', label: t('options.beansOptions.broth') },
+                { value: 'tropeiro', label: t('options.beansOptions.tropeiro') }
+              ]
+            },
+            sideDishes: {
+              title: t('options.sideDishes'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'banana', label: t('options.sideDishesOptions.banana') },
+                { value: 'potato', label: t('options.sideDishesOptions.potato') },
+                { value: 'cassavaFried', label: t('options.sideDishesOptions.cassavaFried') },
+                { value: 'cassavaCooked', label: t('options.sideDishesOptions.cassavaCooked') }
+              ]
+            },
+            meats: {
+              title: t('options.meats'),
+              required: true,
+              type: 'checkbox',
+              max: 2,
+              items: [
+                { value: 'heart', label: t('options.meatsOptions.heart') },
+                { value: 'ribs', label: t('options.meatsOptions.ribs') },
+                { value: 'fillet', label: t('options.meatsOptions.fillet') },
+                { value: 'sausage', label: t('options.meatsOptions.sausage') },
+                { value: 'topSirloin', label: t('options.meatsOptions.topSirloin') },
+                { value: 'cracklings', label: t('options.meatsOptions.cracklings') },
+                { value: 'onlyTopSirloin', label: t('options.meatsOptions.onlyTopSirloin'), price: 1.00, exclusive: true }
+              ]
+            },
+            salad: {
+              title: t('options.salad'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'mixed', label: t('options.saladOptions.mixed') },
+                { value: 'vinaigrette', label: t('options.saladOptions.vinaigrette') },
+                { value: 'none', label: t('options.saladOptions.none') }
+              ]
+            },
+            drinks: {
+              title: t('options.drinks'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+              ]
+            }
+          }
+        },
+        { 
+          id: 102, 
+          name: i18n.language === 'pt' ? "Maminha" : 
+                i18n.language === 'en' ? "Top Sirloin" : "Punta de Solomillo", 
+          description: "", 
+          price: 13.00, 
+          image: "/images/maminha.jpeg"
+          ,
+          options: {
+            beans: {
+              title: t('options.beans'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'broth', label: t('options.beansOptions.broth') },
+                { value: 'tropeiro', label: t('options.beansOptions.tropeiro') }
+              ]
+            },
+            sideDishes: {
+              title: t('options.sideDishes'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'banana', label: t('options.sideDishesOptions.banana') },
+                { value: 'potato', label: t('options.sideDishesOptions.potato') },
+                { value: 'cassavaFried', label: t('options.sideDishesOptions.cassavaFried') },
+                { value: 'cassavaCooked', label: t('options.sideDishesOptions.cassavaCooked') }
+              ]
+            },
+            salad: {
+              title: t('options.salad'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'mixed', label: t('options.saladOptions.mixed') },
+                { value: 'vinaigrette', label: t('options.saladOptions.vinaigrette') },
+                { value: 'none', label: t('options.saladOptions.none') }
+              ]
+            },
+            drinks: {
+              title: t('options.drinks'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+              ]
+            }
+          }
+        },
+        { 
+          id: 103, 
+          name: i18n.language === 'pt' ? "Linguiça Toscana" : 
+                i18n.language === 'en' ? "Tuscan Sausage" : "Salchicha Toscana", 
+          description: "", 
+          price: 12.00, 
+          image: "/images/toscana.jpg",
+          options: {
+            beans: {
+              title: t('options.beans'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'broth', label: t('options.beansOptions.broth') },
+                { value: 'tropeiro', label: t('options.beansOptions.tropeiro') }
+              ]
+            },
+            sideDishes: {
+              title: t('options.sideDishes'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'banana', label: t('options.sideDishesOptions.banana') },
+                { value: 'potato', label: t('options.sideDishesOptions.potato') },
+                { value: 'cassavaFried', label: t('options.sideDishesOptions.cassavaFried') },
+                { value: 'cassavaCooked', label: t('options.sideDishesOptions.cassavaCooked') }
+              ]
+            },
+            salad: {
+              title: t('options.salad'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'mixed', label: t('options.saladOptions.mixed') },
+                { value: 'vinaigrette', label: t('options.saladOptions.vinaigrette') },
+                { value: 'none', label: t('options.saladOptions.none') }
+              ]
+            },
+            drinks: {
+              title: t('options.drinks'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+              ]
+            }
+          }
+        },
+        { 
+          id: 104, 
+          name: i18n.language === 'pt' ? "Costelinha de Porco" : 
+                i18n.language === 'en' ? "Pork Ribs" : "Costillas de Cerdo", 
+          description: "", 
+          price: 12.00, 
+          image: "/images/costelinha.jpg",
+          options: {
+            beans: {
+              title: t('options.beans'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'broth', label: t('options.beansOptions.broth') },
+                { value: 'tropeiro', label: t('options.beansOptions.tropeiro') }
+              ]
+            },
+            sideDishes: {
+              title: t('options.sideDishes'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'banana', label: t('options.sideDishesOptions.banana') },
+                { value: 'potato', label: t('options.sideDishesOptions.potato') },
+                { value: 'cassavaFried',label: t('options.sideDishesOptions.cassavaFried') },
+                { value: 'cassavaCooked', label: t('options.sideDishesOptions.cassavaCooked') }
+              ]
+            },
+            salad: {
+              title: t('options.salad'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'mixed', label: t('options.saladOptions.mixed') },
+                { value: 'vinaigrette', label: t('options.saladOptions.vinaigrette') },
+                { value: 'none', label: t('options.saladOptions.none') }
+              ]
+            },
+            drinks: {
+              title: t('options.drinks'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+              ]
+            }
+          }
+        },
+        { 
+          id: 105, 
+          name: i18n.language === 'pt' ? "Peito de Frango Grelhado" : 
+                i18n.language === 'en' ? "Grilled Chicken Breast" : "Pechuga de Pollo a la Parrilla", 
+          description: "", 
+          price: 12.00, 
+          image: "/images/peitofrango.jpg",
+          options: {
+            beans: {
+              title: t('options.beans'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'broth', label: t('options.beansOptions.broth') },
+                { value: 'tropeiro', label: t('options.beansOptions.tropeiro') }
+              ]
+            },
+            sideDishes: {
+              title: t('options.sideDishes'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'banana', label: t('options.sideDishesOptions.banana') },
+                { value: 'potato', label: t('options.sideDishesOptions.potato') },
+                { value: 'cassavaFried', label: t('options.sideDishesOptions.cassavaFried') },
+                { value: 'cassavaCooked', label: t('options.sideDishesOptions.cassavaCooked') }
+              ]
+            },
+            salad: {
+              title: t('options.salad'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'mixed', label: t('options.saladOptions.mixed') },
+                { value: 'vinaigrette', label: t('options.saladOptions.vinaigrette') },
+                { value: 'none', label: t('options.saladOptions.none') }
+              ]
+            },
+            drinks: {
+              title: t('options.drinks'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      id: 'burguers',
+      name: t('categories.burguers'),
+       icon: <GiHamburger className="h-5 w-5 text-yellow-600" />,
+      products: [
+         
+          { 
+            id: 201, 
+            name: i18n.language === 'pt' ? "X-Salada" : 
+                  i18n.language === 'en' ? "Cheeseburger" : "Hamburguesa con Queso", 
+            description: i18n.language === 'pt' ? "Pão, hambúrguer, queijo, fiambre, alface, tomate, milho e batata palha." : 
+                            i18n.language === 'en' ? "Bun, beef patty, cheese, ham, lettuce, tomato, corn and potato sticks." : 
+                            "Pan, hamburguesa, queso, jamón, lechuga, tomate, maíz y patatas paja.", 
+            price: 6.50, 
+            image: "/images/combolanche.jpeg",
+            options: {
+              drinks: {
+                title: t('options.chooseDrink'),
+                required: false,
+                type: 'radio',
+                items: [
+                  { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                  { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                  { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                  { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                  { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                  { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                  { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                  { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                  { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+                ]
+              },
+              extras: {
+                title: t('options.extras'),
+                required: false,
+                type: 'checkbox',
+                items: [
+                  { value: 'bacon', label: t('options.extrasOptions.bacon'), price: 1.50 },
+                  { value: 'extraCheese', label: t('options.extrasOptions.extraCheese'), price: 1.00 },
+                  { value: 'egg', label: t('options.extrasOptions.egg'), price: 0.50 }
+                ]
+              }
+            }
+          },
+        { 
+          id: 202, 
+          name: i18n.language === 'pt' ? "X-Bacon" : 
+                i18n.language === 'en' ? "Bacon Cheeseburger" : "Hamburguesa con Bacon", 
+          description: i18n.language === 'pt' ? "Pão, hambúrguer, bacon, queijo, fiambre, ovo, alface, tomate, milho e batata palha." : 
+                          i18n.language === 'en' ? "Bun, beef patty, bacon, cheese, ham, egg, lettuce, tomato, corn and potato sticks." : 
+                          "Pan, hamburguesa, bacon, queso, jamón, huevo, lechuga, tomate, maíz y patatas paja.", 
+          price: 8.00, 
+          image: "/images/combolanche.jpeg",
+          options: {
+            drinks: {
+              title: t('options.chooseDrink'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+              ]
+            },
+            extras: {
+              title: t('options.extras'),
+              required: false,
+              type: 'checkbox',
+              items: [
+                { value: 'bacon', label: t('options.extrasOptions.bacon'), price: 1.50 },
+                { value: 'extraCheese', label: t('options.extrasOptions.extraCheese'), price: 1.00 },
+                { value: 'egg', label: t('options.extrasOptions.egg'), price: 0.50 }
+              ]
+            }
+          }
+        },
+        { 
+          id: 203, 
+          name: i18n.language === 'pt' ? "X-Frango" : 
+                i18n.language === 'en' ? "Chicken Burger" : "Pollo Burger", 
+          description: i18n.language === 'pt' ? "Pão, hambúrguer de frango, queijo, fiambre, ovo, alface, tomate, milho e batata palha." : 
+                          i18n.language === 'en' ? "Bun, chicken patty, cheese, ham, egg, lettuce, tomato, corn and potato sticks." : 
+                          "Pan, hamburguesa de pollo, queso, jamón, huevo, lechuga, tomate, maíz y patatas paja.", 
+          price: 8.00, 
+          image: "/images/combolanche.jpeg",
+          options: {
+            drinks: {
+              title: t('options.chooseDrink'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+              ]
+            },
+            extras: {
+              title: t('options.extras'),
+              required: false,
+              type: 'checkbox',
+              items: [
+                { value: 'bacon', label: t('options.extrasOptions.bacon'), price: 1.50 },
+                { value: 'extraCheese', label: t('options.extrasOptions.extraCheese'), price: 1.00 },
+                { value: 'egg', label: t('options.extrasOptions.egg'), price: 0.50 }
+              ]
+            }
+          }
+        },
+        
+        { 
+          id: 204, 
+          name: i18n.language === 'pt' ? "X-Especial" : 
+                i18n.language === 'en' ? "Special Burger" : "Hamburguesa Especial", 
+          description: i18n.language === 'pt' ? "Pão, hambúrguer, queijo, fiambre, ovo, alface, tomate, milho e batata palha." : 
+                          i18n.language === 'en' ? "Bun, beef patty, cheese, ham, egg, lettuce, tomato, corn and potato sticks." : 
+                          "Pan, hamburguesa, queso, jamón, huevo, lechuga, tomate, maíz y patatas paja.", 
+          price: 7.00, 
+          image: "/images/combolanche.jpeg",
+          options: {
+            drinks: {
+              title: t('options.chooseDrink'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+              ]
+            },
+            extras: {
+              title: t('options.extras'),
+              required: false,
+              type: 'checkbox',
+              items: [
+                { value: 'bacon', label: t('options.extrasOptions.bacon'), price: 1.50 },
+                { value: 'extraCheese', label: t('options.extrasOptions.extraCheese'), price: 1.00 },
+                { value: 'egg', label: t('options.extrasOptions.egg'), price: 0.50 }
+              ]
+            }
+          }
+        },
+        { 
+          id: 205, 
+          name: i18n.language === 'pt' ? "X-Tudo" : 
+                i18n.language === 'en' ? "The Works Burger" : "Hamburguesa Completa", 
+          description: i18n.language === 'pt' ? "Pão, hambúrguer, Bacon, queijo, fiambre, Salsicha, ovo, alface, tomate, milho e batata palha." : 
+                          i18n.language === 'en' ? "Bun, beef patty, bacon, cheese, ham, sausage, egg, lettuce, tomato, corn and potato sticks." : 
+                          "Pan, hamburguesa, bacon, queso, jamón, salchicha, huevo, lechuga, tomate, maíz y patatas paja.", 
+          price: 9.00, 
+          image: "/images/combolanche.jpeg",
+          options: {
+            drinks: {
+              title: t('options.chooseDrink'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill'), price: 1.00 },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo'), price: 1.50 },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras'), price: 1.50 },
+                { value: 'coke', label: t('options.drinksOptions.coke'), price: 2.00 },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero'), price: 2.00 },
+                { value: 'fanta', label: t('options.drinksOptions.fanta'), price: 2.00 },
+                { value: 'guarana', label: t('options.drinksOptions.guarana'), price: 2.00 },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea'), price: 2.00 }
+              ]
+            },
+            extras: {
+              title: t('options.extras'),
+              required: false,
+              type: 'checkbox',
+              items: [
+                { value: 'bacon', label: t('options.extrasOptions.bacon'), price: 1.50 },
+                { value: 'extraCheese', label: t('options.extrasOptions.extraCheese'), price: 1.00 },
+                { value: 'egg', label: t('options.extrasOptions.egg'), price: 0.50 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      id: 'combos',
+      name: t('categories.combos'),
+       icon: <FaBox className="h-5 w-5 text-purple-600" />,
+      products: [
+        { 
+          id: 301, 
+          name: i18n.language === 'pt' ? "Combo Frango Supreme" : 
+                i18n.language === 'en' ? "Chicken Supreme Combo" : "Combo Pollo Supreme", 
+          description: i18n.language === 'pt' ? "Sanduíche de frango com batata frita e bebida. Economize €2,50 em relação à compra separada." : 
+                          i18n.language === 'en' ? "Chicken sandwich with fries and drink. Save €2.50 compared to separate purchase." : 
+                          "Sándwich de pollo con patatas fritas y bebida. Ahorra €2,50 en comparación con la compra por separado.", 
+          price: 10.00, 
+          image: "/images/combolanche.jpeg",
+          options: {
+            drinks: {
+              title: t('options.chooseDrink'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill') },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo') },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras') },
+                { value: 'coke', label: t('options.drinksOptions.coke') },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero') },
+                { value: 'fanta', label: t('options.drinksOptions.fanta') },
+                { value: 'guarana', label: t('options.drinksOptions.guarana') },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea') }
+              ]
+            }
+          }
+        },
+        { 
+          id: 302, 
+          name: i18n.language === 'pt' ? "Combo X-Tudo" : 
+                i18n.language === 'en' ? "The Works Combo" : "Combo Completo", 
+          description: i18n.language === 'pt' ? "Sanduíche completo com batata frita e bebida. Economize €3,00 em relação à compra separada." : 
+                          i18n.language === 'en' ? "Complete sandwich with fries and drink. Save €3.00 compared to separate purchase." : 
+                          "Sándwich completo con patatas fritas y bebida. Ahorra €3,00 en comparación con la compra por separado.", 
+          price: 12.00, 
+          image: "/images/combolanche.jpeg",
+          options: {
+            drinks: {
+              title: t('options.chooseDrink'),
+              required: false,
+              type: 'radio',
+              items: [
+                { value: 'none', label: t('options.drinksOptions.none'), default: true },
+                { value: 'waterStill', label: t('options.drinksOptions.waterStill') },
+                { value: 'waterSparklingCastelo', label: t('options.drinksOptions.waterSparklingCastelo') },
+                { value: 'waterSparklingPedras', label: t('options.drinksOptions.waterSparklingPedras') },
+                { value: 'coke', label: t('options.drinksOptions.coke') },
+                { value: 'cokeZero', label: t('options.drinksOptions.cokeZero') },
+                { value: 'fanta', label: t('options.drinksOptions.fanta') },
+                { value: 'guarana', label: t('options.drinksOptions.guarana') },
+                { value: 'iceTea', label: t('options.drinksOptions.iceTea') }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+     id: 'porcoes',
+        name: t('categories.porcoes'),
+        icon: <GiChickenOven className="h-5 w-5 text-yellow-600" />,
+
+      products: [
+        { 
+          id: 401, 
+          name: i18n.language === 'pt' ? "Porção de Arroz" : 
+                i18n.language === 'en' ? "Rice Portion" : "Porción de Arroz", 
+          description: i18n.language === 'pt' ? "Porção de arroz branco soltinho, ideal para acompanhar seus pratos favoritos." : 
+                          i18n.language === 'en' ? "Portion of fluffy white rice, ideal to accompany your favorite dishes." : 
+                          "Porción de arroz blanco suelto, ideal para acompañar tus platos favoritos.", 
+          price: 3.00, 
+          image: "/images/arroz.png" 
+        },
+        { 
+          id: 402, 
+          name: i18n.language === 'pt' ? "Queijo Coalho" : 
+                i18n.language === 'en' ? "Grilled Cheese" : "Queso Coalho", 
+          description: i18n.language === 'pt' ? "Queijo coalho grelhado, tradicional do nordeste brasileiro, perfeito para acompanhar molhos." : 
+                          i18n.language === 'en' ? "Grilled coalho cheese, traditional from northeastern Brazil, perfect to accompany sauces." : 
+                          "Queso coalho a la parrilla, tradicional del noreste de Brasil, perfecto para acompañar salsas.", 
+          price: 6.00, 
+          image: "/images/queijo.jpeg" 
+        },
+        { 
+          id: 403, 
+          name: i18n.language === 'pt' ? "Torresmo" : 
+                i18n.language === 'en' ? "Pork Cracklings" : "Torreznos", 
+          description: i18n.language === 'pt' ? "Torresmo brasileiro: crocante e delicioso, feito com pedaços de carne de porco, ideal para acompanhar uma cerveja gelada." : 
+                          i18n.language === 'en' ? "Brazilian pork cracklings: crispy and delicious, made with pieces of pork, ideal to accompany an ice-cold beer." : 
+                          "Torreznos brasileños: crujientes y deliciosos, hechos con trozos de cerdo, ideales para acompañar una cerveza bien fría.", 
+          price: 6.00, 
+          image: "/images/torresmo.jpeg" 
+        },
+        { 
+          id: 404, 
+          name: i18n.language === 'pt' ? "Porção de Mandioca" : 
+                i18n.language === 'en' ? "Cassava Portion" : "Porción de Yuca", 
+          description: i18n.language === 'pt' ? "Mandioca frita crocante por fora e macia por dentro, acompanha molho à escolha." : 
+                          i18n.language === 'en' ? "Crispy fried cassava, soft inside, served with sauce of your choice." : 
+                          "Yuca frita crujiente por fuera y suave por dentro, acompañada de salsa a elegir.", 
+          price: 6.00, 
+          image: "/images/mandioca.jpg" 
+        },
+        { 
+          id: 405, 
+          name: i18n.language === 'pt' ? "Porção de Batata Frita" : 
+                i18n.language === 'en' ? "French Fries" : "Patatas Fritas", 
+          description: i18n.language === 'pt' ? "Batata frita crocante temperada com sal e ervas finas, acompanha molho à escolha." : 
+                          i18n.language === 'en' ? "Crispy fries seasoned with salt and fine herbs, served with sauce of your choice." : 
+                          "Patatas fritas crujientes sazonadas con sal y hierbas finas, acompañadas de salsa a elegir.", 
+          price: 3.00, 
+          image: "/images/batatafrita.jpg" 
+        },
+        { 
+          id: 406, 
+          name: i18n.language === 'pt' ? "Porção de Carnes" : 
+                i18n.language === 'en' ? "Mixed Grill" : "Parrillada Mixta", 
+          description: "", 
+          price: 10.00, 
+          image: "/images/mistadecarne.jpeg",
+          options: {
+            meats: {
+              title: t('options.meats'),
+              required: true,
+              type: 'checkbox',
+              max: 2,
+              items: [
+                { value: 'heart', label: t('options.meatsOptions.heart') },
+                { value: 'ribs', label: t('options.meatsOptions.ribs') },
+                { value: 'fillet', label: t('options.meatsOptions.fillet') },
+                { value: 'sausage', label: t('options.meatsOptions.sausage') },
+                { value: 'topSirloin', label: t('options.meatsOptions.topSirloin') },
+                { value: 'cracklings', label: t('options.meatsOptions.cracklings') },
+                { value: 'onlyTopSirloin', label: t('options.meatsOptions.onlyTopSirloin'), price: 1.00, exclusive: true }
+              ]
+            },
+          }
+        },      
+      ]
+    },
+    {
+      id: 'bebidas',
+      name: t('categories.bebidas'),
+        icon: <MdLocalBar className="h-5 w-5 text-blue-600" />,
+      products: [
+        { 
+          id: 501, 
+          name: i18n.language === 'pt' ? "Refrigerantes" : 
+                i18n.language === 'en' ? "Soft Drinks" : "Refrescos", 
+          description: i18n.language === 'pt' ? "Selecione seu refrigerante preferido. Todos em lata 350ml, geladinhos." : 
+                          i18n.language === 'en' ? "Select your favorite soft drink. All in 350ml cans, ice cold." : 
+                          "Selecciona tu refresco preferido. Todos en lata de 350ml, bien fríos.", 
+          price: 2.00, 
+          image: "/images/vivi-aguas.jpg",
+          options: {
+            sodas: {
+              title: t('options.chooseSoda'),
+              required: true,
+              type: 'checkbox',
+              items: [
+                { value: 'coke', label: t('options.sodaOptions.coke') },
+                { value: 'sevenUp', label: t('options.sodaOptions.sevenUp') },
+                { value: 'cokeZero', label: t('options.sodaOptions.cokeZero') },
+                { value: 'fanta', label: t('options.sodaOptions.fanta') },
+                { value: 'guarana', label: t('options.sodaOptions.guarana') },
+                { value: 'iceTea', label: t('options.sodaOptions.iceTea') }
+              ]
+            }
+          }
+        },
+        { 
+          id: 502, 
+          name: i18n.language === 'pt' ? "Águas" : 
+                i18n.language === 'en' ? "Waters" : "Aguas", 
+          description: i18n.language === 'pt' ? "Selecione sua água preferida." : 
+                          i18n.language === 'en' ? "Select your preferred water." : 
+                          "Selecciona tu agua preferida.", 
+          price: 1.00, 
+          image: "/images/vivi-aguas.jpg",
+          options: {
+            waters: {
+              title: t('options.chooseWater'),
+              required: true,
+              type: 'checkbox',
+              items: [
+                { value: 'still', label: t('options.waterOptions.still'), price: 1.00 },
+                { value: 'sparklingCastelo', label: t('options.waterOptions.sparklingCastelo'), price: 1.50 },
+                { value: 'sparklingPedras', label: t('options.waterOptions.sparklingPedras'), price: 1.50 }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      id: 'sobremesas',
+      name: t('categories.sobremesas'),
+      icon: <GiCakeSlice className="h-5 w-5 text-pink-600" />,
+      products: [
+        { 
+          id: 601, 
+          name: i18n.language === 'pt' ? "Açai Pequeno" : 
+                i18n.language === 'en' ? "Small Açai Bowl" : "Açaí Pequeño", 
+          description: i18n.language === 'pt' ? "Açai cremoso com acompanhamentos à escolha. Tamanho pequeno (300ml)." : 
+                          i18n.language === 'en' ? "Creamy açai with toppings of your choice. Small size (300ml)." : 
+                          "Açaí cremoso con acompañamientos a elegir. Tamaño pequeño (300ml).", 
+          price: 6.00, 
+          image: "/images/Acai.png",
+          options: {
+            toppings: {
+              title: t('options.chooseAçai'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'complete', label: t('options.açaiOptions.complete'), description: t('options.açaiOptions.complete') },
+                { value: 'custom', label: t('options.açaiOptions.custom'), description: t('options.açaiOptions.custom') },
+                { value: 'pure', label: t('options.açaiOptions.pure'), description: t('options.açaiOptions.pure') }
+              ],
+              customOptions: {
+                title: t('options.chooseAçai'),
+                type: 'checkbox',
+                items: [
+                  { value: 'granola', label: t('options.açaiOptions.granola') },
+                  { value: 'condensedMilk', label: t('options.açaiOptions.condensedMilk') },
+                  { value: 'banana', label: t('options.açaiOptions.banana') },
+                  { value: 'strawberry', label: t('options.açaiOptions.strawberry') },
+                  { value: 'ninho', label: t('options.açaiOptions.ninho') }
+                ]
+              }
+            }
+          }
+        },
+        { 
+          id: 602, 
+          name: i18n.language === 'pt' ? "Açai Grande" : 
+                i18n.language === 'en' ? "Large Açai Bowl" : "Açai Grande", 
+          description: i18n.language === 'pt' ? "Açai cremoso com acompanhamentos à escolha. Tamanho grande (500ml)." : 
+                          i18n.language === 'en' ? "Creamy açai with toppings of your choice. Large size (500ml)." : 
+                          "Açai cremoso con acompañamientos a elegir. Tamaño grande (500ml).", 
+          price: 10.00, 
+          image: "/images/Acai.png",
+          options: {
+            toppings: {
+              title: t('options.chooseAçai'),
+              required: true,
+              type: 'radio',
+              items: [
+                { value: 'complete', label: t('options.açaiOptions.complete'), description: t('options.açaiOptions.complete') },
+                { value: 'custom', label: t('options.açaiOptions.custom'), description: t('options.açaiOptions.custom') },
+                { value: 'pure', label: t('options.açaiOptions.pure'), description: t('options.açaiOptions.pure') }
+              ],
+              customOptions: {
+                title: t('options.chooseAçai'),
+                type: 'checkbox',
+                items: [
+                  { value: 'granola', label: t('options.açaiOptions.granola') },
+                  { value: 'condensedMilk', label: t('options.açaiOptions.condensedMilk') },
+                  { value: 'banana', label: t('options.açaiOptions.banana') },
+                  { value: 'strawberry', label: t('options.açaiOptions.strawberry') },
+                  { value: 'ninho', label: t('options.açaiOptions.ninho') }
+                ]
+              }
+            }
+          }
+        },
+        
+        { 
+          id: 603, 
+          name: i18n.language === 'pt' ? "Pudim Caseiro" : 
+                i18n.language === 'en' ? "Homemade Pudding" : "Flan Casero", 
+          description: i18n.language === 'pt' ? "Pudim tradicional caseiro com calda de caramelo. Feito com ingredientes selecionados." : 
+                          i18n.language === 'en' ? "Traditional homemade pudding with caramel sauce. Made with selected ingredients." : 
+                          "Flan tradicional casero con salsa de caramelo. Hecho con ingredientes seleccionados.", 
+          price: 3.00, 
+          image: "/images/pudim.jpeg" 
+        }
+      ]
+    },
+    // Adicionar na lista de categorias (logo após a categoria 'sobremesas')
+{
+  id: 'Patros da Semana',
+  name: t('Pratos da Semana'),
+
+     icon: <GiMeal className="h-5 w-5 text-gray-700" />,
+
+  products: [
+    { 
+      id: 701, 
+      name: i18n.language === 'pt' ? "Vaca Atolada (Quinta-feira)" : 
+            i18n.language === 'en' ? "Vaca Atolada (Thursday)" : "Vaca Atolada (Jueves)", 
+      description: i18n.language === 'pt' ? "Delicioso prato tradicional brasileiro servido com arroz, feijão tropeiro e couve" : 
+                    i18n.language === 'en' ? "Traditional Brazilian dish served with rice, tropeiro beans and collard greens" : 
+                    "Plato tradicional brasileño servido con arroz, frijoles tropeiro y col", 
+      price: 13.00, 
+      image: "/images/vaca-atolada.jpg",
+      isWeeklySpecial: true,
+      availableDays: ['thursday'],
+      options: {
+        // Opções similares aos outros pratos principais
+      }
+    },
+    { 
+      id: 702, 
+      name: i18n.language === 'pt' ? "Feijoada (Sábado e Domingo)" : 
+            i18n.language === 'en' ? "Feijoada (Saturday & Sunday)" : "Feijoada (Sábado y Domingo)", 
+      description: i18n.language === 'pt' ? "A tradicional feijoada brasileira completa com todos os acompanhamentos" : 
+                    i18n.language === 'en' ? "Traditional Brazilian feijoada with all the side dishes" : 
+                    "Feijoada brasileña tradicional con todas las guarniciones", 
+      price: 13.00, 
+      image: "/images/feijoada.jpeg",
+      isWeeklySpecial: true,
+      availableDays: ['saturday', 'sunday'],
+      options: {
+        // Opções similares aos outros pratos principais
+      }
+    }
+  ]
+}
+  ];
 
   // Estado do carrinho com persistência no localStorage
   const [cart, setCart] = useState(() => {
@@ -492,21 +1325,16 @@ const ClientPage = () => {
   const isDaytime = currentHour >= 8 && currentHour < 18;
   const [showPickupWarning, setShowPickupWarning] = useState(false);
   const [countdownActive, setCountdownActive] = useState(false);
-  const [isMbWayModalOpen, setIsMbWayModalOpen] = useState(false);
 
 
-const categoriesList = categories(t, i18n);
+  const allProducts = categories.flatMap(category => category.products);
 
-// 2. Agora você pode usar flatMap
-const allProducts = categoriesList.flatMap(category => category.products);
-
-// 3. Atualize seu filteredProducts
-const filteredProducts = useMemo(() => {
-  const products = activeCategory === 'all' 
-    ? allProducts 
-    : categoriesList.find(cat => cat.id === activeCategory)?.products || [];
-  return products.filter(product => !unavailableItems.includes(product.id.toString()));
-}, [activeCategory, allProducts, categoriesList, unavailableItems]);
+  const filteredProducts = useMemo(() => {
+    const products = activeCategory === 'all' 
+      ? allProducts 
+      : categories.find(cat => cat.id === activeCategory)?.products || [];
+    return products.filter(product => !unavailableItems.includes(product.id.toString()));
+  }, [activeCategory, allProducts, categories, unavailableItems]);
   
  const PickupConfirmationModal = ({ onConfirm, onCancel }) => {
   return (
@@ -1502,7 +2330,7 @@ const changeLanguage = (lng) => {
   return (
     <div className="min-h-screen bg-[#FFF1E4] flex flex-col">
 
-<OpeningHoursControl>
+
 {showSuccessModal && (
   <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-90 p-4">
     <div className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-xl">
@@ -1658,7 +2486,7 @@ const changeLanguage = (lng) => {
               <span className="text-xs mt-1">{t('categories.all')}</span>
             </button>
 
-            {categoriesList.map(category => (
+            {categories.map(category => (
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
@@ -1726,9 +2554,11 @@ const changeLanguage = (lng) => {
 
 
       <main className="container mx-auto p-4 bg-[#FFF1E4] flex-1">
-        <h2 className="text-xl font-bold text-[#3D1106]">
-          {activeCategory === 'all' ? t('allProducts') : categoriesList.find(c => c.id === activeCategory)?.name}
-        </h2>
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-[#3D1106]">
+            {activeCategory === 'all' ? t('allProducts') : categories.find(c => c.id === activeCategory)?.name}
+          </h2>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map(product => (
@@ -2100,378 +2930,203 @@ const changeLanguage = (lng) => {
               )}
 
               {checkoutStep === 'payment' && (
-  <div className="space-y-6">
-    <h3 className="text-lg font-semibold text-[#3D1106]">{t('paymentMethod')}</h3>
-    
-    <div className="space-y-3">
-      <div 
-        onClick={() => {
-          setPaymentMethod('MBWay');
-          setIsMbWayModalOpen(true);
-        }}
-        className={`relative p-5 rounded-xl border-2 transition-all duration-300 cursor-pointer overflow-hidden ${
-          paymentMethod === 'MBWay' 
-            ? 'border-[#3D1106] bg-gradient-to-br from-[#FFF1E4] to-[#FFE4C4] shadow-lg' 
-            : 'border-gray-200 hover:border-[#3D1106]'
-        }`}
-      >
-        <div className="flex items-start gap-4">
-          {/* Ícone animado */}
-          <div className={`p-3 rounded-lg shadow-sm transition-transform ${
-            paymentMethod === 'MBWay' ? 'bg-[#3D1106] scale-110' : 'bg-gray-100'
-          }`}>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-8 w-8" 
-              viewBox="0 0 24 24" 
-              fill={paymentMethod === 'MBWay' ? '#FFB501' : '#6B7280'}
-            >
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
-          </div>
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-[#3D1106]">{t('paymentMethod')}</h3>
+                  
+                  <div className="space-y-3">
+                    <div 
+                      onClick={() => setPaymentMethod('MBWay')}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
+                        paymentMethod === 'MBWay' ? 'border-[#3D1106] bg-[#FFF1E4] shadow-md' : 'border-gray-200 hover:border-[#3D1106]'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`p-2 rounded-full ${
+                          paymentMethod === 'MBWay' ? 'bg-[#3D1106] text-[#FFB501]' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-[#3D1106]">MBWay</h3>
+                         <p className="text-sm text-gray-600 mt-1">
+                          {i18n.language === 'pt' ? 'Receberá uma solicitação de pagamento do número 922271991' : 
+                          i18n.language === 'en' ? 'You will receive a payment request from the number 92922271991' : 
+                          'Recibirá una solicitud de pago del número 922271991'}
+                        </p>
 
-          <div className="flex-1">
-            <div className="flex justify-between items-start">
-              <h3 className="font-bold text-[#3D1106] text-xl">MB Way</h3>
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                paymentMethod === 'MBWay' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
-              }`}>
-                {paymentMethod === 'MBWay' && (
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-            </div>           
-          </div>
-        </div>
-      </div>
-
-      {/* Modal MB Way */}
-      {isMbWayModalOpen && (
-  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.95 }}
-      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-      className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border-2 border-[#3D1106]/20"
-    >
-      {/* Cabeçalho com gradiente */}
-      <div className="bg-gradient-to-r from-[#3D1106] to-[#5a1a0c] p-5 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <motion.div
-            animate={{ 
-              rotate: [0, 15, -15, 0],
-              scale: [1, 1.1, 1]
-            }}
-            transition={{ repeat: 1, duration: 0.6 }}
-            className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"
-          >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-10 w-10 text-[#FFB501]" 
-              viewBox="0 0 24 24" 
-              fill="currentColor"
-            >
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
-          </motion.div>
-          <div>
-            <h3 className="text-2xl font-bold text-white">MB Way</h3>
-            <p className="text-[#FFB501] text-sm font-medium">
-              {i18n.language === 'pt' ? 'Pagamento Seguro' : 'Secure Payment'}
-            </p>
-          </div>
-        </div>
-        <button 
-          onClick={() => setIsMbWayModalOpen(false)}
-          className="text-white/80 hover:text-white transition-colors p-1"
-        >
-        </button>
-      </div>
-
-      {/* Corpo do modal */}
-      <div className="p-6">
-        {/* Ilustração animada */}
-        <motion.div 
-          animate={{
-            y: [0, -5, 0],
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: 2,
-            ease: "easeInOut"
-          }}
-          className="flex justify-center mb-6"
-        >
-          <div className="relative">
-            <div className="absolute -inset-4 bg-[#FFB501]/20 rounded-full blur-md"></div>
-            <div className="relative bg-white p-5 rounded-xl border-2 border-[#3D1106]/10 shadow-lg">
-              <svg className="w-16 h-16 mx-auto text-[#3D1106]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Passos do processo */}
-        <div className="space-y-5">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex items-start gap-4 p-4 bg-[#FFF1E4] rounded-xl border border-[#3D1106]/10"
-          >
-            <div className="flex-shrink-0 mt-0.5">
-              <div className="bg-[#3D1106] text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                <span className="font-bold">1</span>
-              </div>
-            </div>
-            <p className="text-gray-800 font-medium">
-              {i18n.language === 'pt' 
-                ? 'Finalize o pedido normalmente para prosseguir com o pagamento por MB Way' 
-                : 'Complete the order normally to proceed with MB Way payment'}
-            </p>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-start gap-4 p-4 bg-[#FFF1E4] rounded-xl border border-[#3D1106]/10"
-          >
-            <div className="flex-shrink-0 mt-0.5">
-              <div className="bg-[#3D1106] text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                <span className="font-bold">2</span>
-              </div>
-            </div>
-            <p className="text-gray-800 font-medium">
-              {i18n.language === 'pt' 
-                ? 'Após o envio, aguarde o contacto do restaurante com os dados de pagamento' 
-                : 'After submission, wait for the restaurant to send you the payment details'}
-            </p>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex items-start gap-4 p-4 bg-[#FFF1E4] rounded-xl border border-[#3D1106]/10"
-          >
-            <div className="flex-shrink-0 mt-0.5">
-              <div className="bg-[#3D1106] text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                <span className="font-bold">3</span>
-              </div>
-            </div>
-            <p className="text-gray-800 font-medium">
-              {i18n.language === 'pt' 
-                ? 'O número MB Way será enviado via SMS ou WhatsApp para o seu telefone registado' 
-                : 'The MB Way number will be sent to your registered phone via SMS or WhatsApp'}
-            </p>
-          </motion.div>
-        </div>
-
-        {/* Nota importante */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-6 p-4 bg-[#3D1106]/5 border border-[#3D1106]/10 rounded-lg flex items-start gap-3"
-        >
-          <svg className="flex-shrink-0 w-5 h-5 text-[#3D1106] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <p className="text-sm text-[#3D1106]">
-            {i18n.language === 'pt' 
-              ? 'Por favor, mantenha o seu telemóvel por perto para receber a notificação' 
-              : 'Please keep your phone nearby to receive the notification'}
-          </p>
-        </motion.div>
-
-        {/* Botão de ação */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-8"
-        >
-          <button
-            onClick={() => setIsMbWayModalOpen(false)}
-            className="w-full bg-gradient-to-r from-[#3D1106] to-[#5a1a0c] text-white py-4 px-6 rounded-xl font-bold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden group"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
-              {i18n.language === 'pt' ? 'Entendi, continuar' : 'Got it, continue'}
-            </span>
-            <span className="absolute inset-0 bg-gradient-to-r from-[#5a1a0c] to-[#3D1106] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-          </button>
-        </motion.div>
-      </div>
-    </motion.div>
-  </div>
-)}
-      
-      <div 
-        onClick={() => setPaymentMethod('Cartão Visa')}
-        className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
-          paymentMethod === 'Cartão Visa' ? 'border-[#3D1106] bg-[#FFF1E4] shadow-md' : 'border-gray-200 hover:border-[#3D1106]'
-        }`}
-      >
-        <div className="flex items-start space-x-3">
-          <div className={`p-2 rounded-full ${
-            paymentMethod === 'Cartão Visa' ? 'bg-[#3D1106] text-[#FFB501]' : 'bg-gray-100 text-gray-500'
-          }`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 1.61a10.39 10.39 0 0110.39 10.39 10.39 10.39 0 01-10.39 10.39A10.39 10.39 0 011.61 12 10.39 10.39 0 0112 1.61zm0 1.39a9 9 0 100 18 9 9 0 000-8m3.5 10.5h-7v-1h7v1z" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-[#3D1106]">Cartão Visa</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              {i18n.language === 'pt' ? 'Pague com seu cartão Visa na entrega' : 
-                i18n.language === 'en' ? 'Pay with your Visa card on delivery' : 
-                'Pague con su tarjeta Visa en la entrega'}
-            </p>
-          </div>
-          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-            paymentMethod === 'Cartão Visa' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
-          }`}>
-            {paymentMethod === 'Cartão Visa' && (
-              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      <div 
-        onClick={() => setPaymentMethod('Cartão Mastercard')}
-        className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
-          paymentMethod === 'Cartão Mastercard' ? 'border-[#3D1106] bg-[#FFF1E4] shadow-md' : 'border-gray-200 hover:border-[#3D1106]'
-        }`}
-      >
-        <div className="flex items-start space-x-3">
-          <div className={`p-2 rounded-full ${
-            paymentMethod === 'Cartão Mastercard' ? 'bg-[#3D1106] text-[#FFB501]' : 'bg-gray-100 text-gray-500'
-          }`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 1.61a10.39 10.39 0 0110.39 10.39 10.39 10.39 0 01-10.39 10.39A10.39 10.39 0 011.61 12 10.39 10.39 0 0112 1.61zm0 1.39a9 9 0 100 18 9 9 0 000-8m3.5 10.5h-7v-1h7v1z" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-[#3D1106]">Mastercard</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              {i18n.language === 'pt' ? 'Pague com seu cartão Mastercard na entrega' : 
-                i18n.language === 'en' ? 'Pay with your Mastercard on delivery' : 
-                'Pague con su tarjeta Mastercard en la entrega'}
-            </p>
-          </div>
-          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-            paymentMethod === 'Cartão Mastercard' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
-          }`}>
-            {paymentMethod === 'Cartão Mastercard' && (
-              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      <div 
-        onClick={() => setPaymentMethod('Multibanco')}
-        className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
-          paymentMethod === 'Multibanco' ? 'border-[#3D1106] bg-[#FFF1E4] shadow-md' : 'border-gray-200 hover:border-[#3D1106]'
-        }`}
-      >
-        <div className="flex items-start space-x-3">
-          <div className={`p-2 rounded-full ${
-            paymentMethod === 'Multibanco' ? 'bg-[#3D1106] text-[#FFB501]' : 'bg-gray-100 text-gray-500'
-          }`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 1.61a10.39 10.39 0 0110.39 10.39 10.39 10.39 0 01-10.39 10.39A10.39 10.39 0 011.61 12 10.39 10.39 0 0112 1.61zm0 1.39a9 9 0 100 18 9 9 0 000-8m3.5 10.5h-7v-1h7v1z" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-[#3D1106]">Multibanco</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              {i18n.language === 'pt' ? 'Pagamento por referência Multibanco' : 
-                i18n.language === 'en' ? 'Payment via Multibanco reference' : 
-                'Pago por referencia Multibanco'}
-            </p>
-          </div>
-          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-            paymentMethod === 'Multibanco' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
-          }`}>
-            {paymentMethod === 'Multibanco' && (
-              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      <div 
-        onClick={() => setPaymentMethod('Dinheiro')}
-        className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
-          paymentMethod === 'Dinheiro' ? 'border-[#3D1106] bg-[#FFF1E4] shadow-md' : 'border-gray-200 hover:border-[#3D1106]'
-        }`}
-      >
-        <div className="flex items-start space-x-3">
-          <div className={`p-2 rounded-full ${
-            paymentMethod === 'Dinheiro' ? 'bg-[#3D1106] text-[#FFB501]' : 'bg-gray-100 text-gray-500'
-          }`}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 1.61a10.39 10.39 0 0110.39 10.39 10.39 10.39 0 01-10.39 10.39A10.39 10.39 0 011.61 12 10.39 10.39 0 0112 1.61zm0 1.39a9 9 0 100 18 9 9 0 000-8m3.5 10.5h-7v-1h7v1z" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-[#3D1106]">
-              {i18n.language === 'pt' ? 'Dinheiro' : 
-                i18n.language === 'en' ? 'Cash' : 
-                'Efectivo'}
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">
-              {i18n.language === 'pt' ? 'Pagamento em dinheiro na entrega' : 
-                i18n.language === 'en' ? 'Cash payment on delivery' : 
-                'Pago en efectivo en la entrega'}
-            </p>
-          </div>
-          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-            paymentMethod === 'Dinheiro' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
-          }`}>
-            {paymentMethod === 'Dinheiro' && (
-              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <div className="flex justify-between text-sm text-gray-600 mb-1">
-        <span>{t('subtotal')}</span>
-        <span>€{cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
-      </div>
-      {deliveryOption === 'delivery' && (
-        <div className="flex justify-between text-sm text-gray-600 mb-1">
-          <span>{t('deliveryFee')}</span>
-          <span>€2.00</span>
-        </div>
-      )}
-      <div className="flex justify-between font-bold text-xl text-[#3D1106] pt-2 border-t border-gray-200">
-        <span>{t('total')}</span>
-        <span>€{calculateTotal().total.toFixed(2)}</span>
-      </div>
-    </div>
-    <button
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          paymentMethod === 'MBWay' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
+                        }`}>
+                          {paymentMethod === 'MBWay' && (
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      onClick={() => setPaymentMethod('Cartão Visa')}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
+                        paymentMethod === 'Cartão Visa' ? 'border-[#3D1106] bg-[#FFF1E4] shadow-md' : 'border-gray-200 hover:border-[#3D1106]'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`p-2 rounded-full ${
+                          paymentMethod === 'Cartão Visa' ? 'bg-[#3D1106] text-[#FFB501]' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 1.61a10.39 10.39 0 0110.39 10.39 10.39 10.39 0 01-10.39 10.39A10.39 10.39 0 011.61 12 10.39 10.39 0 0112 1.61zm0 1.39a9 9 0 100 18 9 9 0 000-8m3.5 10.5h-7v-1h7v1z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-[#3D1106]">Cartão Visa</h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {i18n.language === 'pt' ? 'Pague com seu cartão Visa na entrega' : 
+                              i18n.language === 'en' ? 'Pay with your Visa card on delivery' : 
+                              'Pague con su tarjeta Visa en la entrega'}
+                          </p>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          paymentMethod === 'Cartão Visa' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
+                        }`}>
+                          {paymentMethod === 'Cartão Visa' && (
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      onClick={() => setPaymentMethod('Cartão Mastercard')}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
+                        paymentMethod === 'Cartão Mastercard' ? 'border-[#3D1106] bg-[#FFF1E4] shadow-md' : 'border-gray-200 hover:border-[#3D1106]'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`p-2 rounded-full ${
+                          paymentMethod === 'Cartão Mastercard' ? 'bg-[#3D1106] text-[#FFB501]' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 1.61a10.39 10.39 0 0110.39 10.39 10.39 10.39 0 01-10.39 10.39A10.39 10.39 0 011.61 12 10.39 10.39 0 0112 1.61zm0 1.39a9 9 0 100 18 9 9 0 000-8m3.5 10.5h-7v-1h7v1z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-[#3D1106]">Mastercard</h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {i18n.language === 'pt' ? 'Pague com seu cartão Mastercard na entrega' : 
+                              i18n.language === 'en' ? 'Pay with your Mastercard on delivery' : 
+                              'Pague con su tarjeta Mastercard en la entrega'}
+                          </p>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          paymentMethod === 'Cartão Mastercard' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
+                        }`}>
+                          {paymentMethod === 'Cartão Mastercard' && (
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      onClick={() => setPaymentMethod('Multibanco')}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
+                        paymentMethod === 'Multibanco' ? 'border-[#3D1106] bg-[#FFF1E4] shadow-md' : 'border-gray-200 hover:border-[#3D1106]'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`p-2 rounded-full ${
+                          paymentMethod === 'Multibanco' ? 'bg-[#3D1106] text-[#FFB501]' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 1.61a10.39 10.39 0 0110.39 10.39 10.39 10.39 0 01-10.39 10.39A10.39 10.39 0 011.61 12 10.39 10.39 0 0112 1.61zm0 1.39a9 9 0 100 18 9 9 0 000-8m3.5 10.5h-7v-1h7v1z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-[#3D1106]">Multibanco</h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {i18n.language === 'pt' ? 'Pagamento por referência Multibanco' : 
+                              i18n.language === 'en' ? 'Payment via Multibanco reference' : 
+                              'Pago por referencia Multibanco'}
+                          </p>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          paymentMethod === 'Multibanco' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
+                        }`}>
+                          {paymentMethod === 'Multibanco' && (
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      onClick={() => setPaymentMethod('Dinheiro')}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
+                        paymentMethod === 'Dinheiro' ? 'border-[#3D1106] bg-[#FFF1E4] shadow-md' : 'border-gray-200 hover:border-[#3D1106]'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`p-2 rounded-full ${
+                          paymentMethod === 'Dinheiro' ? 'bg-[#3D1106] text-[#FFB501]' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 1.61a10.39 10.39 0 0110.39 10.39 10.39 10.39 0 01-10.39 10.39A10.39 10.39 0 011.61 12 10.39 10.39 0 0112 1.61zm0 1.39a9 9 0 100 18 9 9 0 000-8m3.5 10.5h-7v-1h7v1z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-[#3D1106]">
+                            {i18n.language === 'pt' ? 'Dinheiro' : 
+                              i18n.language === 'en' ? 'Cash' : 
+                              'Efectivo'}
+                          </h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {i18n.language === 'pt' ? 'Pagamento em dinheiro na entrega' : 
+                              i18n.language === 'en' ? 'Cash payment on delivery' : 
+                              'Pago en efectivo en la entrega'}
+                          </p>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          paymentMethod === 'Dinheiro' ? 'border-[#3D1106] bg-[#3D1106]' : 'border-gray-300'
+                        }`}>
+                          {paymentMethod === 'Dinheiro' && (
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex justify-between text-sm text-gray-600 mb-1">
+                      <span>{t('subtotal')}</span>
+                      <span>€{cart.reduce((sum, item) => sum + ((item.finalPrice || item.price) * item.quantity), 0).toFixed(2)}</span>
+                    </div>
+                    {deliveryOption === 'delivery' && (
+                      <div className="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>{t('deliveryFee')}</span>
+                        <span>€2.00</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-xl text-[#3D1106] pt-2 border-t border-gray-200">
+                      <span>{t('total')}</span>
+                     <span>€{calculateTotal().total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                        <button
       onClick={sendOrder}
       disabled={!paymentMethod}
       className={`w-full py-3 px-4 rounded-lg font-bold transition-all duration-300 ${
@@ -2482,8 +3137,8 @@ const changeLanguage = (lng) => {
     >
       {t('completeOrder')}
     </button>
-  </div>
-)}
+              </div>
+              )}
             </div>
           </div>
         </div>
@@ -2674,7 +3329,6 @@ const changeLanguage = (lng) => {
     </div>
   </div>
 </footer>
-</OpeningHoursControl> 
 
 {showPickupWarning && (
   <PickupConfirmationModal 
@@ -2693,4 +3347,4 @@ const changeLanguage = (lng) => {
   );
 };
 
-export default ClientPage; 
+export default ClientPage;
