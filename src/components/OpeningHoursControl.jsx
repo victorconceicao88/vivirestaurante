@@ -381,41 +381,6 @@ const OpeningHoursControl = ({ children }) => {
               </div>
               
               <div className="space-y-2">
-                {/* Card Uber Eats - Mobile optimized */}
-                <motion.a
-                  href={deliveryLinks.uber}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="block bg-gradient-to-r from-[#000000] to-[#1A1A1A] rounded-lg overflow-hidden border border-gray-800 group transition-all duration-300 hover:shadow-lg hover:shadow-[#06C167]/20 active:scale-95"
-                  style={{
-                    touchAction: 'manipulation'
-                  }}
-                >
-                  <div className="flex items-center p-2">
-                    <div className="flex-shrink-0 mr-2">
-                      <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
-                        <img 
-                          src="/images/ubereats.jpg" 
-                          alt="Uber Eats Logo"
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <h4 className="text-white font-bold text-xs mb-0.5 truncate">Uber Eats</h4>
-                      <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
-                    </div>
-                    <div className="ml-2 flex-shrink-0">
-                      <svg className="w-4 h-4 text-gray-400 group-hover:text-[#06C167] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="h-1 bg-gradient-to-r from-[#06C167] to-[#3AAE2A]"></div>
-                </motion.a>
 
                 {/* Card Glovo - Mobile optimized */}
                 <motion.a
