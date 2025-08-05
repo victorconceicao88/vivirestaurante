@@ -508,86 +508,212 @@ const filteredProducts = useMemo(() => {
   return products.filter(product => !unavailableItems.includes(product.id.toString()));
 }, [activeCategory, allProducts, categoriesList, unavailableItems]);
   
- const PickupConfirmationModal = ({ onConfirm, onCancel }) => {
+const PickupConfirmationModal = ({ onConfirm, onCancel }) => {
+  const { t } = useTranslation();
+  const [confirmed, setConfirmed] = useState(false);
+
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black bg-opacity-90">
-      <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
-        <div className="text-center">
-          {/* Ícone de atenção */}
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
-            <svg 
-              className="h-8 w-8 text-yellow-600" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth="2" 
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
-              />
-            </svg>
-          </div>
-          
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
-            {t('pickup_warning_title')}
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", damping: 25 }}
+        className="relative bg-white rounded-2xl w-full max-w-xs sm:max-w-md md:max-w-lg overflow-hidden shadow-2xl border border-[#3D1106]/10"
+      >
+        {/* Cabeçalho com ícone de alerta */}
+        <div className="relative px-4 pt-8 pb-4 sm:px-6 sm:pt-20">
+
+          {/* Título */}
+          <h3 className="text-lg sm:text-xl font-bold text-center text-[#3D1106] mt-6 mb-1">
+            Confirmação de Levantamento
           </h3>
-          
-          <div className="mt-4 text-gray-600">
-            <p className="mb-4">{t('pickup_warning_message')}</p>
-            
-            {/* Ícones de ação */}
-            <div className="flex justify-center space-x-8 mt-6">
-              {/* Botão Não */}
-              <button
-                onClick={onCancel}
-                className="flex flex-col items-center group"
-              >
-                <div className="bg-red-100 p-3 rounded-full group-hover:bg-red-200 transition-colors mb-2">
-                  <svg 
-                    className="h-8 w-8 text-red-600" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth="2" 
-                      d="M6 18L18 6M6 6l12 12" 
-                    />
-                  </svg>
+
+          {/* Texto de apoio */}
+          <p className="text-center text-[#3D1106]/80 text-xs sm:text-sm">
+            Por favor, confirme que irá levantar pessoalmente
+          </p>
+        </div>
+
+        {/* Corpo */}
+        <div className="px-4 sm:px-6 pb-5 sm:pb-7">
+          {/* Cartão de endereço */}
+          <motion.div
+            whileHover={{ y: -2 }}
+            className="bg-[#FFF9F2] p-3 sm:p-4 rounded-lg border border-[#FFB501]/30 mb-4 sm:mb-5"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3">
+              <div className="flex-shrink-0 bg-[#3D1106]/5 p-1.5 sm:p-2 rounded-lg w-fit mx-auto sm:mx-0">
+                <svg
+                  className="h-5 w-5 sm:h-6 sm:w-6 text-[#3D1106]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+              </div>
+              <div className="text-center sm:text-left">
+                <h4 className="font-bold text-[#3D1106] text-sm sm:text-base mb-1">
+                  Local de Levantamento
+                </h4>
+                <div className="text-xs sm:text-sm text-[#3D1106]/90 space-y-0.5">
+                  <p>Av. Dr. Francisco de Sá Carneiro</p>
+                  <p>Lote 9 loja D, 8500-506 Portimão</p>
+                  <p className="text-[0.7rem] sm:text-xs italic text-[#3D1106]/70">
+                    (Beco ao lado do AIMA, frente aos bombeiros)
+                  </p>
                 </div>
-                <span className="text-sm font-medium text-gray-700">Não</span>
-              </button>
-              
-              {/* Botão Sim */}
-              <button
-                onClick={onConfirm}
-                className="flex flex-col items-center group"
-              >
-                <div className="bg-green-100 p-3 rounded-full group-hover:bg-green-200 transition-colors mb-2">
-                  <svg 
-                    className="h-8 w-8 text-green-600" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth="2" 
-                      d="M5 13l4 4L19 7" 
-                    />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium text-gray-700">Sim</span>
-              </button>
+                <a
+                  href="https://www.google.com/maps?q=Av.+Dr.+Francisco+de+Sá+Carneiro,+Portimão"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 sm:mt-3 inline-block text-xs sm:text-sm text-white bg-[#3D1106] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg hover:shadow transition-all"
+                >
+                  📍 Ver no Mapa
+                </a>
+              </div>
             </div>
+          </motion.div>
+
+          {/* Checkbox de confirmação */}
+          <motion.div
+            whileTap={{ scale: 0.98 }}
+            className="flex items-start mb-4 sm:mb-6 cursor-pointer"
+            onClick={() => setConfirmed(!confirmed)}
+          >
+            <div
+              className={`flex-shrink-0 mt-0.5 h-4 w-4 sm:h-5 sm:w-5 rounded border-2 flex items-center justify-center mr-2 transition-all ${
+                confirmed
+                  ? "bg-[#3D1106] border-[#3D1106]"
+                  : "bg-white border-[#3D1106]/50"
+              }`}
+            >
+              {confirmed && (
+                <svg
+                  className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+            </div>
+            <label className="text-xs sm:text-sm text-[#3D1106]/90 cursor-pointer leading-tight">
+              Confirmo que vou levantar pessoalmente no local indicado
+            </label>
+          </motion.div>
+
+          {/* Botões */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <motion.button
+              initial={{ scale: 1 }}
+              animate={{
+                scale: [1, 1.03, 1],
+                boxShadow: [
+                  "0 2px 5px rgba(0,0,0,0.1)",
+                  "0 4px 8px rgba(0,0,0,0.15)",
+                  "0 2px 5px rgba(0,0,0,0.1)",
+                ],
+              }}
+              transition={{
+                repeat: Infinity,
+                repeatType: "reverse",
+                duration: 2,
+              }}
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "rgba(61, 17, 6, 0.05)",
+              }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onCancel}
+              className="py-2 sm:py-2.5 px-3 bg-white text-[#3D1106] border border-[#3D1106]/20 rounded-lg font-medium text-xs sm:text-sm flex items-center justify-center space-x-1 sm:space-x-2 transition-all"
+            >
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              <span>Prefiro Entrega</span>
+            </motion.button>
+
+            <motion.button
+              initial={{ scale: 1 }}
+              animate={
+                confirmed
+                  ? {
+                      scale: [1, 1.03, 1],
+                      boxShadow: [
+                        "0 2px 8px rgba(61, 17, 6, 0.3)",
+                        "0 4px 12px rgba(61, 17, 6, 0.4)",
+                        "0 2px 8px rgba(61, 17, 6, 0.3)",
+                      ],
+                    }
+                  : {}
+              }
+              transition={
+                confirmed
+                  ? {
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                      duration: 2,
+                    }
+                  : {}
+              }
+              whileHover={
+                confirmed
+                  ? {
+                      scale: 1.05,
+                      boxShadow: "0 4px 12px rgba(61, 17, 6, 0.4)",
+                    }
+                  : {}
+              }
+              whileTap={{ scale: 0.98 }}
+              onClick={onConfirm}
+              disabled={!confirmed}
+              className={`py-2 sm:py-2.5 px-3 rounded-lg font-medium text-xs sm:text-sm flex items-center justify-center space-x-1 sm:space-x-2 transition-all ${
+                confirmed
+                  ? "bg-[#3D1106] text-white shadow-lg"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span>Confirmar</span>
+            </motion.button>
           </div>
         </div>
-      </div>
+
+        {/* Rodapé decorativo */}
+        <div className="h-1 bg-gradient-to-r from-[#3D1106] via-[#FFB501] to-[#3D1106] opacity-20"></div>
+      </motion.div>
     </div>
   );
 };
@@ -2508,134 +2634,153 @@ const changeLanguage = (lng) => {
         />
       )}
 
-<footer className="bg-[#FEB300] text-[#280B04] py-8 md:py-12">
+<footer className="bg-[#FEB300] text-[#280B04] py-12 md:py-16 overflow-hidden">
   <div className="container mx-auto px-4">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
-      {/* Horários de funcionamento */}
-      <div className="space-y-4 md:space-y-5">
-        <h3 className="text-lg md:text-xl font-bold flex items-center justify-center md:justify-start">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {t('openingHours')}
-        </h3>
-        <ul className="space-y-2 md:space-y-3">
-          <li className="flex justify-between items-center border-b border-[#280B04] border-opacity-20 pb-2 md:pb-3">
-            <span className="text-[#280B04] opacity-80 text-sm md:text-base">{t('monday')}</span>
-            <span className="font-medium bg-[#FFF1E4] px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs md:text-sm">
-              {t('closed')}
-            </span>
-          </li>
-          <li className="flex justify-between border-b border-[#280B04] border-opacity-20 pb-2 md:pb-3">
-            <span className="text-[#280B04] opacity-80 text-sm md:text-base">{t('tuesdayToSaturday')}</span>
-            <span className="font-medium text-sm md:text-base">12:00 – 15:30 | 19:00 – 22:00</span>
-          </li>
-          <li className="flex justify-between">
-            <span className="text-[#280B04] opacity-80 text-sm md:text-base">{t('sunday')}</span>
-            <span className="font-medium text-sm md:text-base">12:00 – 15:30</span>
-          </li>
-        </ul>
-      </div>
+    {/* Título com animação */}
+    <h2 className="text-2xl md:text-3xl font-bold text-center mb-10 md:mb-12 animate-[slideIn_1s_ease-out]">
+      Nossos Restaurantes
+    </h2>
 
-      {/* Endereço */}
-      <div className="space-y-4 md:space-y-5">
-        <h3 className="text-lg md:text-xl font-bold flex items-center justify-center md:justify-start">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          {t('addressText')}
-        </h3>
-        <address className="not-italic text-center md:text-left">
-          <div className="flex flex-col items-center md:items-start">
-            <div className="font-medium">
-              <p className="font-bold">Cozinha da Vivi</p>
-              <p className="text-sm md:text-base">Estrada de Alvor, São Sebastião</p>
-              <p className="text-sm md:text-base">8500-769 Portimão.</p>
+    {/* Grid dos Restaurantes */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 mb-14">
+      {/* Cozinha da Vivi 1 */}
+      <div className="bg-white/10 p-6 md:p-8 rounded-lg border border-[#280B04]/10 shadow-sm hover:shadow-md transition-all duration-300 animate-[fadeInLeft_0.8s_ease-out]">
+        <div className="flex items-center mb-6 overflow-hidden">
+          <div className="bg-[#280B04] text-[#FEB300] p-2 rounded-full mr-4 animate-[bounceIn_0.8s_ease-out]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <h3 className="text-xl md:text-2xl font-bold animate-[textFocusIn_1s_ease-out]">
+            <span className="inline-block animate-[trackingInExpand_0.7s_ease-out]">Cozinha da Vivi</span>
+          </h3>
+        </div>
+        
+        <div className="space-y-5">
+          <div className="flex animate-[fadeIn_1s_ease-out]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mt-0.5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <p className="text-sm md:text-base">Estrada de Alvor, São Sebastião<br/>8500-769 Portimão</p>
+          </div>
+          
+          <div className="flex animate-[fadeIn_1.1s_ease-out]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mt-0.5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            <div>
+              <p className="text-sm md:text-base">Contacto:</p>
+              <a href="https://wa.me/351926249910" className="font-medium hover:underline">+351 926 249 910</a>
             </div>
           </div>
-        </address>
-      </div>
-
-      {/* Contato */}
-      <div className="space-y-4 md:space-y-5">
-        <h3 className="text-lg md:text-xl font-bold flex items-center justify-center md:justify-start">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-          {t('contact')}
-        </h3>
-        <div className="flex flex-col items-center space-y-3 md:space-y-4 md:items-start">
-          {/* WhatsApp */}
-          <a 
-            href="https://wa.me/351928145225" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="flex items-center bg-[#280B04] text-[#FEB300] p-3 rounded-lg hover:bg-[#3D1106] transition-all group w-full max-w-xs"
-          >
-            <div className="bg-[#FEB300] text-[#280B04] p-2 rounded-full mr-3 group-hover:scale-110 transition-transform">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" />
-              </svg>
-            </div>
+          
+          <div className="flex animate-[fadeIn_1.2s_ease-out]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mt-0.5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <p className="text-sm md:text-base">Reserve jantares e eventos exclusivos diretamente pelo WhatsApp.</p>
+          </div>
+          
+          <div className="flex animate-[fadeIn_1.3s_ease-out]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mt-0.5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             <div>
-              <div className="font-bold text-sm md:text-base">WhatsApp</div>
-              <div className="text-xs md:text-sm opacity-90">+351 928 145 225</div>
+              <p className="text-sm md:text-base font-medium">Horário:</p>
+              <p className="text-sm md:text-base">Terça a Sábado: 12:00–15:30 | 19:00–22:00<br/>Domingo: 12:00–15:30<br/>Segunda: Fechado</p>
             </div>
+          </div>
+          
+          <a 
+            href="https://wa.me/351926249910?text=Olá%20Cozinha%20da%20Vivi,%20gostaria%20de%20reservar%20uma%20mesa%20ou%20obter%20informações%20sobre%20eventos." 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center bg-[#280B04] text-[#FEB300] px-6 py-2 rounded-lg font-medium hover:bg-[#3D1106] transition-all mt-4 w-full md:w-auto animate-[fadeInUp_1s_ease-out] hover:animate-[pulse_1s_ease-in-out]"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" />
+            </svg>
+            Reservar pelo WhatsApp
           </a>
+        </div>
+      </div>
+      
+      {/* Cozinha da Vivi 2 */}
+      <div className="bg-white/10 p-6 md:p-8 rounded-lg border border-[#280B04]/10 shadow-sm hover:shadow-md transition-all duration-300 animate-[fadeInRight_0.8s_ease-out]">
+        <div className="flex items-center mb-6 overflow-hidden">
+          <div className="bg-[#280B04] text-[#FEB300] p-2 rounded-full mr-4 animate-[bounceIn_0.8s_ease-out]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <h3 className="text-xl md:text-2xl font-bold animate-[textFocusIn_1s_ease-out]">
+            <span className="inline-block animate-[trackingInExpand_0.7s_ease-out]">Cozinha da Vivi 2</span>
+          </h3>
+        </div>
+        
+        <div className="space-y-5">
+          <div className="flex animate-[fadeIn_1s_ease-out]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mt-0.5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <p className="text-sm md:text-base">Av. Dr. Francisco de Sá Carneiro, Lote 9, loja D<br/>8500-506 Portimão<br/>(Beco ao lado do AIMA, em frente aos bombeiros)</p>
+          </div>
+          
+          <div className="flex animate-[fadeIn_1.1s_ease-out]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mt-0.5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <p className="text-sm md:text-base">Local de entregas e recolhas dos pedidos online. Também servimos refeições no espaço.</p>
+          </div>
+          
+          <div className="flex animate-[fadeIn_1.2s_ease-out]">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mt-0.5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="text-sm md:text-base font-medium">Horário:</p>
+              <p className="text-sm md:text-base">Terça a Sábado: 11:30–18:00<br/>Domingo: 12:00–15:00<br/>Segunda: Fechado</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    {/* Seção Criativa para Eventos */}
-    <div className="mt-12 text-center">
-      <h4 className="text-xl md:text-2xl font-bold mb-4">🎉 Que tal fazer sua festa de aniversário ou evento conosco?</h4>
-      <p className="mb-6 text-sm md:text-base opacity-90">
-        Transforme sua ocasião especial em uma experiência inesquecível com o toque da Cozinha da Vivi.
-      </p>
-      <a
-        href="https://wa.me/351928145225?text=Olá%2C+gostaria+de+saber+mais+sobre+eventos+e+festas+na+Cozinha+da+Vivi"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block bg-[#280B04] text-[#FEB300] px-6 py-3 rounded-lg font-semibold hover:bg-[#3D1106] transition-all"
-      >
-        Solicitar mais informações
-      </a>
-    </div>
-
     {/* Redes Sociais */}
-    <div className="mt-12 text-center">
-      <h4 className="text-lg font-medium mb-4">Siga-nos</h4>
-      <div className="flex justify-center space-x-6">
-        {/* TripAdvisor */}
+    <div className="flex flex-col items-center mb-10 animate-[fadeIn_1.4s_ease-out]">
+      <h4 className="text-lg font-medium mb-4">Siga-nos nas Redes Sociais</h4>
+      <div className="flex space-x-4">
         <a 
-          href="https://www.tripadvisor.com/Restaurant_Review-g189120-d33062978-Reviews-Cozinha_Da_Vivi-Portimao_Faro_District_Algarve.html?m=69573"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#280B04] text-[#FEB300] p-2 rounded-full hover:scale-110 transition-transform hover:shadow-md"
+          href="https://www.instagram.com/cozinhadavivipt" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="bg-[#280B04] text-[#FEB300] p-3 rounded-full hover:scale-110 transition-transform hover:animate-[jello_1s_ease-in-out]"
+          aria-label="Instagram"
         >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 0a12 12 0 100 24 12 12 0 000-24zm4.5 16.5c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1zm-9 0c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1z"/>
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
           </svg>
         </a>
-        {/* Instagram */}
         <a 
-          href="https://www.instagram.com/cozinhadavivipt?igsh=MTd0NDI1a2c5Y3Uydg=="
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#280B04] text-[#FEB300] p-2 rounded-full hover:scale-110 transition-transform hover:shadow-md"
+          href="https://www.tripadvisor.com/Restaurant_Review-g189120-d33062978-Reviews-Cozinha_Da_Vivi-Portimao_Faro_District_Algarve.html" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="bg-[#280B04] text-[#FEB300] p-3 rounded-full hover:scale-110 transition-transform hover:animate-[jello_1s_ease-in-out]"
+          aria-label="TripAdvisor"
         >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0a12 12 0 100 24 12 12 0 000-24zm4.5 16.5c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1zm-9 0c-.6 0-1.1-.5-1.1-1.1s.5-1.1 1.1-1.1 1.1.5 1.1 1.1-.5 1.1-1.1 1.1z"/>
           </svg>
         </a>
       </div>
     </div>
 
     {/* Direitos Autorais */}
-    <div className="mt-8 pt-4 border-t border-[#280B04] border-opacity-20 text-center">
-      <p className="text-xs md:text-sm text-[#280B04] opacity-80">
-        {t('copyright', { year: new Date().getFullYear() })}
+    <div className="pt-6 border-t border-[#280B04]/20 text-center animate-[fadeIn_1.5s_ease-out]">
+      <p className="text-xs md:text-sm opacity-80">
+        © {new Date().getFullYear()} Cozinha da Vivi. Todos os direitos reservados.
       </p>
     </div>
   </div>

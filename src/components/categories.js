@@ -457,9 +457,9 @@ export const categories = (t, i18n) => [
         id: 601, 
         name: i18n.language === 'pt' ? "Açai Pequeno" : 
               i18n.language === 'en' ? "Small Açai Bowl" : "Açaí Pequeño", 
-        description: i18n.language === 'pt' ? "Açai cremoso com acompanhamentos à escolha. Tamanho pequeno (300ml)." : 
-                      i18n.language === 'en' ? "Creamy açai with toppings of your choice. Small size (300ml)." : 
-                      "Açaí cremoso con acompañamientos a elegir. Tamaño pequeño (300ml).", 
+        description: i18n.language === 'pt' ? "Açai cremoso com acompanhamentos à escolha. Tamanho pequeno ." : 
+                      i18n.language === 'en' ? "Creamy açai with toppings of your choice. Small size." : 
+                      "Açaí cremoso con acompañamientos a elegir. Tamaño pequeño.", 
         price: 6.00, 
         image: "/images/Acai.png",
         options: {
@@ -490,9 +490,9 @@ export const categories = (t, i18n) => [
         id: 602, 
         name: i18n.language === 'pt' ? "Açai Grande" : 
               i18n.language === 'en' ? "Large Açai Bowl" : "Açai Grande", 
-        description: i18n.language === 'pt' ? "Açai cremoso com acompanhamentos à escolha. Tamanho grande (500ml)." : 
-                      i18n.language === 'en' ? "Creamy açai with toppings of your choice. Large size (500ml)." : 
-                      "Açai cremoso con acompañamientos a elegir. Tamaño grande (500ml).", 
+        description: i18n.language === 'pt' ? "Açai cremoso com acompanhamentos à escolha. Tamanho grande." : 
+                      i18n.language === 'en' ? "Creamy açai with toppings of your choice. Large size." : 
+                      "Açai cremoso con acompañamientos a elegir. Tamaño grande.", 
         price: 10.00, 
         image: "/images/Acai.png",
         options: {

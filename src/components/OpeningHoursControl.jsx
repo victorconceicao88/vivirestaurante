@@ -26,7 +26,7 @@ const OpeningHoursControl = ({ children }) => {
     { 
       phase: 'open', 
       open: { hour: 11, minute: 30 }, 
-      close: { hour: 17, minute: 45 },
+      close: { hour: 22, minute: 0 },
       deliveryStarts: { hour: 12, minute: 0 },
       message: 'Plataforma aberta - pedidos disponíveis até 17:45',
       platformAvailable: true
