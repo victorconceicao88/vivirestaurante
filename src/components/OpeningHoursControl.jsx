@@ -111,7 +111,7 @@ const OpeningHoursControl = ({ children }) => {
 
         const deliveryTime = period.deliveryStarts.hour * 60 + period.deliveryStarts.minute;
         if (currentTime < deliveryTime) {
-          message = `Aberto para pedidos (entregas a partir das ${period.deliveryStarts.hour}:${period.deliveryStarts.minute.toString().padStart(2, '0')})`;
+          
         } else {
           message = period.message;
         }
@@ -450,42 +450,7 @@ const OpeningHoursControl = ({ children }) => {
               boxShadow: '0 4px 20px rgba(255, 107, 0, 0.3)'
             }}
           >
-            <div className="container mx-auto px-3 py-2">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-2">
-                <div className="flex items-center">
-                  <motion.div 
-                    animate={{ 
-                      scale: [1, 1.1, 1],
-                      rotate: [0, 10, -10, 0]
-                    }}
-                    transition={{ 
-                      repeat: Infinity, 
-                      duration: 3,
-                      ease: "easeInOut"
-                    }}
-                    className="bg-white/20 p-1 rounded-full mr-2 backdrop-blur-sm"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </motion.div>
-                  <p className="text-white font-bold text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[180px] sm:max-w-none">
-                    {status.message}
-                  </p>
-                </div>
-                
-                <motion.div 
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center bg-black/10 px-2 sm:px-3 py-1 rounded-full backdrop-blur-sm border border-white/10"
-                >
-                  <span className="text-white text-xs font-medium">
-                    Fechamento às <span className="font-bold">15:00</span> • 
-                    <span className="ml-1 font-mono tracking-tighter">{formatTime(status.nextChangeIn)}</span>
-                  </span>
-                </motion.div>
-              </div>
-            </div>
+         
           </motion.div>
         )}
       </AnimatePresence>
