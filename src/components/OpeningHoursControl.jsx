@@ -143,7 +143,7 @@ const OpeningHoursControl = ({ children }) => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const AnalogClock = ({ size = 60 }) => {
+  const AnalogClock = ({ size = 40 }) => {
     const time = new Date();
     const seconds = time.getSeconds();
     const minutes = time.getMinutes();
@@ -226,12 +226,10 @@ const OpeningHoursControl = ({ children }) => {
             /* Prevent text size adjustment on orientation change */
             html {
               -webkit-text-size-adjust: 100%;
-              -ms-text-size-adjust: 100%;
               text-size-adjust: 100%;
             }
             /* Tap highlight color */
             a, button {
-              -webkit-tap-highlight-color: rgba(0,0,0,0);
               -webkit-tap-highlight-color: transparent;
             }
           }
@@ -250,7 +248,7 @@ const OpeningHoursControl = ({ children }) => {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.6, type: 'spring' }}
-          className="w-full max-w-md mx-auto bg-gradient-to-br from-[#3D1106] to-[#5A1B0D] p-5 sm:p-6 rounded-2xl shadow-2xl text-center text-white relative overflow-hidden border border-[#FFB501]/20 safe-area-padding"
+          className="w-full max-w-sm mx-auto bg-gradient-to-br from-[#3D1106] to-[#5A1B0D] p-4 rounded-2xl shadow-2xl text-center text-white relative overflow-hidden border border-[#FFB501]/20 safe-area-padding"
           style={{
             maxHeight: '90vh',
             overflowY: 'auto',
@@ -261,20 +259,20 @@ const OpeningHoursControl = ({ children }) => {
         >
           {/* Efeitos de partículas (reduzidos em mobile) */}
           <div className="absolute inset-0 overflow-hidden">
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <motion.div
                 key={i}
                 className="absolute rounded-full bg-[#FFB501]/10"
                 initial={{
                   x: Math.random() * 100,
                   y: Math.random() * 100,
-                  width: Math.random() * 6 + 2,
-                  height: Math.random() * 6 + 2,
+                  width: Math.random() * 4 + 2,
+                  height: Math.random() * 4 + 2,
                   opacity: Math.random() * 0.2 + 0.1
                 }}
                 animate={{
-                  y: [null, (Math.random() - 0.5) * 20],
-                  x: [null, (Math.random() - 0.5) * 20],
+                  y: [null, (Math.random() - 0.5) * 10],
+                  x: [null, (Math.random() - 0.5) * 10],
                   transition: {
                     duration: Math.random() * 8 + 8,
                     repeat: Infinity,
@@ -287,11 +285,11 @@ const OpeningHoursControl = ({ children }) => {
           
           {/* Elementos decorativos (otimizados para mobile) */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF6B00] via-[#FFB501] to-[#FF6B00]"></div>
-          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-[#FFB501]/10 filter blur-lg sm:blur-xl"></div>
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-[#FFB501]/5 filter blur-lg sm:blur-xl"></div>
+          <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#FFB501]/10 filter blur-md"></div>
+          <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-[#FFB501]/5 filter blur-md"></div>
           
           <div className="relative z-10">
-            <div className="mb-3 sm:mb-6 flex flex-col items-center">
+            <div className="mb-3 flex flex-col items-center">
               <motion.div 
                 animate={{ 
                   rotate: 360,
@@ -307,19 +305,19 @@ const OpeningHoursControl = ({ children }) => {
                     repeatType: 'reverse'
                   }
                 }}
-                className="bg-gradient-to-br from-[#FFB501] to-[#FF6B00] p-1 sm:p-1.5 rounded-full mb-2 sm:mb-4 shadow-lg"
+                className="bg-gradient-to-br from-[#FFB501] to-[#FF6B00] p-1 rounded-full mb-2 shadow-lg"
                 style={{
-                  boxShadow: '0 0 12px rgba(255, 181, 1, 0.5)'
+                  boxShadow: '0 0 8px rgba(255, 181, 1, 0.5)'
                 }}
               >
-                <AnalogClock size={40} />
+                <AnalogClock size={36} />
               </motion.div>
               
               <motion.h2 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2 bg-clip-text text-transparent bg-gradient-to-r from-[#FFB501] to-[#FF6B00] px-2"
+                className="text-lg font-bold mb-1 bg-clip-text text-transparent bg-gradient-to-r from-[#FFB501] to-[#FF6B00] px-2"
               >
                 Plataforma Fechada
               </motion.h2>
@@ -327,7 +325,7 @@ const OpeningHoursControl = ({ children }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-xs sm:text-base text-gray-300 mb-2 sm:mb-4 px-2"
+                className="text-xs text-gray-300 mb-2 px-2"
               >
                 Fora do horário de funcionamento da plataforma própria
               </motion.p>
@@ -338,26 +336,26 @@ const OpeningHoursControl = ({ children }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-white/5 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-[#FFB501]/20 mb-3 sm:mb-6 relative overflow-hidden mx-2"
+              className="bg-white/5 backdrop-blur-md p-3 rounded-xl border border-[#FFB501]/20 mb-3 relative overflow-hidden mx-1"
               style={{
                 boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.1)'
               }}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFB501]/5 to-transparent opacity-20"></div>
               <div className="relative z-10">
-                <div className="flex flex-col items-center gap-1 sm:gap-3">
+                <div className="flex flex-col items-center gap-1">
                   <div className="text-center">
-                    <p className="text-[#FFB501] text-xs sm:text-sm font-semibold mb-1">
+                    <p className="text-[#FFB501] text-xs font-semibold mb-1">
                       Próximo horário de funcionamento:
                     </p>
-                    <p className="text-white text-xs sm:text-base font-medium leading-tight">
+                    <p className="text-white text-xs font-medium leading-tight">
                       Amanhã às 11:30 (funcionamento normal até 17:45)
                     </p>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-[#FFB501]/10 to-[#FF6B00]/10 p-2 sm:p-3 rounded-lg border border-[#FFB501]/30 backdrop-blur-sm w-full max-w-[160px] sm:max-w-[180px] mt-2">
-                    <p className="text-[#FFB501] text-[10px] sm:text-xs mb-1">Tempo restante:</p>
-                    <div className="text-lg sm:text-2xl font-mono font-bold text-white tracking-tighter">
+                  <div className="bg-gradient-to-br from-[#FFB501]/10 to-[#FF6B00]/10 p-2 rounded-lg border border-[#FFB501]/30 backdrop-blur-sm w-full max-w-[140px] mt-1">
+                    <p className="text-[#FFB501] text-[10px] mb-1">Tempo restante:</p>
+                    <div className="text-lg font-mono font-bold text-white tracking-tighter">
                       {formatTime(status.nextChangeIn)}
                     </div>
                   </div>
@@ -370,19 +368,19 @@ const OpeningHoursControl = ({ children }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="mb-3 sm:mb-6 mx-2"
+              className="mb-3 mx-1"
             >
-              <h3 className="text-[#FFB501] font-bold text-base sm:text-xl mb-3 sm:mb-4 text-center px-1">
+              <h3 className="text-[#FFB501] font-bold text-sm mb-2 text-center px-1">
                 Pedidos Noturnos pelos Parceiros
               </h3>
               
-              <div className="mb-3 bg-black/20 p-3 rounded-lg border border-[#FFB501]/30">
-                <p className="text-white text-xs sm:text-sm text-center">
+              <div className="mb-2 bg-black/20 p-2 rounded-lg border border-[#FFB501]/30">
+                <p className="text-white text-xs text-center">
                   Durante o período noturno, você pode fazer pedidos exclusivamente pelos nossos parceiros oficiais:
                 </p>
               </div>
               
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2">
                 {/* Card Uber Eats - Mobile optimized */}
                 <motion.a
                   href={deliveryLinks.uber}
@@ -390,14 +388,14 @@ const OpeningHoursControl = ({ children }) => {
                   rel="noopener noreferrer"
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  className="block bg-gradient-to-r from-[#000000] to-[#1A1A1A] rounded-xl overflow-hidden border border-gray-800 group transition-all duration-300 hover:shadow-lg hover:shadow-[#06C167]/20 active:scale-95"
+                  className="block bg-gradient-to-r from-[#000000] to-[#1A1A1A] rounded-lg overflow-hidden border border-gray-800 group transition-all duration-300 hover:shadow-lg hover:shadow-[#06C167]/20 active:scale-95"
                   style={{
                     touchAction: 'manipulation'
                   }}
                 >
-                  <div className="flex items-center p-3 sm:p-5">
-                    <div className="flex-shrink-0 mr-3 sm:mr-4">
-                      <div className="bg-white p-1 sm:p-2 rounded-lg flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16">
+                  <div className="flex items-center p-2">
+                    <div className="flex-shrink-0 mr-2">
+                      <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
                         <img 
                           src="/images/ubereats.jpg" 
                           alt="Uber Eats Logo"
@@ -407,11 +405,11 @@ const OpeningHoursControl = ({ children }) => {
                       </div>
                     </div>
                     <div className="flex-1 text-left min-w-0">
-                      <h4 className="text-white font-bold text-sm sm:text-lg mb-0.5 truncate">Uber Eats</h4>
-                      <p className="text-white/90 text-xs sm:text-sm mb-1 truncate">Clique para fazer seu pedido</p>
+                      <h4 className="text-white font-bold text-xs mb-0.5 truncate">Uber Eats</h4>
+                      <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
                     </div>
-                    <div className="ml-2 sm:ml-4 flex-shrink-0">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 group-hover:text-[#06C167] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <div className="ml-2 flex-shrink-0">
+                      <svg className="w-4 h-4 text-gray-400 group-hover:text-[#06C167] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
                     </div>
@@ -426,14 +424,14 @@ const OpeningHoursControl = ({ children }) => {
                   rel="noopener noreferrer"
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  className="block bg-gradient-to-r from-[#FF6B00] to-[#FF8C33] rounded-xl overflow-hidden border border-[#FF8C33] group transition-all duration-300 hover:shadow-lg hover:shadow-[#FF6B00]/30 active:scale-95"
+                  className="block bg-gradient-to-r from-[#FF6B00] to-[#FF8C33] rounded-lg overflow-hidden border border-[#FF8C33] group transition-all duration-300 hover:shadow-lg hover:shadow-[#FF6B00]/30 active:scale-95"
                   style={{
                     touchAction: 'manipulation'
                   }}
                 >
-                  <div className="flex items-center p-3 sm:p-5">
-                    <div className="flex-shrink-0 mr-3 sm:mr-4">
-                      <div className="bg-white p-1 sm:p-2 rounded-lg flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16">
+                  <div className="flex items-center p-2">
+                    <div className="flex-shrink-0 mr-2">
+                      <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
                         <img 
                           src="/images/glovo.jpg" 
                           alt="Glovo Logo"
@@ -443,11 +441,11 @@ const OpeningHoursControl = ({ children }) => {
                       </div>
                     </div>
                     <div className="flex-1 text-left min-w-0">
-                      <h4 className="text-white font-bold text-sm sm:text-lg mb-0.5 truncate">Glovo</h4>
-                      <p className="text-white/90 text-xs sm:text-sm mb-1 truncate">Clique para fazer seu pedido</p>
+                      <h4 className="text-white font-bold text-xs mb-0.5 truncate">Glovo</h4>
+                      <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
                     </div>
-                    <div className="ml-2 sm:ml-4 flex-shrink-0">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white/70 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <div className="ml-2 flex-shrink-0">
+                      <svg className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
                     </div>
@@ -455,56 +453,54 @@ const OpeningHoursControl = ({ children }) => {
                   <div className="h-1 bg-gradient-to-r from-[#FF6B00] to-[#FFB501]"></div>
                 </motion.a>
 
-                  {/* Card Uber Eats - Mobile optimized */}
-               <motion.a
-                href={deliveryLinks.bolt}
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                className="block bg-gradient-to-r from-[#06C167] to-[#3AAE2A] rounded-xl overflow-hidden border border-green-600 group transition-all duration-300 hover:shadow-lg hover:shadow-[#06C167]/30 active:scale-95"
-                style={{
-                  touchAction: 'manipulation'
-                }}
-              >
-                <div className="flex items-center p-3 sm:p-5">
-                  <div className="flex-shrink-0 mr-3 sm:mr-4">
-                    <div className="bg-white p-1 sm:p-2 rounded-lg flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16">
-                      <img 
-                        src="/images/boltfood.jpg" 
-                        alt="Bolt Food Logo"
-                        className="w-full h-full object-contain"
-                        loading="lazy"
-                      />
+                {/* Card Bolt Food - Mobile optimized */}
+                <motion.a
+                  href={deliveryLinks.bolt}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="block bg-gradient-to-r from-[#06C167] to-[#3AAE2A] rounded-lg overflow-hidden border border-green-600 group transition-all duration-300 hover:shadow-lg hover:shadow-[#06C167]/30 active:scale-95"
+                  style={{
+                    touchAction: 'manipulation'
+                  }}
+                >
+                  <div className="flex items-center p-2">
+                    <div className="flex-shrink-0 mr-2">
+                      <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
+                        <img 
+                          src="/images/boltfood.jpg" 
+                          alt="Bolt Food Logo"
+                          className="w-full h-full object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <h4 className="text-white font-bold text-xs mb-0.5 truncate">Bolt Food</h4>
+                      <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
+                    </div>
+                    <div className="ml-2 flex-shrink-0">
+                      <svg className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
                     </div>
                   </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <h4 className="text-white font-bold text-sm sm:text-lg mb-0.5 truncate">Bolt Food</h4>
-                    <p className="text-white/90 text-xs sm:text-sm mb-1 truncate">Clique para fazer seu pedido</p>
-                  </div>
-                  <div className="ml-2 sm:ml-4 flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white/80 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="h-1 bg-white/20"></div>
-              </motion.a>
-
-
+                  <div className="h-1 bg-white/20"></div>
+                </motion.a>
               </div>
 
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}
-                className="mt-4 sm:mt-6 text-center"
+                className="mt-3 text-center"
               >
-                <div className="inline-flex items-center bg-black/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-[#FFB501]/30 text-center mx-auto max-w-xs">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 text-[#FFB501]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <div className="inline-flex items-center bg-black/20 px-2 py-1 rounded-full border border-[#FFB501]/30 text-center mx-auto max-w-xs">
+                  <svg className="w-3 h-3 mr-1 text-[#FFB501]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-[10px] sm:text-xs text-gray-300 leading-tight">
+                  <span className="text-[10px] text-gray-300 leading-tight">
                     Plataforma própria reabre amanhã às 11:30
                   </span>
                 </div>
@@ -516,33 +512,33 @@ const OpeningHoursControl = ({ children }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-3 sm:p-4 rounded-xl border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group mx-2"
+              className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-2 rounded-lg border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group mx-1"
             >
-              <div className="absolute -right-2 -top-2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#FFB501]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
-              <h3 className="text-[#FFB501] font-bold text-sm sm:text-lg mb-1 sm:mb-2 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="absolute -right-1 -top-1 w-8 h-8 rounded-full bg-[#FFB501]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
+              <h3 className="text-[#FFB501] font-bold text-xs mb-1 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 HORÁRIO DE FUNCIONAMENTO
               </h3>
-              <ul className="space-y-1 sm:space-y-2 text-[11px] sm:text-sm text-gray-300">
+              <ul className="space-y-1 text-[10px] text-gray-300">
                 <li className="flex justify-between items-center">
                   <span className="flex items-center">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
                     Plataforma própria:
                   </span>
                   <span className="font-medium text-white">11:30 - 17:45</span>
                 </li>
                 <li className="flex justify-between items-center">
                   <span className="flex items-center">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
                     Entregas a partir:
                   </span>
                   <span className="font-medium text-white">12:00</span>
                 </li>
                 <li className="flex justify-between items-center">
                   <span className="flex items-center">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
                     Pedidos noturnos:
                   </span>
                   <span className="font-medium text-white">Apenas por parceiros</span>
@@ -555,12 +551,7 @@ const OpeningHoursControl = ({ children }) => {
     );
   }
 
-  return (
-    <>
-           
-      {children}
-    </>
-  );
+  return <>{children}</>;
 };
 
 export default OpeningHoursControl;
