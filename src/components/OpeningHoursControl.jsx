@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 
+
 const OpeningHoursControl = ({ children }) => {
   const { t } = useTranslation();
   const [status, setStatus] = useState({
@@ -9,24 +10,24 @@ const OpeningHoursControl = ({ children }) => {
     nextOpening: null,
     currentPhase: 'closed',
     message: '',
-    nextChangeIn: 0
+    nextChangeIn: 0,
+    deliveryAvailable: false
   });
+
+  // Links para delivery externo
+  const deliveryLinks = {
+    uber: 'https://www.ubereats.com/pt/store/cozinha-da-vivi/1ecH28yjXgSgpSGCtKlKoA?diningMode=DELIVERY&pl=JTdCJTIyYWRkcmVzcyUyMiUzQSUyMlBvcnRpbSVDMyVBM28lMjIlMkMlMjJyZWZlcmVuY2UlMjIlM0ElMjJDaElKOFY1YlBiWW9HdzBSVlNLMDNJLWs5YnclMjIlMkMlMjJyZWZlcmVuY2VUeXBlJTIyJTNBJTIyZ29vZ2xlX3BsYWNlcyUyMiUyQyUyMmxhdGl0dWRlJTIyJTNBMzcuMTM3Nzc5OSUyQyUyMmxvbmdpdHVkZSUyMiUzQS04LjU2NTE5NTg5OTk5OTk5OSU3RA%3D%3D',
+    glovo: 'https://glovoapp.com/pt/pt/portimao/cozinha-da-vivi-pot/'
+  };
 
   // Definição dos horários de funcionamento
   const schedule = [
     { 
-      phase: 'lunch', 
+      phase: 'open', 
       open: { hour: 11, minute: 30 }, 
-      close: { hour: 15, minute: 0 },
-      deliveryStarts: { hour: 12, minute: 0 },
-      message: 'Horário de almoço - entregas a partir do meio-dia'
-    },
-    { 
-      phase: 'dinner', 
-      open: { hour: 18, minute: 0 }, 
-      close: { hour: 22, minute: 0 },
-      deliveryStarts: { hour: 18, minute: 0 },
-      message: 'Horário de jantar - entregas imediatas'
+      close: { hour: 17, minute: 45 },
+      deliveryStarts: { hour: 12, minute: 0 }, // Entregas começam ao meio-dia
+      message: 'Estamos abertos - entregas disponíveis a partir das 12:00'
     }
   ];
 
@@ -51,30 +52,11 @@ const OpeningHoursControl = ({ children }) => {
 
   // Encontra o próximo horário de abertura
   const getNextOpening = () => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    
-    if (currentHour < 11 || (currentHour === 11 && currentMinute < 30)) {
-      return {
-        time: calculateTimeToEvent(11, 30),
-        phase: 'lunch',
-        message: 'Abertura do almoço às 11:30 (entregas a partir do meio-dia)'
-      };
-    }
-    
-    if (currentHour < 18 || (currentHour === 18 && currentMinute < 0)) {
-      return {
-        time: calculateTimeToEvent(18, 0),
-        phase: 'dinner',
-        message: 'Abertura do jantar às 18:00'
-      };
-    }
-    
     return {
       time: calculateTimeToEvent(11, 30),
-      phase: 'lunch',
-      message: 'Abertura do almoço às 11:30 (entregas a partir do meio-dia)'
+      phase: 'open',
+      message: 'Amanhã abrimos às 11:30 (entregas a partir do meio-dia)',
+      deliveryStarts: { hour: 12, minute: 0 }
     };
   };
 
@@ -87,7 +69,8 @@ const OpeningHoursControl = ({ children }) => {
         nextOpening: getNextOpening(),
         currentPhase: 'closed',
         message: 'Plataforma fechada temporariamente para testes',
-        nextChangeIn: 3600
+        nextChangeIn: 3600,
+        deliveryAvailable: false
       });
       return;
     }
@@ -100,20 +83,22 @@ const OpeningHoursControl = ({ children }) => {
     let isCurrentlyOpen = false;
     let currentPhase = 'closed';
     let message = '';
+    let deliveryAvailable = false;
 
     for (const period of schedule) {
       const openTime = period.open.hour * 60 + period.open.minute;
       const closeTime = period.close.hour * 60 + period.close.minute;
+      const deliveryTime = period.deliveryStarts.hour * 60 + period.deliveryStarts.minute;
 
       if (currentTime >= openTime && currentTime < closeTime) {
         isCurrentlyOpen = true;
         currentPhase = period.phase;
-
-        const deliveryTime = period.deliveryStarts.hour * 60 + period.deliveryStarts.minute;
-        if (currentTime < deliveryTime) {
-          
-        } else {
+        
+        if (currentTime >= deliveryTime) {
+          deliveryAvailable = true;
           message = period.message;
+        } else {
+          message = `Aberto - entregas começam às ${period.deliveryStarts.hour}:${period.deliveryStarts.minute.toString().padStart(2, '0')}`;
         }
         break;
       }
@@ -131,7 +116,8 @@ const OpeningHoursControl = ({ children }) => {
             schedule.find(p => p.phase === currentPhase).close.hour,
             schedule.find(p => p.phase === currentPhase).close.minute
           )
-        : nextOpening.time
+        : nextOpening.time,
+      deliveryAvailable
     });
   };
 
@@ -165,7 +151,6 @@ const OpeningHoursControl = ({ children }) => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Componente de relógio analógico animado
   const AnalogClock = ({ size = 60 }) => {
     const time = new Date();
     const seconds = time.getSeconds();
@@ -343,7 +328,7 @@ const OpeningHoursControl = ({ children }) => {
                       Próxima abertura:
                     </p>
                     <p className="text-white text-sm sm:text-base font-medium">
-                      {status.nextOpening?.message}
+                      Amanhã às 11:30 (entregas a partir do meio-dia)
                     </p>
                   </div>
                   
@@ -357,77 +342,118 @@ const OpeningHoursControl = ({ children }) => {
               </div>
             </motion.div>
             
+            {/* Seção de Delivery Externo */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="grid grid-cols-1 gap-3 sm:gap-4 text-left"
+              className="mb-4 sm:mb-6"
             >
-              <div className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-3 sm:p-4 rounded-xl border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group">
-                <div className="absolute -right-3 -top-3 w-12 h-12 rounded-full bg-[#FFB501]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
-                <h3 className="text-[#FFB501] font-bold text-base sm:text-lg mb-1 sm:mb-2 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Horário de Almoço
-                </h3>
-                <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-300">
-                  <li className="flex justify-between items-center">
-                    <span className="flex items-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
-                      Abertura:
-                    </span>
-                    <span className="font-medium text-white">11:30</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <span className="flex items-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
-                      Entregas a partir:
-                    </span>
-                    <span className="font-medium text-white">12:00</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <span className="flex items-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
-                      Fechamento:
-                    </span>
-                    <span className="font-medium text-white">15:00</span>
-                  </li>
-                </ul>
+              <h3 className="text-[#FFB501] font-bold text-base sm:text-lg mb-3 sm:mb-4 text-center">
+                ENCOMENDE AGORA PELOS NOSSOS PARCEIROS:
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                {/* Botão Uber Eats */}
+                <motion.a
+                  href={deliveryLinks.uber}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ y: -5, scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-black p-4 rounded-xl border border-gray-800 flex flex-col items-center justify-center text-center group relative overflow-hidden hover:shadow-lg hover:shadow-[#000]/30 transition-all duration-300"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-black to-gray-900 opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative z-10 w-full">
+                    <div className="mb-3 flex justify-center">
+                      <img 
+                        src="/images/ubereats.jpg" 
+                        alt="Uber Eats Logo"
+                        className="h-8 object-contain"
+                      />
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm p-2 rounded-lg border border-white/20 mt-2">
+                      <h4 className="text-white font-bold text-sm sm:text-base mb-1">PEDIR NO UBER EATS</h4>
+                      <p className="text-gray-300 text-xs">Clique para ser redirecionado</p>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#06C167] to-[#3AAE2A]"></div>
+                </motion.a>
+                
+                {/* Botão Glovo */}
+                <motion.a
+                  href={deliveryLinks.glovo}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ y: -5, scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-[#FF6B00] p-4 rounded-xl border border-[#FF8C33] flex flex-col items-center justify-center text-center group relative overflow-hidden hover:shadow-lg hover:shadow-[#FF6B00]/30 transition-all duration-300"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B00] to-[#FF8C33] opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative z-10 w-full">
+                    <div className="mb-3 flex justify-center">
+                      <img 
+                        src="/images/glovo.jpg" 
+                        alt="Glovo Logo"
+                        className="h-8 object-contain"
+                      />
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm p-2 rounded-lg border border-white/20 mt-2">
+                      <h4 className="text-white font-bold text-sm sm:text-base mb-1">PEDIR NO GLOVO</h4>
+                      <p className="text-white text-xs opacity-90">Clique para ser redirecionado</p>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FF6B00] to-[#FFB501]"></div>
+                </motion.a>
               </div>
               
-              <div className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-3 sm:p-4 rounded-xl border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group">
-                <div className="absolute -right-3 -top-3 w-12 h-12 rounded-full bg-[#FF6B00]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
-                <h3 className="text-[#FFB501] font-bold text-base sm:text-lg mb-1 sm:mb-2 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Horário de Jantar
-                </h3>
-                <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-300">
-                  <li className="flex justify-between items-center">
-                    <span className="flex items-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] mr-1.5"></span>
-                      Abertura:
-                    </span>
-                    <span className="font-medium text-white">18:00</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <span className="flex items-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] mr-1.5"></span>
-                      Entregas a partir:
-                    </span>
-                    <span className="font-medium text-white">18:00</span>
-                  </li>
-                  <li className="flex justify-between items-center">
-                    <span className="flex items-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] mr-1.5"></span>
-                      Fechamento:
-                    </span>
-                    <span className="font-medium text-white">22:00</span>
-                  </li>
-                </ul>
-              </div>
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="text-center text-xs text-gray-400 mt-3"
+              >
+                * Será redirecionado para o site oficial do parceiro
+              </motion.p>
+            </motion.div>
+            
+            {/* Horário de Funcionamento */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-3 sm:p-4 rounded-xl border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group"
+            >
+              <div className="absolute -right-3 -top-3 w-12 h-12 rounded-full bg-[#FFB501]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
+              <h3 className="text-[#FFB501] font-bold text-base sm:text-lg mb-1 sm:mb-2 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                HORÁRIO DE FUNCIONAMENTO
+              </h3>
+              <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-300">
+                <li className="flex justify-between items-center">
+                  <span className="flex items-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
+                    Abertura:
+                  </span>
+                  <span className="font-medium text-white">11:30</span>
+                </li>
+                <li className="flex justify-between items-center">
+                  <span className="flex items-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
+                    Entregas a partir:
+                  </span>
+                  <span className="font-medium text-white">12:00</span>
+                </li>
+                <li className="flex justify-between items-center">
+                  <span className="flex items-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1.5"></span>
+                    Fechamento:
+                  </span>
+                  <span className="font-medium text-white">14:50</span>
+                </li>
+              </ul>
             </motion.div>
           </div>
         </motion.div>
@@ -438,19 +464,30 @@ const OpeningHoursControl = ({ children }) => {
   return (
     <>
       <AnimatePresence>
-        {status.currentPhase === 'lunch' && 
-         (new Date().getHours() * 60 + new Date().getMinutes()) < (12 * 60) && (
+        {status.isOpen && (
           <motion.div
             initial={{ y: -100 }}
             animate={{ y: 0 }}
             exit={{ y: -100 }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            className="fixed top-0 left-0 right-0 z-[999] bg-gradient-to-r from-[#FF6B00] to-[#FFA800] shadow-lg backdrop-blur-sm"
+            className="fixed top-0 left-0 right-0 z-[999] bg-gradient-to-r from-[#FF6B00] to-[#FFA800] shadow-lg backdrop-blur-sm py-2"
             style={{
               boxShadow: '0 4px 20px rgba(255, 107, 0, 0.3)'
             }}
           >
-         
+            <div className="container mx-auto px-4 text-center text-white font-medium text-sm sm:text-base">
+              {status.deliveryAvailable ? (
+                <>
+                  <span className="inline-block mr-2">🚚</span>
+                  {status.message} - Fechamos às 14:50
+                </>
+              ) : (
+                <>
+                  <span className="inline-block mr-2">⏱️</span>
+                  {status.message} - Entregas começam ao meio-dia
+                </>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
