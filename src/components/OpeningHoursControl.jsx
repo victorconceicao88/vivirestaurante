@@ -462,36 +462,7 @@ const OpeningHoursControl = ({ children }) => {
   }
 
   return (
-    <>
-      <AnimatePresence>
-        {status.isOpen && (
-          <motion.div
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
-            exit={{ y: -100 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            className="fixed top-0 left-0 right-0 z-[999] bg-gradient-to-r from-[#FF6B00] to-[#FFA800] shadow-lg backdrop-blur-sm py-2"
-            style={{
-              boxShadow: '0 4px 20px rgba(255, 107, 0, 0.3)'
-            }}
-          >
-            <div className="container mx-auto px-4 text-center text-white font-medium text-sm sm:text-base">
-              {status.deliveryAvailable ? (
-                <>
-                  <span className="inline-block mr-2">🚚</span>
-                  {status.message} - Fechamos às 14:50
-                </>
-              ) : (
-                <>
-                  <span className="inline-block mr-2">⏱️</span>
-                  {status.message} - Entregas começam ao meio-dia
-                </>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
+    <>   
       {children}
     </>
   );
