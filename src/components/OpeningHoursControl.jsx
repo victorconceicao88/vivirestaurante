@@ -11,7 +11,8 @@ const OpeningHoursControl = ({ children }) => {
     message: '',
     nextChangeIn: 0,
     deliveryAvailable: false,
-    platformAvailable: false
+    platformAvailable: false,
+    nextOpeningText: ''
   });
 
   // Links para delivery externo
@@ -52,14 +53,51 @@ const OpeningHoursControl = ({ children }) => {
     return Math.floor((targetTime - now) / 1000);
   };
 
-  // Encontra o próximo horário de abertura
+  // Nova função para determinar o texto do próximo horário de abertura
+  const getNextOpeningText = (currentTime, openHour, openMinute, closeHour, closeMinute) => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+    const openTimeInMinutes = openHour * 60 + openMinute;
+    const closeTimeInMinutes = closeHour * 60 + closeMinute;
+
+    // Se ainda não abriu hoje
+    if (currentTimeInMinutes < openTimeInMinutes) {
+      return { text: `hoje às ${openHour}:${openMinute.toString().padStart(2, '0')}`, isToday: true };
+    }
+    // Se já fechou hoje
+    else if (currentTimeInMinutes >= closeTimeInMinutes) {
+      return { text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, isToday: false };
+    }
+    // Se estiver aberto agora (não deveria chegar aqui, mas por segurança)
+    else {
+      return { text: `hoje às ${openHour}:${openMinute.toString().padStart(2, '0')}`, isToday: true };
+    }
+  };
+
+  // Encontra o próximo horário de abertura com o texto correto
   const getNextOpening = () => {
+    const now = new Date();
+    const { hour: openHour, minute: openMinute } = schedule[0].open;
+    const { hour: closeHour, minute: closeMinute } = schedule[0].close;
+    
+    const { text: openingText, isToday } = getNextOpeningText(
+      now, 
+      openHour, 
+      openMinute, 
+      closeHour, 
+      closeMinute
+    );
+
     return {
-      time: calculateTimeToEvent(11, 30),
+      time: calculateTimeToEvent(openHour, openMinute),
       phase: 'open',
-      message: 'Amanhã abrimos às 11:30',
+      message: isToday ? `Hoje abrimos às ${openHour}:${openMinute.toString().padStart(2, '0')}` : 
+                         `Amanhã abrimos às ${openHour}:${openMinute.toString().padStart(2, '0')}`,
       deliveryStarts: { hour: 12, minute: 0 },
-      platformAvailable: true
+      platformAvailable: true,
+      openingText: openingText
     };
   };
 
@@ -109,7 +147,8 @@ const OpeningHoursControl = ({ children }) => {
           )
         : nextOpening.time,
       deliveryAvailable,
-      platformAvailable
+      platformAvailable,
+      nextOpeningText: nextOpening.openingText
     });
   };
 
@@ -349,7 +388,7 @@ const OpeningHoursControl = ({ children }) => {
                       Próximo horário de funcionamento:
                     </p>
                     <p className="text-white text-xs font-medium leading-tight">
-                      Amanhã às 11:30 (funcionamento normal até 17:45)
+                      {status.nextOpeningText} (funcionamento normal até 17:45)
                     </p>
                   </div>
                   
@@ -466,7 +505,7 @@ const OpeningHoursControl = ({ children }) => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span className="text-[10px] text-gray-300 leading-tight">
-                    Plataforma própria reabre amanhã às 11:30
+                    Plataforma própria reabre {status.nextOpeningText}
                   </span>
                 </div>
               </motion.div>
