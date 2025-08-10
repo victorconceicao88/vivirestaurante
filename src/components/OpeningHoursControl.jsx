@@ -23,16 +23,35 @@ const OpeningHoursControl = ({ children }) => {
   };
 
   // Definição dos horários de funcionamento
-  const schedule = [
-    { 
-      phase: 'open', 
-      open: { hour: 11, minute: 30 }, 
-      close: { hour: 17, minute: 45 },
-      deliveryStarts: { hour: 12, minute: 0 },
-      message: 'Plataforma aberta - pedidos disponíveis até 17:45',
-      platformAvailable: true
+  const getSchedule = () => {
+    const today = new Date();
+    const isSunday = today.getDay() === 0; // 0 é domingo
+    
+    if (isSunday) {
+      return [
+        { 
+          phase: 'open', 
+          open: { hour: 11, minute: 30 }, 
+          close: { hour: 15, minute: 0 }, // Fecha às 15:00 no domingo
+          deliveryStarts: { hour: 12, minute: 0 },
+          message: 'Plataforma aberta - pedidos disponíveis até 15:00',
+          platformAvailable: true
+        }
+      ];
     }
-  ];
+    
+    // Horário normal para outros dias
+    return [
+      { 
+        phase: 'open', 
+        open: { hour: 11, minute: 30 }, 
+        close: { hour: 17, minute: 45 },
+        deliveryStarts: { hour: 12, minute: 0 },
+        message: 'Plataforma aberta - pedidos disponíveis até 17:45',
+        platformAvailable: true
+      }
+    ];
+  };
 
   // Calcula o tempo até o próximo evento
   const calculateTimeToEvent = (targetHour, targetMinute) => {
@@ -61,6 +80,7 @@ const OpeningHoursControl = ({ children }) => {
     const currentTimeInMinutes = currentHour * 60 + currentMinute;
     const openTimeInMinutes = openHour * 60 + openMinute;
     const closeTimeInMinutes = closeHour * 60 + closeMinute;
+    const isSunday = now.getDay() === 0;
 
     // Se ainda não abriu hoje
     if (currentTimeInMinutes < openTimeInMinutes) {
@@ -68,7 +88,15 @@ const OpeningHoursControl = ({ children }) => {
     }
     // Se já fechou hoje
     else if (currentTimeInMinutes >= closeTimeInMinutes) {
-      return { text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, isToday: false };
+      if (isSunday) {
+        // Se for domingo, o próximo dia de abertura é terça-feira
+        const nextOpening = new Date(now);
+        nextOpening.setDate(nextOpening.getDate() + (2 - nextOpening.getDay() + 7) % 7 || 7);
+        const dayName = nextOpening.toLocaleDateString('pt-PT', { weekday: 'long' });
+        return { text: `${dayName} às ${openHour}:${openMinute.toString().padStart(2, '0')}`, isToday: false };
+      } else {
+        return { text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, isToday: false };
+      }
     }
     // Se estiver aberto agora (não deveria chegar aqui, mas por segurança)
     else {
@@ -79,6 +107,7 @@ const OpeningHoursControl = ({ children }) => {
   // Encontra o próximo horário de abertura com o texto correto
   const getNextOpening = () => {
     const now = new Date();
+    const schedule = getSchedule();
     const { hour: openHour, minute: openMinute } = schedule[0].open;
     const { hour: closeHour, minute: closeMinute } = schedule[0].close;
     
@@ -94,7 +123,7 @@ const OpeningHoursControl = ({ children }) => {
       time: calculateTimeToEvent(openHour, openMinute),
       phase: 'open',
       message: isToday ? `Hoje abrimos às ${openHour}:${openMinute.toString().padStart(2, '0')}` : 
-                         `Amanhã abrimos às ${openHour}:${openMinute.toString().padStart(2, '0')}`,
+                         `Próxima abertura: ${openingText}`,
       deliveryStarts: { hour: 12, minute: 0 },
       platformAvailable: true,
       openingText: openingText
@@ -106,6 +135,7 @@ const OpeningHoursControl = ({ children }) => {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     const currentTime = currentHour * 60 + currentMinute;
+    const schedule = getSchedule();
 
     let isCurrentlyOpen = false;
     let currentPhase = 'closed';
@@ -253,6 +283,8 @@ const OpeningHoursControl = ({ children }) => {
     );
   };
 
+  const isSunday = new Date().getDay() === 0;
+
   if (!status.isOpen) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-[#3D1106]/10 to-[#5A1B0D]/30 flex items-center justify-center p-4 z-[1000] overflow-y-auto backdrop-blur-sm">
@@ -388,7 +420,7 @@ const OpeningHoursControl = ({ children }) => {
                       Próximo horário de funcionamento:
                     </p>
                     <p className="text-white text-xs font-medium leading-tight">
-                      {status.nextOpeningText} (funcionamento normal até 17:45)
+                      {status.nextOpeningText} (funcionamento normal até {isSunday ? '15:00' : '17:45'})
                     </p>
                   </div>
                   
@@ -402,114 +434,115 @@ const OpeningHoursControl = ({ children }) => {
               </div>
             </motion.div>
             
-            {/* Seção de Delivery Externo - Ultra responsiva */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="mb-3 mx-1"
-            >
-              <h3 className="text-[#FFB501] font-bold text-sm mb-2 text-center px-1">
-                Pedidos Noturnos pelos Parceiros
-              </h3>
-              
-              <div className="mb-2 bg-black/20 p-2 rounded-lg border border-[#FFB501]/30">
-                <p className="text-white text-xs text-center">
-                  Durante o período noturno, você pode fazer pedidos exclusivamente pelos nossos parceiros oficiais:
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-
-                {/* Card Glovo - Mobile optimized */}
-                <motion.a
-                  href={deliveryLinks.glovo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="block bg-gradient-to-r from-[#FF6B00] to-[#FF8C33] rounded-lg overflow-hidden border border-[#FF8C33] group transition-all duration-300 hover:shadow-lg hover:shadow-[#FF6B00]/30 active:scale-95"
-                  style={{
-                    touchAction: 'manipulation'
-                  }}
-                >
-                  <div className="flex items-center p-2">
-                    <div className="flex-shrink-0 mr-2">
-                      <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
-                        <img 
-                          src="/images/glovo.jpg" 
-                          alt="Glovo Logo"
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <h4 className="text-white font-bold text-xs mb-0.5 truncate">Glovo</h4>
-                      <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
-                    </div>
-                    <div className="ml-2 flex-shrink-0">
-                      <svg className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="h-1 bg-gradient-to-r from-[#FF6B00] to-[#FFB501]"></div>
-                </motion.a>
-
-                {/* Card Bolt Food - Mobile optimized */}
-                <motion.a
-                  href={deliveryLinks.bolt}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="block bg-gradient-to-r from-[#06C167] to-[#3AAE2A] rounded-lg overflow-hidden border border-green-600 group transition-all duration-300 hover:shadow-lg hover:shadow-[#06C167]/30 active:scale-95"
-                  style={{
-                    touchAction: 'manipulation'
-                  }}
-                >
-                  <div className="flex items-center p-2">
-                    <div className="flex-shrink-0 mr-2">
-                      <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
-                        <img 
-                          src="/images/boltfood.jpg" 
-                          alt="Bolt Food Logo"
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <h4 className="text-white font-bold text-xs mb-0.5 truncate">Bolt Food</h4>
-                      <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
-                    </div>
-                    <div className="ml-2 flex-shrink-0">
-                      <svg className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="h-1 bg-white/20"></div>
-                </motion.a>
-              </div>
-
+            {/* Seção de Delivery Externo - Só mostra se não for domingo */}
+            {!isSunday && (
               <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                className="mt-3 text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mb-3 mx-1"
               >
-                <div className="inline-flex items-center bg-black/20 px-2 py-1 rounded-full border border-[#FFB501]/30 text-center mx-auto max-w-xs">
-                  <svg className="w-3 h-3 mr-1 text-[#FFB501]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-[10px] text-gray-300 leading-tight">
-                    Plataforma própria reabre {status.nextOpeningText}
-                  </span>
+                <h3 className="text-[#FFB501] font-bold text-sm mb-2 text-center px-1">
+                  Pedidos Noturnos pelos Parceiros
+                </h3>
+                
+                <div className="mb-2 bg-black/20 p-2 rounded-lg border border-[#FFB501]/30">
+                  <p className="text-white text-xs text-center">
+                    Durante o período noturno, você pode fazer pedidos exclusivamente pelos nossos parceiros oficiais:
+                  </p>
                 </div>
+                
+                <div className="space-y-2">
+                  {/* Card Glovo - Mobile optimized */}
+                  <motion.a
+                    href={deliveryLinks.glovo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="block bg-gradient-to-r from-[#FF6B00] to-[#FF8C33] rounded-lg overflow-hidden border border-[#FF8C33] group transition-all duration-300 hover:shadow-lg hover:shadow-[#FF6B00]/30 active:scale-95"
+                    style={{
+                      touchAction: 'manipulation'
+                    }}
+                  >
+                    <div className="flex items-center p-2">
+                      <div className="flex-shrink-0 mr-2">
+                        <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
+                          <img 
+                            src="/images/glovo.jpg" 
+                            alt="Glovo Logo"
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <h4 className="text-white font-bold text-xs mb-0.5 truncate">Glovo</h4>
+                        <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
+                      </div>
+                      <div className="ml-2 flex-shrink-0">
+                        <svg className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="h-1 bg-gradient-to-r from-[#FF6B00] to-[#FFB501]"></div>
+                  </motion.a>
+
+                  {/* Card Bolt Food - Mobile optimized */}
+                  <motion.a
+                    href={deliveryLinks.bolt}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="block bg-gradient-to-r from-[#06C167] to-[#3AAE2A] rounded-lg overflow-hidden border border-green-600 group transition-all duration-300 hover:shadow-lg hover:shadow-[#06C167]/30 active:scale-95"
+                    style={{
+                      touchAction: 'manipulation'
+                    }}
+                  >
+                    <div className="flex items-center p-2">
+                      <div className="flex-shrink-0 mr-2">
+                        <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
+                          <img 
+                            src="/images/boltfood.jpg" 
+                            alt="Bolt Food Logo"
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <h4 className="text-white font-bold text-xs mb-0.5 truncate">Bolt Food</h4>
+                        <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
+                      </div>
+                      <div className="ml-2 flex-shrink-0">
+                        <svg className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="h-1 bg-white/20"></div>
+                  </motion.a>
+                </div>
+
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="mt-3 text-center"
+                >
+                  <div className="inline-flex items-center bg-black/20 px-2 py-1 rounded-full border border-[#FFB501]/30 text-center mx-auto max-w-xs">
+                    <svg className="w-3 h-3 mr-1 text-[#FFB501]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-[10px] text-gray-300 leading-tight">
+                      Plataforma própria reabre {status.nextOpeningText}
+                    </span>
+                  </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
+            )}
             
             {/* Horário de Funcionamento - Mobile optimized */}
             <motion.div 
@@ -531,7 +564,7 @@ const OpeningHoursControl = ({ children }) => {
                     <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
                     Plataforma própria:
                   </span>
-                  <span className="font-medium text-white">11:30 - 17:45</span>
+                  <span className="font-medium text-white">{isSunday ? '11:30 - 15:00' : '11:30 - 17:45'}</span>
                 </li>
                 <li className="flex justify-between items-center">
                   <span className="flex items-center">
@@ -540,13 +573,15 @@ const OpeningHoursControl = ({ children }) => {
                   </span>
                   <span className="font-medium text-white">12:00</span>
                 </li>
-                <li className="flex justify-between items-center">
-                  <span className="flex items-center">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
-                    Pedidos noturnos:
-                  </span>
-                  <span className="font-medium text-white">Apenas por parceiros</span>
-                </li>
+                {!isSunday && (
+                  <li className="flex justify-between items-center">
+                    <span className="flex items-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
+                      Pedidos noturnos:
+                    </span>
+                    <span className="font-medium text-white">Apenas por parceiros</span>
+                  </li>
+                )}
               </ul>
             </motion.div>
           </div>
