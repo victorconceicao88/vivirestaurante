@@ -362,69 +362,105 @@ const OpeningHoursControl = ({ children }) => {
             </motion.div>
             
             {/* Seção de Delivery Externo */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="mb-3 mx-1"
-            >
-              <h3 className="text-[#FFB501] font-bold text-sm mb-2 text-center px-1">
-                Pedidos Noturnos pelos Parceiros
-              </h3>
-              
-              <div className="mb-2 bg-black/20 p-2 rounded-lg border border-[#FFB501]/30">
-                <p className="text-white text-xs text-center">
-                  Durante o período noturno, você pode fazer pedidos exclusivamente pelos nossos parceiros oficiais:
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                {/* Cards de delivery... */}
-                <motion.a
-                  href={deliveryLinks.glovo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="block bg-gradient-to-r from-[#FF6B00] to-[#FF8C33] rounded-lg overflow-hidden border border-[#FF8C33] group transition-all duration-300 hover:shadow-lg hover:shadow-[#FF6B00]/30 active:scale-95"
-                  style={{
-                    touchAction: 'manipulation'
-                  }}
-                >
-                  {/* Conteúdo do card Glovo... */}
-                </motion.a>
+           {/* Seção de Delivery Externo */}
+<motion.div 
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.5 }}
+  className="mb-3 mx-1"
+>
+  <h3 className="text-[#FFB501] font-bold text-sm mb-2 text-center px-1">
+    Pedidos Noturnos pelos Parceiros
+  </h3>
+  
+  <div className="mb-2 bg-black/20 p-2 rounded-lg border border-[#FFB501]/30">
+    <p className="text-white text-xs text-center">
+      Durante o período noturno, você pode fazer pedidos exclusivamente pelos nossos parceiros oficiais:
+    </p>
+  </div>
+  
+  <div className="space-y-2">
+    {/* Botão Glovo */}
+    <motion.a
+      href={deliveryLinks.glovo}
+      target="_blank"
+      rel="noopener noreferrer"
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      className="block bg-gradient-to-r from-[#FF6B00] to-[#FF8C33] rounded-lg overflow-hidden border border-[#FF8C33] group transition-all duration-300 hover:shadow-lg hover:shadow-[#FF6B00]/30 active:scale-95"
+      style={{
+        touchAction: 'manipulation'
+      }}
+    >
+      <div className="flex items-center justify-between p-3">
+        <div className="flex items-center">
+          <div className="bg-white p-1 rounded-lg mr-2">
+            <img 
+              src="./images/glovo.jpg" 
+              alt="Glovo" 
+              className="w-6 h-6 object-contain"
+            />
+          </div>
+          <div>
+            <p className="text-white font-bold text-sm">Glovo</p>
+            <p className="text-white/80 text-xs">Clique aqui para Pedir pelo Glovo</p>
+          </div>
+        </div>
+        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </div>
+    </motion.a>
 
-                <motion.a
-                  href={deliveryLinks.bolt}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="block bg-gradient-to-r from-[#06C167] to-[#3AAE2A] rounded-lg overflow-hidden border border-green-600 group transition-all duration-300 hover:shadow-lg hover:shadow-[#06C167]/30 active:scale-95"
-                  style={{
-                    touchAction: 'manipulation'
-                  }}
-                >
-                  {/* Conteúdo do card Bolt... */}
-                </motion.a>
-              </div>
+    {/* Botão Bolt */}
+    <motion.a
+      href={deliveryLinks.bolt}
+      target="_blank"
+      rel="noopener noreferrer"
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      className="block bg-gradient-to-r from-[#06C167] to-[#3AAE2A] rounded-lg overflow-hidden border border-green-600 group transition-all duration-300 hover:shadow-lg hover:shadow-[#06C167]/30 active:scale-95"
+      style={{
+        touchAction: 'manipulation'
+      }}
+    >
+      <div className="flex items-center justify-between p-3">
+        <div className="flex items-center">
+          <div className="bg-white p-1 rounded-lg mr-2">
+            <img 
+              src="./images/boltfood.jpg" 
+              alt="Bolt Food" 
+              className="w-6 h-6 object-contain"
+            />
+          </div>
+          <div>
+            <p className="text-white font-bold text-sm">Bolt Food</p>
+            <p className="text-white/80 text-xs"> Clique aqui pedir pela Bolt</p>
+          </div>
+        </div>
+        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </div>
+    </motion.a>
+  </div>
 
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                className="mt-3 text-center"
-              >
-                <div className="inline-flex items-center bg-black/20 px-2 py-1 rounded-full border border-[#FFB501]/30 text-center mx-auto max-w-xs">
-                  <svg className="w-3 h-3 mr-1 text-[#FFB501]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-[10px] text-gray-300 leading-tight">
-                    Plataforma própria reabre {status.nextOpeningText}
-                  </span>
-                </div>
-              </motion.div>
-            </motion.div>
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay: 0.8 }}
+    className="mt-3 text-center"
+  >
+    <div className="inline-flex items-center bg-black/20 px-2 py-1 rounded-full border border-[#FFB501]/30 text-center mx-auto max-w-xs">
+      <svg className="w-3 h-3 mr-1 text-[#FFB501]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span className="text-[10px] text-gray-300 leading-tight">
+        Plataforma própria reabre {status.nextOpeningText}
+      </span>
+    </div>
+  </motion.div>
+</motion.div>
             
             {/* Horário de Funcionamento */}
             <motion.div 
