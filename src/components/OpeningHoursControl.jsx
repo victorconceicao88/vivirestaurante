@@ -25,25 +25,44 @@ const OpeningHoursControl = ({ children }) => {
   // Definição dos horários de funcionamento
   const getSchedule = () => {
     const now = new Date();
-    const day = now.getDay();
-    const isSunday = day === 0;
+    const day = now.getDay(); // 0 = Domingo, 1 = Segunda, etc.
     
-    // Horário padrão de funcionamento
-    const openHour = 11;
-    const openMinute = 30;
-    const closeHour = isSunday ? 15 : 17;
-    const closeMinute = isSunday ? 0 : 45;
+    // Segunda-feira: fechado o dia todo
+    if (day === 1) {
+      return [];
+    }
     
+    // Domingo: aberto até 15:00
+    if (day === 0) {
+      return [
+        {
+          time: calculateTimeToEvent(11, 30),
+          phase: 'open',
+          message: 'Plataforma aberta',
+          deliveryStarts: { hour: 12, minute: 0 },
+          platformAvailable: true
+        },
+        {
+          time: calculateTimeToEvent(15, 0),
+          phase: 'closed',
+          message: 'Plataforma fechada',
+          deliveryAvailable: false,
+          platformAvailable: false
+        }
+      ];
+    }
+    
+    // Terça a Sábado: 11:30 - 17:45
     return [
       {
-        time: calculateTimeToEvent(openHour, openMinute),
+        time: calculateTimeToEvent(11, 30),
         phase: 'open',
         message: 'Plataforma aberta',
         deliveryStarts: { hour: 12, minute: 0 },
         platformAvailable: true
       },
       {
-        time: calculateTimeToEvent(closeHour, closeMinute),
+        time: calculateTimeToEvent(17, 45),
         phase: 'closed',
         message: 'Plataforma fechada',
         deliveryAvailable: false,
@@ -64,12 +83,24 @@ const OpeningHoursControl = ({ children }) => {
       0
     );
     
-    // Se o horário já passou hoje, agende para amanhã
+    // Se o horário já passou hoje, agende para o próximo dia de funcionamento
     if (targetTime < now) {
+      const day = now.getDay();
+      let daysToAdd = 1;
+      
+      // Se for domingo após 15h, pular para terça-feira
+      if (day === 0 && now.getHours() >= 15) {
+        daysToAdd = 2;
+      } 
+      // Se for segunda-feira, pular para terça-feira
+      else if (day === 1) {
+        daysToAdd = 1;
+      }
+      
       targetTime = new Date(
         now.getFullYear(),
         now.getMonth(),
-        now.getDate() + 1,
+        now.getDate() + daysToAdd,
         targetHour,
         targetMinute,
         0
@@ -82,16 +113,28 @@ const OpeningHoursControl = ({ children }) => {
   // Nova função para determinar o texto do próximo horário de abertura
   const getNextOpeningText = () => {
     const now = new Date();
-    const today = new Date(now);
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const isTodaySunday = today.getDay() === 0;
-    const isTomorrowSunday = tomorrow.getDay() === 0;
+    const day = now.getDay();
+    const hours = now.getHours();
     
     // Horário padrão de abertura
     const openHour = 11;
     const openMinute = 30;
+    
+    // Se for domingo após 15h, próxima abertura é terça às 11:30
+    if (day === 0 && hours >= 15) {
+      return { 
+        text: 'terça-feira às 11:30', 
+        isToday: false 
+      };
+    }
+    
+    // Se for segunda-feira, próxima abertura é terça às 11:30
+    if (day === 1) {
+      return { 
+        text: 'terça-feira às 11:30', 
+        isToday: false 
+      };
+    }
     
     // Verifica se ainda vai abrir hoje
     const todayOpening = new Date(
@@ -108,10 +151,29 @@ const OpeningHoursControl = ({ children }) => {
         isToday: true 
       };
     } else {
-      return { 
-        text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, 
-        isToday: false 
-      };
+      // Se for sexta, sábado ou domingo antes das 15h, próxima abertura é amanhã
+      if (day === 6 || day === 0 || day === 5) {
+        return { 
+          text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, 
+          isToday: false 
+        };
+      }
+      // Se for terça, quarta ou quinta, verificar se amanhã é dia de funcionamento
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowDay = tomorrow.getDay();
+      
+      if (tomorrowDay === 1) { // Amanhã é segunda - fechado
+        return { 
+          text: 'terça-feira às 11:30', 
+          isToday: false 
+        };
+      } else {
+        return { 
+          text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, 
+          isToday: false 
+        };
+      }
     }
   };
 
@@ -135,18 +197,63 @@ const OpeningHoursControl = ({ children }) => {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-    const isSunday = now.getDay() === 0;
+    const day = now.getDay();
     
-    // Horários de funcionamento
-    const openHour = 11;
-    const openMinute = 30;
-    const closeHour = isSunday ? 15 : 17;
-    const closeMinute = isSunday ? 0 : 45;
+    // Segunda-feira: sempre fechado
+    if (day === 1) {
+      const nextOpening = getNextOpening();
+      setStatus({
+        isOpen: false,
+        nextOpening: nextOpening,
+        currentPhase: 'closed',
+        message: 'Plataforma fechada',
+        nextChangeIn: nextOpening.time,
+        deliveryAvailable: false,
+        platformAvailable: false,
+        nextOpeningText: nextOpening.openingText
+      });
+      return;
+    }
     
-    // Verifica se está dentro do horário de funcionamento
+    // Domingo: aberto até 15:00
+    if (day === 0) {
+      const isOpenTime = (
+        (currentHour > 11 || (currentHour === 11 && currentMinute >= 30)) &&
+        (currentHour < 15)
+      );
+      
+      const nextOpening = getNextOpening();
+      
+      if (isOpenTime) {
+        setStatus({
+          isOpen: true,
+          nextOpening: nextOpening,
+          currentPhase: 'open',
+          message: 'Plataforma aberta',
+          nextChangeIn: calculateTimeToEvent(15, 0),
+          deliveryAvailable: currentHour >= 12,
+          platformAvailable: true,
+          nextOpeningText: nextOpening.openingText
+        });
+      } else {
+        setStatus({
+          isOpen: false,
+          nextOpening: nextOpening,
+          currentPhase: 'closed',
+          message: 'Plataforma fechada',
+          nextChangeIn: nextOpening.time,
+          deliveryAvailable: false,
+          platformAvailable: false,
+          nextOpeningText: nextOpening.openingText
+        });
+      }
+      return;
+    }
+    
+    // Terça a Sábado: 11:30 - 17:45
     const isOpenTime = (
-      (currentHour > openHour || (currentHour === openHour && currentMinute >= openMinute)) &&
-      (currentHour < closeHour || (currentHour === closeHour && currentMinute < closeMinute))
+      (currentHour > 11 || (currentHour === 11 && currentMinute >= 30)) &&
+      (currentHour < 17 || (currentHour === 17 && currentMinute < 45))
     );
     
     const nextOpening = getNextOpening();
@@ -157,7 +264,7 @@ const OpeningHoursControl = ({ children }) => {
         nextOpening: nextOpening,
         currentPhase: 'open',
         message: 'Plataforma aberta',
-        nextChangeIn: calculateTimeToEvent(closeHour, closeMinute),
+        nextChangeIn: calculateTimeToEvent(17, 45),
         deliveryAvailable: currentHour >= 12,
         platformAvailable: true,
         nextOpeningText: nextOpening.openingText
@@ -277,7 +384,10 @@ const OpeningHoursControl = ({ children }) => {
     );
   };
 
-  const isSunday = new Date().getDay() === 0;
+  const now = new Date();
+  const day = now.getDay();
+  const isSunday = day === 0;
+  const isMonday = day === 1;
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-[#3D1106]/10 to-[#5A1B0D]/30 flex items-center justify-center p-4 z-[1000] overflow-y-auto backdrop-blur-sm">
@@ -416,8 +526,12 @@ const OpeningHoursControl = ({ children }) => {
                   </p>
                   <p className="text-white text-xs font-medium leading-tight">
                     {status.isOpen 
-                      ? `Hoje às ${isSunday ? '15:00' : '17:45'}`
-                      : `${status.nextOpeningText} (funcionamento normal até ${isSunday ? '15:00' : '17:45'})`}
+                      ? isSunday 
+                        ? 'Hoje às 15:00' 
+                        : 'Hoje às 17:45'
+                      : status.nextOpeningText.includes('terça-feira') 
+                        ? 'Próxima abertura: terça-feira às 11:30'
+                        : `Próxima abertura: ${status.nextOpeningText}`}
                   </p>
                 </div>
                 
@@ -433,8 +547,8 @@ const OpeningHoursControl = ({ children }) => {
             </div>
           </motion.div>
           
-          {/* Seção de Delivery Externo - Só mostra se a plataforma estiver fechada e não for domingo */}
-          {!status.isOpen && !isSunday && (
+          {/* Seção de Delivery Externo - Só mostra se a plataforma estiver fechada e não for domingo ou segunda */}
+          {!status.isOpen && !isSunday && !isMonday && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -561,9 +675,23 @@ const OpeningHoursControl = ({ children }) => {
               <li className="flex justify-between items-center">
                 <span className="flex items-center">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
-                  Plataforma própria:
+                  Segunda-feira:
                 </span>
-                <span className="font-medium text-white">{isSunday ? '11:30 - 15:00' : '11:30 - 17:45'}</span>
+                <span className="font-medium text-white">Fechado</span>
+              </li>
+              <li className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
+                  Terça a Sábado:
+                </span>
+                <span className="font-medium text-white">11:30 - 17:45</span>
+              </li>
+              <li className="flex justify-between items-center">
+                <span className="flex items-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
+                  Domingo:
+                </span>
+                <span className="font-medium text-white">11:30 - 15:00</span>
               </li>
               <li className="flex justify-between items-center">
                 <span className="flex items-center">
@@ -572,7 +700,7 @@ const OpeningHoursControl = ({ children }) => {
                 </span>
                 <span className="font-medium text-white">12:00</span>
               </li>
-              {!isSunday && (
+              {!isSunday && !isMonday && (
                 <li className="flex justify-between items-center">
                   <span className="flex items-center">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
