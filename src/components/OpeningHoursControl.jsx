@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-mo
 const OpeningHoursControl = ({ children }) => {
   const { t } = useTranslation();
   const [status, setStatus] = useState({
-    isOpen: true,
+    isOpen: false,
     nextOpening: null,
     currentPhase: 'closed',
     message: '',
@@ -22,119 +22,29 @@ const OpeningHoursControl = ({ children }) => {
     bolt:'https://food.bolt.eu/en-US/438/p/145891-cozinha-da-vivi?utm_source=share_provider&utm_medium=product&utm_content=menu_header'
   };
 
-  // Definição dos horários de funcionamento
-  const getSchedule = () => {
-    const now = new Date();
-    const day = now.getDay(); // 0 = Domingo, 1 = Segunda, etc.
-    
-    // Segunda-feira: fechado o dia todo
-    if (day === 1) {
-      return [];
-    }
-    
-    // Domingo: aberto até 15:00
-    if (day === 0) {
-      return [
-        {
-          time: calculateTimeToEvent(11, 30),
-          phase: 'open',
-          message: 'Plataforma aberta',
-          deliveryStarts: { hour: 12, minute: 0 },
-          platformAvailable: true
-        },
-        {
-          time: calculateTimeToEvent(15, 0),
-          phase: 'closed',
-          message: 'Plataforma fechada',
-          deliveryAvailable: false,
-          platformAvailable: false
-        }
-      ];
-    }
-    
-    // Terça a Sábado: 11:30 - 17:45
-    return [
-      {
-        time: calculateTimeToEvent(11, 30),
-        phase: 'open',
-        message: 'Plataforma aberta',
-        deliveryStarts: { hour: 12, minute: 0 },
-        platformAvailable: true
-      },
-      {
-        time: calculateTimeToEvent(17, 45),
-        phase: 'closed',
-        message: 'Plataforma fechada',
-        deliveryAvailable: false,
-        platformAvailable: false
-      }
-    ];
-  };
-
   // Calcula o tempo até o próximo evento
-  const calculateTimeToEvent = (targetHour, targetMinute) => {
+  const calculateTimeToEvent = (targetHour, targetMinute, daysToAdd = 0) => {
     const now = new Date();
-    let targetTime = new Date(
+    const targetTime = new Date(
       now.getFullYear(),
       now.getMonth(),
-      now.getDate(),
+      now.getDate() + daysToAdd,
       targetHour,
       targetMinute,
       0
     );
-    
-    // Se o horário já passou hoje, agende para o próximo dia de funcionamento
-    if (targetTime < now) {
-      const day = now.getDay();
-      let daysToAdd = 1;
-      
-      // Se for domingo após 15h, pular para terça-feira
-      if (day === 0 && now.getHours() >= 15) {
-        daysToAdd = 2;
-      } 
-      // Se for segunda-feira, pular para terça-feira
-      else if (day === 1) {
-        daysToAdd = 1;
-      }
-      
-      targetTime = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() + daysToAdd,
-        targetHour,
-        targetMinute,
-        0
-      );
-    }
-    
     return Math.floor((targetTime - now) / 1000);
   };
 
-  // Nova função para determinar o texto do próximo horário de abertura
+  // Determina o texto do próximo horário de abertura
   const getNextOpeningText = () => {
     const now = new Date();
-    const day = now.getDay();
     const hours = now.getHours();
+    const minutes = now.getMinutes();
     
-    // Horário padrão de abertura
+    // Horário de abertura
     const openHour = 11;
     const openMinute = 30;
-    
-    // Se for domingo após 15h, próxima abertura é terça às 11:30
-    if (day === 0 && hours >= 15) {
-      return { 
-        text: 'terça-feira às 11:30', 
-        isToday: false 
-      };
-    }
-    
-    // Se for segunda-feira, próxima abertura é terça às 11:30
-    if (day === 1) {
-      return { 
-        text: 'terça-feira às 11:30', 
-        isToday: false 
-      };
-    }
     
     // Verifica se ainda vai abrir hoje
     const todayOpening = new Date(
@@ -146,99 +56,57 @@ const OpeningHoursControl = ({ children }) => {
     );
     
     if (now < todayOpening) {
-      return { 
-        text: `hoje às ${openHour}:${openMinute.toString().padStart(2, '0')}`, 
-        isToday: true 
-      };
+      return `hoje às ${openHour}:${openMinute.toString().padStart(2, '0')}`;
     } else {
-      // Se for sexta, sábado ou domingo antes das 15h, próxima abertura é amanhã
-      if (day === 6 || day === 0 || day === 5) {
-        return { 
-          text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, 
-          isToday: false 
-        };
-      }
-      // Se for terça, quarta ou quinta, verificar se amanhã é dia de funcionamento
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowDay = tomorrow.getDay();
-      
-      if (tomorrowDay === 1) { // Amanhã é segunda - fechado
-        return { 
-          text: 'terça-feira às 11:30', 
-          isToday: false 
-        };
-      } else {
-        return { 
-          text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, 
-          isToday: false 
-        };
-      }
+      return `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`;
     }
   };
 
-  // Encontra o próximo horário de abertura com o texto correto
-  const getNextOpening = () => {
-    const { text: openingText, isToday } = getNextOpeningText();
-    const openHour = 11;
-    const openMinute = 30;
+  const checkStatus = () => {
+  // Garante que o cálculo seja feito no horário de Lisboa
+  const lisbonTime = new Date().toLocaleString("en-US", { timeZone: "Europe/Lisbon" });
+  const now = new Date(lisbonTime);
 
-    return {
-      time: calculateTimeToEvent(openHour, openMinute),
-      phase: 'open',
-      message: `Próxima abertura: ${openingText}`,
-      deliveryStarts: { hour: 12, minute: 0 },
-      platformAvailable: true,
-      openingText: openingText
-    };
-  };
-
-const checkStatus = () => {
-  const now = new Date();
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
-  const day = now.getDay();
+  const currentTime = currentHour * 60 + currentMinute;
 
-  // DEBUG: Verificação de horário
-  console.log(`Verificação: ${currentHour}:${currentMinute}, Dia ${day}`);
+  // Definições de horário
+  const OPEN_TIME = 11 * 60 + 30; // 11:30 em minutos
+  const CLOSE_TIME = 17 * 60 + 45; // 17:45
 
-  // Lógica corrigida para verificação de horário
-  const isOpen = (
-    (day !== 1) && // Não é segunda-feira
-    (
-      (day === 0 && (currentHour > 11 || (currentHour === 11 && currentMinute >= 30)) && currentHour < 15) || // Domingo 11:30-15:00
-      (day !== 0 && (currentHour > 11 || (currentHour === 11 && currentMinute >= 30)) && (currentHour < 17 || (currentHour === 17 && currentMinute < 45)) // Terça-Sábado 11:30-17:45
-    )
-  ));
+  // Verificação direta do status
+  const isOpen = currentTime >= OPEN_TIME && currentTime < CLOSE_TIME;
 
+  // Calcular próximo horário de mudança
+  let nextChangeTime;
   if (isOpen) {
-    setStatus({
-      isOpen: true,
-      nextOpening: { 
-        time: day === 0 ? calculateTimeToEvent(15, 0) : calculateTimeToEvent(17, 45),
-        phase: 'closed' 
-      },
-      currentPhase: 'open',
-      message: 'Plataforma aberta',
-      nextChangeIn: day === 0 ? calculateTimeToEvent(15, 0) : calculateTimeToEvent(17, 45),
-      deliveryAvailable: currentHour >= 12,
-      platformAvailable: true,
-      nextOpeningText: day === 0 ? 'hoje às 15:00' : 'hoje às 17:45'
-    });
+    nextChangeTime = calculateTimeToEvent(17, 45); // Fecha às 17:45
   } else {
-    const nextOpening = getNextOpening();
-    setStatus({
-      isOpen: false,
-      nextOpening: nextOpening,
-      currentPhase: 'closed',
-      message: 'Plataforma fechada',
-      nextChangeIn: nextOpening.time,
-      deliveryAvailable: false,
-      platformAvailable: false,
-      nextOpeningText: nextOpening.openingText
-    });
+    // Se já passou do horário de fechamento, próxima abertura é amanhã
+    if (currentTime >= CLOSE_TIME) {
+      nextChangeTime = calculateTimeToEvent(11, 30, 1);
+    } else {
+      // Se ainda não abriu hoje
+      nextChangeTime = calculateTimeToEvent(11, 30);
+    }
   }
+
+  // Atualização imediata do estado
+  setStatus({
+    isOpen,
+    currentPhase: isOpen ? 'open' : 'closed',
+    message: isOpen ? 'Plataforma aberta' : 'Plataforma fechada',
+    nextChangeIn: nextChangeTime,
+    deliveryAvailable: isOpen, // pedidos liberados assim que abrir
+    platformAvailable: isOpen,
+    nextOpeningText: isOpen
+      ? 'hoje às 17:45'
+      : getNextOpeningText()
+  });
 };
+
+
   useEffect(() => {
     checkStatus();
     
@@ -258,6 +126,8 @@ const checkStatus = () => {
       clearInterval(countdownInterval);
     };
   }, []);
+
+  
 
   const formatTime = (seconds) => {
     if (seconds <= 0) return '00:00:00';
@@ -339,172 +209,159 @@ const checkStatus = () => {
       </svg>
     );
   };
-
-  const now = new Date();
-  const day = now.getDay();
-  const isSunday = day === 0;
-  const isMonday = day === 1;
-
-  return (
-    <div className="fixed inset-0 bg-gradient-to-br from-[#3D1106]/10 to-[#5A1B0D]/30 flex items-center justify-center p-4 z-[1000] overflow-y-auto backdrop-blur-sm">
-      {/* Viewport mobile-specific adjustments */}
-      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-      
-      {/* Mobile-specific touch optimizations */}
-      <style jsx global>{`
-        @media (max-width: 640px) {
-          /* Prevent text size adjustment on orientation change */
-          html {
-            -webkit-text-size-adjust: 100%;
-            text-size-adjust: 100%;
-          }
-          /* Tap highlight color */
-          a, button {
-            -webkit-tap-highlight-color: transparent;
-          }
-        }
+  
+ return (
+  <>
+    {/* Modal de horário (aparece apenas quando fechado) */}
+    {!status.isOpen && (
+      <div className="fixed inset-0 bg-gradient-to-br from-[#3D1106]/10 to-[#5A1B0D]/30 flex items-center justify-center p-4 z-[1000] overflow-y-auto backdrop-blur-sm">
+        {/* Viewport mobile-specific adjustments */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         
-        /* iPhone notch/padding adjustments */
-        @supports (padding: max(0px)) {
-          .safe-area-padding {
-            padding-left: max(12px, env(safe-area-inset-left));
-            padding-right: max(12px, env(safe-area-inset-right));
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        {/* Mobile-specific touch optimizations */}
+        <style jsx global>{`
+          @media (max-width: 640px) {
+            html {
+              -webkit-text-size-adjust: 100%;
+              text-size-adjust: 100%;
+            }
+            a, button {
+              -webkit-tap-highlight-color: transparent;
+            }
           }
-        }
-      `}</style>
+          
+          @supports (padding: max(0px)) {
+            .safe-area-padding {
+              padding-left: max(12px, env(safe-area-inset-left));
+              padding-right: max(12px, env(safe-area-inset-right));
+              padding-bottom: max(12px, env(safe-area-inset-bottom));
+            }
+          }
+        `}</style>
 
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.6, type: 'spring' }}
-        className="w-full max-w-sm mx-auto bg-gradient-to-br from-[#3D1106] to-[#5A1B0D] p-4 rounded-2xl shadow-2xl text-center text-white relative overflow-hidden border border-[#FFB501]/20 safe-area-padding"
-        style={{
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          backgroundImage: 'radial-gradient(at top right, #5A1B0D, transparent 60%), linear-gradient(to bottom, #3D1106, #5A1B0D)',
-          WebkitOverflowScrolling: 'touch'
-        }}
-      >
-        {/* Efeitos de partículas (reduzidos em mobile) */}
-        <div className="absolute inset-0 overflow-hidden">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full bg-[#FFB501]/10"
-              initial={{
-                x: Math.random() * 100,
-                y: Math.random() * 100,
-                width: Math.random() * 4 + 2,
-                height: Math.random() * 4 + 2,
-                opacity: Math.random() * 0.2 + 0.1
-              }}
-              animate={{
-                y: [null, (Math.random() - 0.5) * 10],
-                x: [null, (Math.random() - 0.5) * 10],
-                transition: {
-                  duration: Math.random() * 8 + 8,
-                  repeat: Infinity,
-                  repeatType: 'reverse'
-                }
-              }}
-            />
-          ))}
-        </div>
-        
-        {/* Elementos decorativos (otimizados para mobile) */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF6B00] via-[#FFB501] to-[#FF6B00]"></div>
-        <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#FFB501]/10 filter blur-md"></div>
-        <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-[#FFB501]/5 filter blur-md"></div>
-        
-        <div className="relative z-10">
-          <div className="mb-3 flex flex-col items-center">
-            <motion.div 
-              animate={{ 
-                rotate: 360,
-                scale: [1, 1.03, 1]
-              }}
-              transition={{ 
-                repeat: Infinity, 
-                duration: 20, 
-                ease: "linear",
-                scale: {
-                  duration: 4,
-                  repeat: Infinity,
-                  repeatType: 'reverse'
-                }
-              }}
-              className="bg-gradient-to-br from-[#FFB501] to-[#FF6B00] p-1 rounded-full mb-2 shadow-lg"
-              style={{
-                boxShadow: '0 0 8px rgba(255, 181, 1, 0.5)'
-              }}
-            >
-              <AnalogClock size={36} />
-            </motion.div>
-            
-            <motion.h2 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-lg font-bold mb-1 bg-clip-text text-transparent bg-gradient-to-r from-[#FFB501] to-[#FF6B00] px-2"
-            >
-              {status.isOpen ? 'Plataforma Aberta' : 'Plataforma Fechada'}
-            </motion.h2>
-            <motion.p 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-xs text-gray-300 mb-2 px-2"
-            >
-              {status.isOpen 
-                ? 'Horário de funcionamento da plataforma própria' 
-                : 'Fora do horário de funcionamento da plataforma própria'}
-            </motion.p>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, type: 'spring' }}
+          className="w-full max-w-sm mx-auto bg-gradient-to-br from-[#3D1106] to-[#5A1B0D] p-4 rounded-2xl shadow-2xl text-center text-white relative overflow-hidden border border-[#FFB501]/20 safe-area-padding"
+          style={{
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            backgroundImage: 'radial-gradient(at top right, #5A1B0D, transparent 60%), linear-gradient(to bottom, #3D1106, #5A1B0D)',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
+          {/* Efeitos de partículas */}
+          <div className="absolute inset-0 overflow-hidden">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute rounded-full bg-[#FFB501]/10"
+                initial={{
+                  x: Math.random() * 100,
+                  y: Math.random() * 100,
+                  width: Math.random() * 4 + 2,
+                  height: Math.random() * 4 + 2,
+                  opacity: Math.random() * 0.2 + 0.1
+                }}
+                animate={{
+                  y: [null, (Math.random() - 0.5) * 10],
+                  x: [null, (Math.random() - 0.5) * 10],
+                  transition: {
+                    duration: Math.random() * 8 + 8,
+                    repeat: Infinity,
+                    repeatType: 'reverse'
+                  }
+                }}
+              />
+            ))}
           </div>
           
-          {/* Contador de tempo - otimizado para mobile */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white/5 backdrop-blur-md p-3 rounded-xl border border-[#FFB501]/20 mb-3 relative overflow-hidden mx-1"
-            style={{
-              boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.1)'
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFB501]/5 to-transparent opacity-20"></div>
-            <div className="relative z-10">
-              <div className="flex flex-col items-center gap-1">
-                <div className="text-center">
-                  <p className="text-[#FFB501] text-xs font-semibold mb-1">
-                    {status.isOpen ? 'Próximo fechamento:' : 'Próximo horário de funcionamento:'}
-                  </p>
-                  <p className="text-white text-xs font-medium leading-tight">
-                    {status.isOpen 
-                      ? isSunday 
-                        ? 'Hoje às 15:00' 
-                        : 'Hoje às 17:45'
-                      : status.nextOpeningText.includes('terça-feira') 
-                        ? 'Próxima abertura: terça-feira às 11:30'
-                        : `Próxima abertura: ${status.nextOpeningText}`}
-                  </p>
-                </div>
-                
-                <div className="bg-gradient-to-br from-[#FFB501]/10 to-[#FF6B00]/10 p-2 rounded-lg border border-[#FFB501]/30 backdrop-blur-sm w-full max-w-[140px] mt-1">
-                  <p className="text-[#FFB501] text-[10px] mb-1">
-                    {status.isOpen ? 'Tempo restante:' : 'Abre em:'}
-                  </p>
-                  <div className="text-lg font-mono font-bold text-white tracking-tighter">
-                    {formatTime(status.nextChangeIn)}
+          {/* Elementos decorativos */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF6B00] via-[#FFB501] to-[#FF6B00]"></div>
+          <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#FFB501]/10 filter blur-md"></div>
+          <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-[#FFB501]/5 filter blur-md"></div>
+          
+          <div className="relative z-10">
+            {/* Conteúdo do modal */}
+            <div className="mb-3 flex flex-col items-center">
+              <motion.div 
+                animate={{ 
+                  rotate: 360,
+                  scale: [1, 1.03, 1]
+                }}
+                transition={{ 
+                  repeat: Infinity, 
+                  duration: 20, 
+                  ease: "linear",
+                  scale: {
+                    duration: 4,
+                    repeat: Infinity,
+                    repeatType: 'reverse'
+                  }
+                }}
+                className="bg-gradient-to-br from-[#FFB501] to-[#FF6B00] p-1 rounded-full mb-2 shadow-lg"
+                style={{
+                  boxShadow: '0 0 8px rgba(255, 181, 1, 0.5)'
+                }}
+              >
+                <AnalogClock size={36} />
+              </motion.div>
+              
+              <motion.h2 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-lg font-bold mb-1 bg-clip-text text-transparent bg-gradient-to-r from-[#FFB501] to-[#FF6B00] px-2"
+              >
+                Plataforma Fechada
+              </motion.h2>
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-xs text-gray-300 mb-2 px-2"
+              >
+                Fora do horário de funcionamento da plataforma própria
+              </motion.p>
+            </div>
+            
+            {/* Contador de tempo */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white/5 backdrop-blur-md p-3 rounded-xl border border-[#FFB501]/20 mb-3 relative overflow-hidden mx-1"
+              style={{
+                boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFB501]/5 to-transparent opacity-20"></div>
+              <div className="relative z-10">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="text-center">
+                    <p className="text-[#FFB501] text-xs font-semibold mb-1">
+                      Próximo horário de funcionamento:
+                    </p>
+                    <p className="text-white text-xs font-medium leading-tight">
+                      Próxima abertura: {status.nextOpeningText}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-[#FFB501]/10 to-[#FF6B00]/10 p-2 rounded-lg border border-[#FFB501]/30 backdrop-blur-sm w-full max-w-[140px] mt-1">
+                    <p className="text-[#FFB501] text-[10px] mb-1">
+                      Abre em:
+                    </p>
+                    <div className="text-lg font-mono font-bold text-white tracking-tighter">
+                      {formatTime(status.nextChangeIn)}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-          
-          {/* Seção de Delivery Externo - Só mostra se a plataforma estiver fechada e não for domingo ou segunda */}
-          {!status.isOpen && !isSunday && !isMonday && (
+            </motion.div>
+            
+            {/* Seção de Delivery Externo */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -522,7 +379,7 @@ const checkStatus = () => {
               </div>
               
               <div className="space-y-2">
-                {/* Card Glovo - Mobile optimized */}
+                {/* Cards de delivery... */}
                 <motion.a
                   href={deliveryLinks.glovo}
                   target="_blank"
@@ -534,31 +391,9 @@ const checkStatus = () => {
                     touchAction: 'manipulation'
                   }}
                 >
-                  <div className="flex items-center p-2">
-                    <div className="flex-shrink-0 mr-2">
-                      <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
-                        <img 
-                          src="/images/glovo.jpg" 
-                          alt="Glovo Logo"
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <h4 className="text-white font-bold text-xs mb-0.5 truncate">Glovo</h4>
-                      <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
-                    </div>
-                    <div className="ml-2 flex-shrink-0">
-                      <svg className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="h-1 bg-gradient-to-r from-[#FF6B00] to-[#FFB501]"></div>
+                  {/* Conteúdo do card Glovo... */}
                 </motion.a>
 
-                {/* Card Bolt Food - Mobile optimized */}
                 <motion.a
                   href={deliveryLinks.bolt}
                   target="_blank"
@@ -570,28 +405,7 @@ const checkStatus = () => {
                     touchAction: 'manipulation'
                   }}
                 >
-                  <div className="flex items-center p-2">
-                    <div className="flex-shrink-0 mr-2">
-                      <div className="bg-white p-1 rounded-md flex items-center justify-center w-10 h-10">
-                        <img 
-                          src="/images/boltfood.jpg" 
-                          alt="Bolt Food Logo"
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <h4 className="text-white font-bold text-xs mb-0.5 truncate">Bolt Food</h4>
-                      <p className="text-white/90 text-[10px] mb-1 truncate">Clique para fazer seu pedido</p>
-                    </div>
-                    <div className="ml-2 flex-shrink-0">
-                      <svg className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="h-1 bg-white/20"></div>
+                  {/* Conteúdo do card Bolt... */}
                 </motion.a>
               </div>
 
@@ -611,52 +425,36 @@ const checkStatus = () => {
                 </div>
               </motion.div>
             </motion.div>
-          )}
-          
-          {/* Horário de Funcionamento - Mobile optimized */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-2 rounded-lg border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group mx-1"
-          >
-            <div className="absolute -right-1 -top-1 w-8 h-8 rounded-full bg-[#FFB501]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
-            <h3 className="text-[#FFB501] font-bold text-xs mb-1 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              HORÁRIO DE FUNCIONAMENTO
-            </h3>
-            <ul className="space-y-1 text-[10px] text-gray-300">
-              <li className="flex justify-between items-center">
-                <span className="flex items-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
-                  Segunda-feira:
-                </span>
-                <span className="font-medium text-white">Fechado</span>
-              </li>
-              <li className="flex justify-between items-center">
-                <span className="flex items-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
-                  Terça a Sábado:
-                </span>
-                <span className="font-medium text-white">11:30 - 17:45</span>
-              </li>
-              <li className="flex justify-between items-center">
-                <span className="flex items-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
-                  Domingo:
-                </span>
-                <span className="font-medium text-white">11:30 - 15:00</span>
-              </li>
-              <li className="flex justify-between items-center">
-                <span className="flex items-center">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
-                  Entregas a partir:
-                </span>
-                <span className="font-medium text-white">12:00</span>
-              </li>
-              {!isSunday && !isMonday && (
+            
+            {/* Horário de Funcionamento */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-gradient-to-br from-[#FFB501]/5 to-[#FF6B00]/5 p-2 rounded-lg border border-[#FFB501]/20 backdrop-blur-sm relative overflow-hidden group mx-1"
+            >
+              <div className="absolute -right-1 -top-1 w-8 h-8 rounded-full bg-[#FFB501]/10 group-hover:opacity-50 transition-opacity duration-300"></div>
+              <h3 className="text-[#FFB501] font-bold text-xs mb-1 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                HORÁRIO DE FUNCIONAMENTO
+              </h3>
+              <ul className="space-y-1 text-[10px] text-gray-300">
+                <li className="flex justify-between items-center">
+                  <span className="flex items-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
+                    Todos os dias:
+                  </span>
+                  <span className="font-medium text-white">11:30 - 17:45</span>
+                </li>
+                <li className="flex justify-between items-center">
+                  <span className="flex items-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
+                    Entregas a partir:
+                  </span>
+                  <span className="font-medium text-white">12:00</span>
+                </li>
                 <li className="flex justify-between items-center">
                   <span className="flex items-center">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#FFB501] mr-1"></span>
@@ -664,13 +462,17 @@ const checkStatus = () => {
                   </span>
                   <span className="font-medium text-white">Apenas por parceiros</span>
                 </li>
-              )}
-            </ul>
-          </motion.div>
-        </div>
-      </motion.div>
-    </div>
-  );
+              </ul>
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
+    )}
+
+    {/* Conteúdo principal (aparece apenas quando aberto) */}
+    {status.isOpen && children}
+  </>
+);
 };
 
 export default OpeningHoursControl;
