@@ -9,7 +9,7 @@ import { database, ref, push, set, onValue, auth, getAuth } from '../firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { getCategoryIcon } from '../components/categories'; 
 import { categories } from '../components/categories';
-import OpeningHoursControl from '../components/OpeningHoursControl';
+
 
 // Configuração de internacionalização
 i18n
@@ -1628,7 +1628,7 @@ const changeLanguage = (lng) => {
   return (
     <div className="min-h-screen bg-[#FFF1E4] flex flex-col">
 
-<OpeningHoursControl>
+
 {showSuccessModal && (
   <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-90 p-4">
     <div className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-xl">
@@ -2785,7 +2785,7 @@ const changeLanguage = (lng) => {
     </div>
   </div>
 </footer>
-</OpeningHoursControl> 
+
 
 {showPickupWarning && (
   <PickupConfirmationModal 

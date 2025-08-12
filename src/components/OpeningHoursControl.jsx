@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-mo
 const OpeningHoursControl = ({ children }) => {
   const { t } = useTranslation();
   const [status, setStatus] = useState({
-    isOpen: false,
+    isOpen: true,
     nextOpening: null,
     currentPhase: 'closed',
     message: '',
@@ -193,96 +193,52 @@ const OpeningHoursControl = ({ children }) => {
     };
   };
 
-  const checkStatus = () => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const day = now.getDay();
-    
-    // Segunda-feira: sempre fechado
-    if (day === 1) {
-      const nextOpening = getNextOpening();
-      setStatus({
-        isOpen: false,
-        nextOpening: nextOpening,
-        currentPhase: 'closed',
-        message: 'Plataforma fechada',
-        nextChangeIn: nextOpening.time,
-        deliveryAvailable: false,
-        platformAvailable: false,
-        nextOpeningText: nextOpening.openingText
-      });
-      return;
-    }
-    
-    // Domingo: aberto até 15:00
-    if (day === 0) {
-      const isOpenTime = (
-        (currentHour > 11 || (currentHour === 11 && currentMinute >= 30)) &&
-        (currentHour < 15)
-      );
-      
-      const nextOpening = getNextOpening();
-      
-      if (isOpenTime) {
-        setStatus({
-          isOpen: true,
-          nextOpening: nextOpening,
-          currentPhase: 'open',
-          message: 'Plataforma aberta',
-          nextChangeIn: calculateTimeToEvent(15, 0),
-          deliveryAvailable: currentHour >= 12,
-          platformAvailable: true,
-          nextOpeningText: nextOpening.openingText
-        });
-      } else {
-        setStatus({
-          isOpen: false,
-          nextOpening: nextOpening,
-          currentPhase: 'closed',
-          message: 'Plataforma fechada',
-          nextChangeIn: nextOpening.time,
-          deliveryAvailable: false,
-          platformAvailable: false,
-          nextOpeningText: nextOpening.openingText
-        });
-      }
-      return;
-    }
-    
-    // Terça a Sábado: 11:30 - 17:45
-    const isOpenTime = (
-      (currentHour > 11 || (currentHour === 11 && currentMinute >= 30)) &&
-      (currentHour < 17 || (currentHour === 17 && currentMinute < 45))
-    );
-    
-    const nextOpening = getNextOpening();
-    
-    if (isOpenTime) {
-      setStatus({
-        isOpen: true,
-        nextOpening: nextOpening,
-        currentPhase: 'open',
-        message: 'Plataforma aberta',
-        nextChangeIn: calculateTimeToEvent(17, 45),
-        deliveryAvailable: currentHour >= 12,
-        platformAvailable: true,
-        nextOpeningText: nextOpening.openingText
-      });
-    } else {
-      setStatus({
-        isOpen: false,
-        nextOpening: nextOpening,
-        currentPhase: 'closed',
-        message: 'Plataforma fechada',
-        nextChangeIn: nextOpening.time,
-        deliveryAvailable: false,
-        platformAvailable: false,
-        nextOpeningText: nextOpening.openingText
-      });
-    }
-  };
+const checkStatus = () => {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const day = now.getDay();
 
+  // DEBUG: Verificação de horário
+  console.log(`Verificação: ${currentHour}:${currentMinute}, Dia ${day}`);
+
+  // Lógica corrigida para verificação de horário
+  const isOpen = (
+    (day !== 1) && // Não é segunda-feira
+    (
+      (day === 0 && (currentHour > 11 || (currentHour === 11 && currentMinute >= 30)) && currentHour < 15) || // Domingo 11:30-15:00
+      (day !== 0 && (currentHour > 11 || (currentHour === 11 && currentMinute >= 30)) && (currentHour < 17 || (currentHour === 17 && currentMinute < 45)) // Terça-Sábado 11:30-17:45
+    )
+  ));
+
+  if (isOpen) {
+    setStatus({
+      isOpen: true,
+      nextOpening: { 
+        time: day === 0 ? calculateTimeToEvent(15, 0) : calculateTimeToEvent(17, 45),
+        phase: 'closed' 
+      },
+      currentPhase: 'open',
+      message: 'Plataforma aberta',
+      nextChangeIn: day === 0 ? calculateTimeToEvent(15, 0) : calculateTimeToEvent(17, 45),
+      deliveryAvailable: currentHour >= 12,
+      platformAvailable: true,
+      nextOpeningText: day === 0 ? 'hoje às 15:00' : 'hoje às 17:45'
+    });
+  } else {
+    const nextOpening = getNextOpening();
+    setStatus({
+      isOpen: false,
+      nextOpening: nextOpening,
+      currentPhase: 'closed',
+      message: 'Plataforma fechada',
+      nextChangeIn: nextOpening.time,
+      deliveryAvailable: false,
+      platformAvailable: false,
+      nextOpeningText: nextOpening.openingText
+    });
+  }
+};
   useEffect(() => {
     checkStatus();
     
