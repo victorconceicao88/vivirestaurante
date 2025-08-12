@@ -22,23 +22,59 @@ const OpeningHoursControl = ({ children }) => {
     bolt:'https://food.bolt.eu/en-US/438/p/145891-cozinha-da-vivi?utm_source=share_provider&utm_medium=product&utm_content=menu_header'
   };
 
-  // Definição dos horários de funcionamento - SEMPRE FECHADO HOJE
+  // Definição dos horários de funcionamento
   const getSchedule = () => {
-    // Forçar plataforma fechada hoje
-    return [];
+    const now = new Date();
+    const day = now.getDay();
+    const isSunday = day === 0;
+    
+    // Horário padrão de funcionamento
+    const openHour = 11;
+    const openMinute = 30;
+    const closeHour = isSunday ? 15 : 17;
+    const closeMinute = isSunday ? 0 : 45;
+    
+    return [
+      {
+        time: calculateTimeToEvent(openHour, openMinute),
+        phase: 'open',
+        message: 'Plataforma aberta',
+        deliveryStarts: { hour: 12, minute: 0 },
+        platformAvailable: true
+      },
+      {
+        time: calculateTimeToEvent(closeHour, closeMinute),
+        phase: 'closed',
+        message: 'Plataforma fechada',
+        deliveryAvailable: false,
+        platformAvailable: false
+      }
+    ];
   };
 
   // Calcula o tempo até o próximo evento
   const calculateTimeToEvent = (targetHour, targetMinute) => {
     const now = new Date();
-    const targetTime = new Date(
+    let targetTime = new Date(
       now.getFullYear(),
       now.getMonth(),
-      now.getDate() + 1, // Sempre amanhã
+      now.getDate(),
       targetHour,
       targetMinute,
       0
     );
+    
+    // Se o horário já passou hoje, agende para amanhã
+    if (targetTime < now) {
+      targetTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + 1,
+        targetHour,
+        targetMinute,
+        0
+      );
+    }
     
     return Math.floor((targetTime - now) / 1000);
   };
@@ -46,18 +82,37 @@ const OpeningHoursControl = ({ children }) => {
   // Nova função para determinar o texto do próximo horário de abertura
   const getNextOpeningText = () => {
     const now = new Date();
+    const today = new Date(now);
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const isTodaySunday = today.getDay() === 0;
     const isTomorrowSunday = tomorrow.getDay() === 0;
     
     // Horário padrão de abertura
     const openHour = 11;
     const openMinute = 30;
     
-    return { 
-      text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, 
-      isToday: false 
-    };
+    // Verifica se ainda vai abrir hoje
+    const todayOpening = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      openHour,
+      openMinute
+    );
+    
+    if (now < todayOpening) {
+      return { 
+        text: `hoje às ${openHour}:${openMinute.toString().padStart(2, '0')}`, 
+        isToday: true 
+      };
+    } else {
+      return { 
+        text: `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`, 
+        isToday: false 
+      };
+    }
   };
 
   // Encontra o próximo horário de abertura com o texto correto
@@ -77,19 +132,48 @@ const OpeningHoursControl = ({ children }) => {
   };
 
   const checkStatus = () => {
-    // Forçar status fechado
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const isSunday = now.getDay() === 0;
+    
+    // Horários de funcionamento
+    const openHour = 11;
+    const openMinute = 30;
+    const closeHour = isSunday ? 15 : 17;
+    const closeMinute = isSunday ? 0 : 45;
+    
+    // Verifica se está dentro do horário de funcionamento
+    const isOpenTime = (
+      (currentHour > openHour || (currentHour === openHour && currentMinute >= openMinute)) &&
+      (currentHour < closeHour || (currentHour === closeHour && currentMinute < closeMinute))
+    );
+    
     const nextOpening = getNextOpening();
-
-    setStatus({
-      isOpen: false,
-      nextOpening: nextOpening,
-      currentPhase: 'closed',
-      message: 'Plataforma fechada',
-      nextChangeIn: nextOpening.time,
-      deliveryAvailable: false,
-      platformAvailable: false,
-      nextOpeningText: nextOpening.openingText
-    });
+    
+    if (isOpenTime) {
+      setStatus({
+        isOpen: true,
+        nextOpening: nextOpening,
+        currentPhase: 'open',
+        message: 'Plataforma aberta',
+        nextChangeIn: calculateTimeToEvent(closeHour, closeMinute),
+        deliveryAvailable: currentHour >= 12,
+        platformAvailable: true,
+        nextOpeningText: nextOpening.openingText
+      });
+    } else {
+      setStatus({
+        isOpen: false,
+        nextOpening: nextOpening,
+        currentPhase: 'closed',
+        message: 'Plataforma fechada',
+        nextChangeIn: nextOpening.time,
+        deliveryAvailable: false,
+        platformAvailable: false,
+        nextOpeningText: nextOpening.openingText
+      });
+    }
   };
 
   useEffect(() => {
@@ -195,7 +279,6 @@ const OpeningHoursControl = ({ children }) => {
 
   const isSunday = new Date().getDay() === 0;
 
-  // Sempre mostrar a tela de fechado
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-[#3D1106]/10 to-[#5A1B0D]/30 flex items-center justify-center p-4 z-[1000] overflow-y-auto backdrop-blur-sm">
       {/* Viewport mobile-specific adjustments */}
@@ -300,7 +383,7 @@ const OpeningHoursControl = ({ children }) => {
               transition={{ delay: 0.2 }}
               className="text-lg font-bold mb-1 bg-clip-text text-transparent bg-gradient-to-r from-[#FFB501] to-[#FF6B00] px-2"
             >
-              Plataforma Fechada
+              {status.isOpen ? 'Plataforma Aberta' : 'Plataforma Fechada'}
             </motion.h2>
             <motion.p 
               initial={{ opacity: 0, y: 10 }}
@@ -308,7 +391,9 @@ const OpeningHoursControl = ({ children }) => {
               transition={{ delay: 0.3 }}
               className="text-xs text-gray-300 mb-2 px-2"
             >
-              Fora do horário de funcionamento da plataforma própria
+              {status.isOpen 
+                ? 'Horário de funcionamento da plataforma própria' 
+                : 'Fora do horário de funcionamento da plataforma própria'}
             </motion.p>
           </div>
           
@@ -327,15 +412,19 @@ const OpeningHoursControl = ({ children }) => {
               <div className="flex flex-col items-center gap-1">
                 <div className="text-center">
                   <p className="text-[#FFB501] text-xs font-semibold mb-1">
-                    Próximo horário de funcionamento:
+                    {status.isOpen ? 'Próximo fechamento:' : 'Próximo horário de funcionamento:'}
                   </p>
                   <p className="text-white text-xs font-medium leading-tight">
-                    {status.nextOpeningText} (funcionamento normal até {isSunday ? '15:00' : '17:45'})
+                    {status.isOpen 
+                      ? `Hoje às ${isSunday ? '15:00' : '17:45'}`
+                      : `${status.nextOpeningText} (funcionamento normal até ${isSunday ? '15:00' : '17:45'})`}
                   </p>
                 </div>
                 
                 <div className="bg-gradient-to-br from-[#FFB501]/10 to-[#FF6B00]/10 p-2 rounded-lg border border-[#FFB501]/30 backdrop-blur-sm w-full max-w-[140px] mt-1">
-                  <p className="text-[#FFB501] text-[10px] mb-1">Tempo restante:</p>
+                  <p className="text-[#FFB501] text-[10px] mb-1">
+                    {status.isOpen ? 'Tempo restante:' : 'Abre em:'}
+                  </p>
                   <div className="text-lg font-mono font-bold text-white tracking-tighter">
                     {formatTime(status.nextChangeIn)}
                   </div>
@@ -344,8 +433,8 @@ const OpeningHoursControl = ({ children }) => {
             </div>
           </motion.div>
           
-          {/* Seção de Delivery Externo - Só mostra se não for domingo */}
-          {!isSunday && (
+          {/* Seção de Delivery Externo - Só mostra se a plataforma estiver fechada e não for domingo */}
+          {!status.isOpen && !isSunday && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
