@@ -62,7 +62,7 @@ const OpeningHoursControl = ({ children }) => {
     }
   };
 
-  const checkStatus = () => {
+const checkStatus = () => {
   // Garante que o cálculo seja feito no horário de Lisboa
   const lisbonTime = new Date().toLocaleString("en-US", { timeZone: "Europe/Lisbon" });
   const now = new Date(lisbonTime);
@@ -75,34 +75,21 @@ const OpeningHoursControl = ({ children }) => {
   const OPEN_TIME = 11 * 60 + 30; // 11:30 em minutos
   const CLOSE_TIME = 17 * 60 + 45; // 17:45
 
-  // Verificação direta do status
-  const isOpen = currentTime >= OPEN_TIME && currentTime < CLOSE_TIME;
+  // Verificação direta do status - SEMPRE FECHADO HOJE
+  const isOpen = false; // Força fechado hoje, independente do horário
 
-  // Calcular próximo horário de mudança
-  let nextChangeTime;
-  if (isOpen) {
-    nextChangeTime = calculateTimeToEvent(17, 45); // Fecha às 17:45
-  } else {
-    // Se já passou do horário de fechamento, próxima abertura é amanhã
-    if (currentTime >= CLOSE_TIME) {
-      nextChangeTime = calculateTimeToEvent(11, 30, 1);
-    } else {
-      // Se ainda não abriu hoje
-      nextChangeTime = calculateTimeToEvent(11, 30);
-    }
-  }
+  // Calcular próximo horário de mudança (sempre será amanhã às 11:30)
+  const nextChangeTime = calculateTimeToEvent(11, 30, 1); // Sempre amanhã às 11:30
 
   // Atualização imediata do estado
   setStatus({
     isOpen,
-    currentPhase: isOpen ? 'open' : 'closed',
-    message: isOpen ? 'Plataforma aberta' : 'Plataforma fechada',
+    currentPhase: 'closed',
+    message: 'Plataforma fechada',
     nextChangeIn: nextChangeTime,
-    deliveryAvailable: isOpen, // pedidos liberados assim que abrir
-    platformAvailable: isOpen,
-    nextOpeningText: isOpen
-      ? 'hoje às 17:45'
-      : getNextOpeningText()
+    deliveryAvailable: false, // pedidos desativados
+    platformAvailable: false,
+    nextOpeningText: 'amanhã às 11:30' // Texto fixo
   });
 };
 
@@ -317,14 +304,7 @@ const OpeningHoursControl = ({ children }) => {
               >
                 Plataforma Fechada
               </motion.h2>
-              <motion.p 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-xs text-gray-300 mb-2 px-2"
-              >
-                Fora do horário de funcionamento da plataforma própria
-              </motion.p>
+
             </div>
             
             {/* Contador de tempo */}
@@ -341,9 +321,6 @@ const OpeningHoursControl = ({ children }) => {
               <div className="relative z-10">
                 <div className="flex flex-col items-center gap-1">
                   <div className="text-center">
-                    <p className="text-[#FFB501] text-xs font-semibold mb-1">
-                      Próximo horário de funcionamento:
-                    </p>
                     <p className="text-white text-xs font-medium leading-tight">
                       Próxima abertura: {status.nextOpeningText}
                     </p>
