@@ -62,7 +62,7 @@ const OpeningHoursControl = ({ children }) => {
     }
   };
 
-const checkStatus = () => {
+  const checkStatus = () => {
   // Garante que o cálculo seja feito no horário de Lisboa
   const lisbonTime = new Date().toLocaleString("en-US", { timeZone: "Europe/Lisbon" });
   const now = new Date(lisbonTime);
@@ -75,21 +75,34 @@ const checkStatus = () => {
   const OPEN_TIME = 11 * 60 + 30; // 11:30 em minutos
   const CLOSE_TIME = 17 * 60 + 45; // 17:45
 
-  // Verificação direta do status - SEMPRE FECHADO HOJE
-  const isOpen = false; // Força fechado hoje, independente do horário
+  // Verificação direta do status
+  const isOpen = currentTime >= OPEN_TIME && currentTime < CLOSE_TIME;
 
-  // Calcular próximo horário de mudança (sempre será amanhã às 11:30)
-  const nextChangeTime = calculateTimeToEvent(11, 30, 1); // Sempre amanhã às 11:30
+  // Calcular próximo horário de mudança
+  let nextChangeTime;
+  if (isOpen) {
+    nextChangeTime = calculateTimeToEvent(17, 45); // Fecha às 17:45
+  } else {
+    // Se já passou do horário de fechamento, próxima abertura é amanhã
+    if (currentTime >= CLOSE_TIME) {
+      nextChangeTime = calculateTimeToEvent(11, 30, 1);
+    } else {
+      // Se ainda não abriu hoje
+      nextChangeTime = calculateTimeToEvent(11, 30);
+    }
+  }
 
   // Atualização imediata do estado
   setStatus({
     isOpen,
-    currentPhase: 'closed',
-    message: 'Plataforma fechada',
+    currentPhase: isOpen ? 'open' : 'closed',
+    message: isOpen ? 'Plataforma aberta' : 'Plataforma fechada',
     nextChangeIn: nextChangeTime,
-    deliveryAvailable: false, // pedidos desativados
-    platformAvailable: false,
-    nextOpeningText: 'amanhã às 11:30' // Texto fixo
+    deliveryAvailable: isOpen, // pedidos liberados assim que abrir
+    platformAvailable: isOpen,
+    nextOpeningText: isOpen
+      ? 'hoje às 17:45'
+      : getNextOpeningText()
   });
 };
 
