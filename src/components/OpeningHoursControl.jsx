@@ -37,54 +37,72 @@ const OpeningHoursControl = ({ children }) => {
   };
 
   // Determina o texto do próximo horário de abertura
-// Determina o texto do próximo horário de abertura
-const getNextOpeningText = () => {
-  const openHour = 11;
-  const openMinute = 30;
-  return `terça-feira às ${openHour}:${openMinute
-    .toString()
-    .padStart(2, "0")}`;
-};
+  const getNextOpeningText = () => {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    
+    // Horário de abertura
+    const openHour = 11;
+    const openMinute = 30;
+    
+    // Verifica se ainda vai abrir hoje
+    const todayOpening = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      openHour,
+      openMinute
+    );
+    
+    if (now < todayOpening) {
+      return `hoje às ${openHour}:${openMinute.toString().padStart(2, '0')}`;
+    } else {
+      return `amanhã às ${openHour}:${openMinute.toString().padStart(2, '0')}`;
+    }
+  };
 
-const checkStatus = () => {
-  // Horário Lisboa
-  const lisbonTime = new Date().toLocaleString("en-US", {
-    timeZone: "Europe/Lisbon",
-  });
+  const checkStatus = () => {
+  // Garante que o cálculo seja feito no horário de Lisboa
+  const lisbonTime = new Date().toLocaleString("en-US", { timeZone: "Europe/Lisbon" });
   const now = new Date(lisbonTime);
 
-  const currentDay = now.getDay(); // 0=Dom, 1=Seg, 2=Ter...
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
   const currentTime = currentHour * 60 + currentMinute;
 
-  // Config
-  const OPEN_DAY = 2; // Terça-feira
-  const OPEN_TIME = 11 * 60 + 30; // 11:30
+  // Definições de horário
+  const OPEN_TIME = 11 * 60 + 30; // 11:30 em minutos
   const CLOSE_TIME = 17 * 60 + 45; // 17:45
 
-  let isOpen = false;
-  let nextChangeTime;
+  // Verificação direta do status
+  const isOpen = currentTime >= OPEN_TIME && currentTime < CLOSE_TIME;
 
-  if (currentDay === OPEN_DAY) {
-    if (currentTime >= OPEN_TIME && currentTime < CLOSE_TIME) {
-      isOpen = true;
-      nextChangeTime = calculateTimeToEvent(17, 45, OPEN_DAY); // fecha
-    } else {
-      nextChangeTime = calculateTimeToEvent(11, 30, OPEN_DAY); // abre
-    }
+  // Calcular próximo horário de mudança
+  let nextChangeTime;
+  if (isOpen) {
+    nextChangeTime = calculateTimeToEvent(17, 45); // Fecha às 17:45
   } else {
-    nextChangeTime = calculateTimeToEvent(11, 30, OPEN_DAY); // próxima terça
+    // Se já passou do horário de fechamento, próxima abertura é amanhã
+    if (currentTime >= CLOSE_TIME) {
+      nextChangeTime = calculateTimeToEvent(11, 30, 1);
+    } else {
+      // Se ainda não abriu hoje
+      nextChangeTime = calculateTimeToEvent(11, 30);
+    }
   }
 
+  // Atualização imediata do estado
   setStatus({
     isOpen,
-    currentPhase: isOpen ? "open" : "closed",
-    message: isOpen ? "Plataforma aberta" : "Plataforma fechada",
-    nextChangeIn: nextChangeTime, // contador formatado
-    deliveryAvailable: isOpen,
+    currentPhase: isOpen ? 'open' : 'closed',
+    message: isOpen ? 'Plataforma aberta' : 'Plataforma fechada',
+    nextChangeIn: nextChangeTime,
+    deliveryAvailable: isOpen, // pedidos liberados assim que abrir
     platformAvailable: isOpen,
-    nextOpeningText: isOpen ? "hoje às 17:45" : getNextOpeningText(),
+    nextOpeningText: isOpen
+      ? 'hoje às 17:45'
+      : getNextOpeningText()
   });
 };
 
